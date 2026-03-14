@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import styles from "./register.module.css";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { AuthLayout, AuthInput, AuthButton, ImageSlider } from '../../../components/auth';
+import styles from '../../../components/auth/AuthLayout.module.css';
 
 const slides = [
   { url: "/4.webp", slogan: "Seamless Power" },
@@ -13,15 +13,7 @@ const slides = [
 
 export default function RegisterPage() {
   const [isRegister, setIsRegister] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,41 +31,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={styles.pageWrapper}>
+    <AuthLayout variant="register">
       <div className={styles.mainCard}>
-        {/* SOL PANEL - GÜÇLÜ IŞIKLI SLIDER */}
-        <div className={styles.leftPanel}>
-          <div className={styles.imageContainer}>
-            <div 
-              className={styles.sliderTrack}
-              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-            >
-              {slides.map((slide, index) => (
-                <div className={styles.slide} key={index}>
-                  <img src={slide.url} className={styles.bgImage} alt="visual" />
-                </div>
-              ))}
-            </div>
-            <div className={styles.leftOverlay}>
-              <h1 className={styles.logo}>LUMEN</h1>
-              <div>
-                <p style={{ color: "#fff", fontSize: "1.1rem", fontWeight: "300", margin: 0 }}>
-                  {slides[currentIndex].slogan}
-                </p>
-                <div className={styles.dots}>
-                  {slides.map((_, index) => (
-                    <div 
-                      key={index}
-                      className={index === currentIndex ? styles.dotActive : styles.dot}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImageSlider slides={slides} logo="AMU" />
 
-        {/* SAĞ PANEL - GLASS FORM */}
+        {/* Right Panel - Form */}
         <div className={styles.rightPanel}>
           <div className={styles.glassForm}>
             <div className={styles.formContent}>
@@ -83,17 +45,25 @@ export default function RegisterPage() {
               <form onSubmit={handleSubmit}>
                 {isRegister && (
                   <div className={styles.nameRow}>
-                    <input type="text" placeholder="First name" className={styles.inputField} />
-                    <input type="text" placeholder="Last name" className={styles.inputField} />
+                    <AuthInput type="text" placeholder="First name" />
+                    <AuthInput type="text" placeholder="Last name" />
                   </div>
                 )}
-                <input type="email" placeholder="Email address" className={styles.inputField} required />
-                <input type="password" placeholder="Password" className={styles.inputField} required />
-                {isRegister && <input type="password" placeholder="Confirm Password" className={styles.inputField} required />}
+                <div className={styles.singleFieldRow}>
+                  <AuthInput type="email" placeholder="Email address" required />
+                </div>
+                <div className={styles.singleFieldRow}>
+                  <AuthInput type="password" placeholder="Password" required />
+                </div>
+                {isRegister && (
+                  <div className={styles.singleFieldRow}>
+                    <AuthInput type="password" placeholder="Confirm Password" required />
+                  </div>
+                )}
                 
-                <button type="submit" className={styles.submitBtn}>
+                <AuthButton type="submit">
                   {isRegister ? "Create account" : "Sign In"}
-                </button>
+                </AuthButton>
               </form>
               
               <div className={styles.toggleText}>
@@ -106,6 +76,6 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
