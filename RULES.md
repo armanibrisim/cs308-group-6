@@ -191,7 +191,6 @@ backend/
 
 ## Git Rules
 
-- Branch naming: `feature/<short-description>`, `fix/<short-description>`, `chore/<short-description>`
 - Commit messages: short imperative sentence, e.g. `Add product search endpoint`
 - Do not commit `.env`, `.env.local`, or any Firebase service account JSON files.
 - Open a Pull Request for every feature; get at least one review before merging to `main`.
