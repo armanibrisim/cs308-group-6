@@ -14,6 +14,8 @@ const slides = [
 export default function AuthPage() {
   const [isRegister, setIsRegister] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,20 +25,68 @@ export default function AuthPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push("/logInMain");
+    setError("");
+    setLoading(true);
+
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+
+    try {
+      if (isRegister) {
+        const firstName = (form.elements.namedItem("firstName") as HTMLInputElement).value;
+        const lastName = (form.elements.namedItem("lastName") as HTMLInputElement).value;
+        const confirmPassword = (form.elements.namedItem("confirmPassword") as HTMLInputElement).value;
+
+        if (password !== confirmPassword) {
+          setError("Şifreler eşleşmiyor.");
+          return;
+        }
+
+        const res = await fetch("http://localhost:8000/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, first_name: firstName, last_name: lastName }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.detail || "Kayıt yapılamadı.");
+          return;
+        }
+      } else {
+        const res = await fetch("http://localhost:8000/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.detail || "Giriş yapılamadı.");
+          return;
+        }
+      }
+
+      router.push("/logInMain");
+    } catch {
+      setError("Sunucuya bağlanılamadı.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainCard}>
-        
+
         {/* SOL PANEL - GÜÇLÜ IŞIKLI SLIDER */}
         <div className={styles.leftPanel}>
           <div className={styles.imageContainer}>
-            <div 
-              className={styles.sliderTrack} 
+            <div
+              className={styles.sliderTrack}
               style={{ transform: `translateX(-${currentIndex * 100}%)` }}
             >
               {slides.map((slide, index) => (
@@ -54,9 +104,9 @@ export default function AuthPage() {
                 </p>
                 <div className={styles.dots}>
                   {slides.map((_, index) => (
-                    <div 
-                      key={index} 
-                      className={index === currentIndex ? styles.dotActive : styles.dot} 
+                    <div
+                      key={index}
+                      className={index === currentIndex ? styles.dotActive : styles.dot}
                     />
                   ))}
                 </div>
@@ -75,22 +125,26 @@ export default function AuthPage() {
               <form onSubmit={handleSubmit}>
                 {isRegister && (
                   <div className={styles.nameRow}>
-                    <input type="text" placeholder="First name" className={styles.inputField} />
-                    <input type="text" placeholder="Last name" className={styles.inputField} />
+                    <input name="firstName" type="text" placeholder="First name" className={styles.inputField} required />
+                    <input name="lastName" type="text" placeholder="Last name" className={styles.inputField} required />
                   </div>
                 )}
-                <input type="email" placeholder="Email address" className={styles.inputField} required />
-                <input type="password" placeholder="Password" className={styles.inputField} required />
-                {isRegister && <input type="password" placeholder="Confirm Password" className={styles.inputField} required />}
+                <input name="email" type="email" placeholder="Email address" className={styles.inputField} required />
+                <input name="password" type="password" placeholder="Password" className={styles.inputField} required />
+                {isRegister && <input name="confirmPassword" type="password" placeholder="Confirm Password" className={styles.inputField} required />}
 
-                <button type="submit" className={styles.submitBtn}>
-                  {isRegister ? "Create account" : "Sign In"}
+                {error && (
+                  <p style={{ color: "#ef4444", fontSize: "13px", marginBottom: "8px" }}>{error}</p>
+                )}
+
+                <button type="submit" className={styles.submitBtn} disabled={loading}>
+                  {loading ? "..." : isRegister ? "Create account" : "Sign In"}
                 </button>
               </form>
 
               <div className={styles.toggleText}>
                 {isRegister ? "Already have an account?" : "Don't have an account?"}
-                <button type="button" onClick={() => setIsRegister(!isRegister)}>
+                <button type="button" onClick={() => { setIsRegister(!isRegister); setError(""); }}>
                   {isRegister ? "Log In" : "Register"}
                 </button>
               </div>
