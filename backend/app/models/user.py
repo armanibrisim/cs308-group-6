@@ -17,3 +17,5 @@ class AuthResponse(BaseModel):
     success: bool
     doc_id: str
     email: str
+    role: str
+    token: str

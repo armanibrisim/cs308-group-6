@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import uuid
+
 from firebase_admin import firestore
+
 from app.firebase.client import get_firebase_app
+from app.utils.security import hash_password
 
 
 def get_user_by_email(email: str) -> tuple[str, dict] | None:
     get_firebase_app()
     db = firestore.client()
 
-    for doc in db.collection("users").stream():
-        data = doc.to_dict()
-        if data.get("email") == email:
-            return doc.id, data
+    results = (
+        db.collection("users")
+        .where("email", "==", email)
+        .limit(1)
+        .stream()
+    )
+    for doc in results:
+        return doc.id, doc.to_dict()
 
     return None
 
@@ -20,13 +28,10 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> s
     get_firebase_app()
     db = firestore.client()
 
-    users_ref = db.collection("users")
-    count = len(list(users_ref.stream()))
-    doc_id = f"user_{count}"
-
-    users_ref.document(doc_id).set({
+    doc_id = str(uuid.uuid4())
+    db.collection("users").document(doc_id).set({
         "email": email,
-        "password": password,
+        "password": hash_password(password),
         "first_name": first_name,
         "last_name": last_name,
         "role": "customer",

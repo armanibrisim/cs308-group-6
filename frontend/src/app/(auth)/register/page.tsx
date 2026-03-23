@@ -1,75 +1,138 @@
-"use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { AuthLayout, AuthInput, AuthButton, ImageSlider } from '../../../components/auth';
-import styles from '../../../components/auth/AuthLayout.module.css';
+'use client'
+
+import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
+
+import styles from '../../../components/auth/AuthLayout.module.css'
+import { AuthButton, AuthInput, AuthLayout, ImageSlider } from '../../../components/auth'
+import { useAuth } from '../../../context/AuthContext'
+import { authService } from '../../../services/authService'
 
 const slides = [
-  { url: "/4.webp", slogan: "Seamless Power" },
-  { url: "/3.jpg", slogan: "Elegant Design" },
-  { url: "/2.webp", slogan: "Infinite Visuals" },
-  { url: "/1.webp", slogan: "Beyond Imagination" },
-];
+  { url: '/4.webp', slogan: 'Seamless Power' },
+  { url: '/3.jpg', slogan: 'Elegant Design' },
+  { url: '/2.webp', slogan: 'Infinite Visuals' },
+  { url: '/1.webp', slogan: 'Beyond Imagination' },
+]
 
 export default function RegisterPage() {
-  const [isRegister, setIsRegister] = useState(true);
-  const router = useRouter();
+  const router = useRouter()
+  const { login } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted");
-  };
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleToggle = () => {
-    if (isRegister) {
-      // Switch to login - redirect to login page
-      router.push("/login");
-    } else {
-      setIsRegister(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
     }
-  };
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const data = await authService.register({
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+      })
+      login(data)
+      router.push('/browse')
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('409')) {
+        setError('This email is already registered.')
+      } else {
+        setError('Registration failed. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <AuthLayout variant="register">
       <div className={styles.mainCard}>
-        <ImageSlider slides={slides} logo="AMU" />
+        <ImageSlider slides={slides} logo="LUMEN" />
 
-        {/* Right Panel - Form */}
         <div className={styles.rightPanel}>
           <div className={styles.glassForm}>
             <div className={styles.formContent}>
-              <h1 className={styles.title}>{isRegister ? "Create account" : "Welcome back"}</h1>
-              <p className={styles.subtitle}>{isRegister ? "Start your journey today." : "Sign in to continue."}</p>
-              
+              <h1 className={styles.title}>Create account</h1>
+              <p className={styles.subtitle}>Start your journey today.</p>
+
               <form onSubmit={handleSubmit}>
-                {isRegister && (
-                  <div className={styles.nameRow}>
-                    <AuthInput type="text" placeholder="First name" />
-                    <AuthInput type="text" placeholder="Last name" />
-                  </div>
-                )}
-                <div className={styles.singleFieldRow}>
-                  <AuthInput type="email" placeholder="Email address" required />
+                <div className={styles.nameRow}>
+                  <AuthInput
+                    type="text"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                  <AuthInput
+                    type="text"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
                 </div>
+
                 <div className={styles.singleFieldRow}>
-                  <AuthInput type="password" placeholder="Password" required />
+                  <AuthInput
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-                {isRegister && (
-                  <div className={styles.singleFieldRow}>
-                    <AuthInput type="password" placeholder="Confirm Password" required />
-                  </div>
-                )}
-                
-                <AuthButton type="submit">
-                  {isRegister ? "Create account" : "Sign In"}
+
+                <div className={styles.singleFieldRow}>
+                  <AuthInput
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.singleFieldRow}>
+                  <AuthInput
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {error && <p style={{ color: 'red', fontSize: '0.85rem', marginBottom: '8px' }}>{error}</p>}
+
+                <AuthButton type="submit" disabled={loading}>
+                  {loading ? 'Creating account...' : 'Create account'}
                 </AuthButton>
               </form>
-              
+
               <div className={styles.toggleText}>
-                {isRegister ? "Already have an account?" : "Don't have an account?"}
-                <button type="button" onClick={handleToggle}>
-                  {isRegister ? "Log In" : "Register"}
+                Already have an account?
+                <button type="button" onClick={() => router.push('/login')}>
+                  Log In
                 </button>
               </div>
             </div>
@@ -77,5 +140,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </AuthLayout>
-  );
+  )
 }
