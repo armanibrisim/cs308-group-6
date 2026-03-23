@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+from datetime import datetime, timezone
 
 from firebase_admin import firestore
 
@@ -28,13 +28,14 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> s
     get_firebase_app()
     db = firestore.client()
 
-    doc_id = str(uuid.uuid4())
+    doc_id = email
     db.collection("users").document(doc_id).set({
         "email": email,
         "password": hash_password(password),
         "first_name": first_name,
         "last_name": last_name,
         "role": "customer",
+        "created_at": datetime.now(timezone.utc).isoformat(),
     })
 
     return doc_id
