@@ -1,10 +1,17 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAuth } from '../../../context/AuthContext'
+import { cartService } from '../../../services/cartService'
+import { CartItem } from '../../../types/cart'
 
-interface CartItem {
-  id: string
+// ── Local-storage guest cart ──────────────────────────────────────────────────
+
+const GUEST_CART_KEY = 'lumen_guest_cart'
+
+interface GuestCartItem {
+  id: string        // product_id acts as id for guest cart
   name: string
   price: number
   quantity: number
@@ -12,32 +19,32 @@ interface CartItem {
   description: string
 }
 
-const INITIAL_CART: CartItem[] = [
-  {
-    id: 'p1',
-    name: 'Sonic-X Pro Headphones',
-    price: 349.00,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400',
-    description: 'Studio-grade noise cancellation with obsidian finish.',
-  },
-  {
-    id: 'p2',
-    name: 'Nvidia RTX 3080',
-    price: 799.00,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&q=80&w=400',
-    description: 'Founders Edition with dual-axial flow-through thermal design.',
-  },
-  {
-    id: 'p3',
-    name: 'Lumen Mechanical TKL',
-    price: 189.00,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=400',
-    description: 'Gasket-mounted precision with neon-responsive keys.',
-  },
-]
+function loadGuestCart(): GuestCartItem[] {
+  if (typeof window === 'undefined') return []
+  try {
+    return JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveGuestCart(items: GuestCartItem[]): void {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items))
+}
+
+// ── Display shape used by both guest and authenticated paths ──────────────────
+
+interface DisplayItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  image: string
+  description: string
+  maxStock?: number
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const SHIPPING_COST = 45.00
 const FREE_SHIPPING_THRESHOLD = 5000
@@ -46,6 +53,8 @@ const TAX_RATE = 0.08
 function fmt(n: number) {
   return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
 }
+
+// ── GlowCard component ────────────────────────────────────────────────────────
 
 function GlowCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -66,23 +75,136 @@ function GlowCard({ children, className = '' }: { children: React.ReactNode; cla
   )
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function CartPage() {
   const router = useRouter()
-  const [cart, setCart] = useState<CartItem[]>(INITIAL_CART)
+  const { user } = useAuth()
+
+  const [items, setItems] = useState<DisplayItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [promoCode, setPromoCode] = useState('')
 
-  const totalItems = cart.reduce((s, i) => s + i.quantity, 0)
-  const subtotal   = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  // ── Derived totals ────────────────────────────────────────────────────────
+
+  const totalItems = items.reduce((s, i) => s + i.quantity, 0)
+  const subtotal   = items.reduce((s, i) => s + i.price * i.quantity, 0)
   const shipping   = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST
   const tax        = subtotal * TAX_RATE
   const total      = subtotal + shipping + tax
   const progress   = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)
 
-  const increment = (id: string) => setCart(p => p.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i))
-  const decrement = (id: string) => setCart(p => p.map(i => i.id === id && i.quantity > 1 ? { ...i, quantity: i.quantity - 1 } : i))
-  const remove    = (id: string) => setCart(p => p.filter(i => i.id !== id))
+  // ── Helpers to convert backend CartItem → DisplayItem ─────────────────────
 
-  useEffect(() => { window.scrollTo({ top: 0 }) }, [])
+  function toDisplayItems(backendItems: CartItem[]): DisplayItem[] {
+    return backendItems.map(i => ({
+      id: i.product_id,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      image: i.image_url ?? '',
+      description: i.description,
+      maxStock: i.stock_quantity,
+    }))
+  }
+
+  // ── Load cart ─────────────────────────────────────────────────────────────
+
+  const loadCart = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (user) {
+        const cart = await cartService.getCart()
+        setItems(toDisplayItems(cart.items))
+      } else {
+        setItems(
+          loadGuestCart().map(g => ({
+            id: g.id,
+            name: g.name,
+            price: g.price,
+            quantity: g.quantity,
+            image: g.image,
+            description: g.description,
+          }))
+        )
+      }
+    } catch (err) {
+      setError('Failed to load cart. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    loadCart()
+    window.scrollTo({ top: 0 })
+  }, [loadCart])
+
+  // ── Increment ─────────────────────────────────────────────────────────────
+
+  async function increment(id: string) {
+    const item = items.find(i => i.id === id)
+    if (!item) return
+
+    const newQty = item.quantity + 1
+    if (item.maxStock !== undefined && newQty > item.maxStock) return
+
+    if (user) {
+      try {
+        const cart = await cartService.updateItem(id, { quantity: newQty })
+        setItems(toDisplayItems(cart.items))
+      } catch {
+        setError('Could not update quantity.')
+      }
+    } else {
+      const updated = items.map(i => i.id === id ? { ...i, quantity: newQty } : i)
+      setItems(updated)
+      saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
+    }
+  }
+
+  // ── Decrement ─────────────────────────────────────────────────────────────
+
+  async function decrement(id: string) {
+    const item = items.find(i => i.id === id)
+    if (!item || item.quantity <= 1) return
+
+    const newQty = item.quantity - 1
+
+    if (user) {
+      try {
+        const cart = await cartService.updateItem(id, { quantity: newQty })
+        setItems(toDisplayItems(cart.items))
+      } catch {
+        setError('Could not update quantity.')
+      }
+    } else {
+      const updated = items.map(i => i.id === id ? { ...i, quantity: newQty } : i)
+      setItems(updated)
+      saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
+    }
+  }
+
+  // ── Remove ────────────────────────────────────────────────────────────────
+
+  async function remove(id: string) {
+    if (user) {
+      try {
+        const cart = await cartService.removeItem(id)
+        setItems(toDisplayItems(cart.items))
+      } catch {
+        setError('Could not remove item.')
+      }
+    } else {
+      const updated = items.filter(i => i.id !== id)
+      setItems(updated)
+      saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0d0d0d', color: '#e5e2e1' }}>
@@ -126,7 +248,7 @@ export default function CartPage() {
         </div>
       </header>
 
-      {/* ── Progress bar ── */}
+      {/* ── Free-shipping progress bar ── */}
       <div style={{ position: 'fixed', top: '4rem', left: 0, right: 0, height: '3px', zIndex: 50, background: 'rgba(255,255,255,0.05)' }}>
         <div style={{
           height: '100%', background: '#2ff801',
@@ -166,7 +288,6 @@ export default function CartPage() {
 
           {/* ── Cart items ── */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {/* Heading */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
               <h1 className="font-wide" style={{ fontSize: '3.5rem', fontWeight: 900, lineHeight: 1, textTransform: 'uppercase' }}>
                 Your Cart
@@ -176,78 +297,129 @@ export default function CartPage() {
               </span>
             </div>
 
-            {/* Items */}
-            <div className="hide-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {cart.length === 0 ? (
-                <div style={{ padding: '8rem 0', textAlign: 'center', opacity: 0.4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '5rem', marginBottom: '2rem' }}>shopping_basket</span>
-                  <p className="font-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.4em', fontSize: '0.85rem' }}>Inventory Empty</p>
-                  <button
-                    onClick={() => setCart(INITIAL_CART)}
-                    style={{ marginTop: '2rem', color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
-                  >
-                    Restore Inventory
-                  </button>
-                </div>
-              ) : (
-                cart.map(item => (
-                  <GlowCard key={item.id} className="rounded-[2rem]">
-                    <div className="product-card glass-panel" style={{ borderRadius: '2rem', transition: 'background 0.5s' }}>
-                      <div className="cart-item-inner">
-                        {/* Thumbnail */}
-                        <div style={{
-                          width: '96px', height: '96px', borderRadius: '1rem',
-                          overflow: 'hidden', flexShrink: 0,
-                          border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)',
-                        }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="product-img"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </div>
+            {/* Guest banner */}
+            {!user && (
+              <div style={{
+                padding: '1rem 1.5rem', borderRadius: '1rem',
+                background: 'rgba(47,248,1,0.05)', border: '1px solid rgba(47,248,1,0.15)',
+                fontSize: '11px', color: '#a1a1a1', letterSpacing: '0.05em',
+              }}>
+                You are browsing as a guest.{' '}
+                <button
+                  onClick={() => router.push('/login')}
+                  style={{ color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                >
+                  Sign in
+                </button>
+                {' '}to save your cart and proceed to checkout.
+              </div>
+            )}
 
-                        {/* Info */}
-                        <div style={{ flex: 1, textAlign: 'left' }}>
-                          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>{item.name}</h3>
-                          <p style={{ fontSize: '0.8rem', color: 'rgba(229,226,225,0.4)', marginBottom: '0.75rem' }}>{item.description}</p>
-                          <button
-                            onClick={() => remove(item.id)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
-                            Remove
-                          </button>
-                        </div>
+            {/* Error banner */}
+            {error && (
+              <div style={{
+                padding: '1rem 1.5rem', borderRadius: '1rem',
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                fontSize: '11px', color: '#ef4444',
+              }}>
+                {error}
+              </div>
+            )}
 
-                        {/* Qty + Price */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', borderRadius: '0.75rem', padding: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <button className="qty-btn" onClick={() => decrement(item.id)}
-                              style={{ width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>remove</span>
-                            </button>
-                            <span style={{ width: '2.5rem', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', color: '#fff' }}>{item.quantity}</span>
-                            <button className="qty-btn" onClick={() => increment(item.id)}
-                              style={{ width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>add</span>
+            {/* Loading state */}
+            {loading ? (
+              <div style={{ padding: '8rem 0', textAlign: 'center', opacity: 0.4 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '3rem' }}>sync</span>
+                <p className="font-wide" style={{ marginTop: '1rem', textTransform: 'uppercase', letterSpacing: '0.4em', fontSize: '0.75rem' }}>Loading Cart…</p>
+              </div>
+            ) : (
+              <div className="hide-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {items.length === 0 ? (
+                  <div style={{ padding: '8rem 0', textAlign: 'center', opacity: 0.4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '5rem', marginBottom: '2rem' }}>shopping_basket</span>
+                    <p className="font-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.4em', fontSize: '0.85rem' }}>Inventory Empty</p>
+                    <button
+                      onClick={() => router.push('/browse')}
+                      style={{ marginTop: '2rem', color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
+                    >
+                      Browse Products
+                    </button>
+                  </div>
+                ) : (
+                  items.map(item => (
+                    <GlowCard key={item.id} className="rounded-[2rem]">
+                      <div className="product-card glass-panel" style={{ borderRadius: '2rem', transition: 'background 0.5s' }}>
+                        <div className="cart-item-inner">
+                          {/* Thumbnail */}
+                          <div style={{
+                            width: '96px', height: '96px', borderRadius: '1rem',
+                            overflow: 'hidden', flexShrink: 0,
+                            border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)',
+                          }}>
+                            {item.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="product-img"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: '#444' }}>image_not_supported</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div style={{ flex: 1, textAlign: 'left' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>{item.name}</h3>
+                            <p style={{ fontSize: '0.8rem', color: 'rgba(229,226,225,0.4)', marginBottom: '0.75rem' }}>{item.description}</p>
+                            {item.maxStock !== undefined && item.maxStock < 5 && item.maxStock > 0 && (
+                              <p style={{ fontSize: '9px', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.5rem' }}>
+                                Only {item.maxStock} left
+                              </p>
+                            )}
+                            <button
+                              onClick={() => remove(item.id)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                              Remove
                             </button>
                           </div>
 
-                          <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '1.5rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-                            {fmt(item.price * item.quantity)}
+                          {/* Qty + Price */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', borderRadius: '0.75rem', padding: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                              <button className="qty-btn" onClick={() => decrement(item.id)}
+                                style={{ width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>remove</span>
+                              </button>
+                              <span style={{ width: '2.5rem', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', color: '#fff' }}>{item.quantity}</span>
+                              <button className="qty-btn" onClick={() => increment(item.id)}
+                                disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
+                                style={{
+                                  width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer',
+                                  color: item.maxStock !== undefined && item.quantity >= item.maxStock ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)',
+                                }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>add</span>
+                              </button>
+                            </div>
+
+                            <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '1.5rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                              {fmt(item.price * item.quantity)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </GlowCard>
-                ))
-              )}
-            </div>
+                    </GlowCard>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Order Summary ── */}
@@ -262,7 +434,7 @@ export default function CartPage() {
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2.5rem', marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     {[
                       { label: 'Subtotal', value: fmt(subtotal), color: '#fff' },
-                      { label: 'Shipping', value: fmt(shipping), color: '#2ff801' },
+                      { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping), color: '#2ff801' },
                       { label: 'Tax (Est.)', value: fmt(tax), color: '#fff' },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -306,22 +478,24 @@ export default function CartPage() {
 
                     {/* Checkout */}
                     <button
-                      onClick={() => router.push('/checkout')}
+                      onClick={() => user ? router.push('/checkout') : router.push('/login')}
                       className="neon-glow"
+                      disabled={items.length === 0}
                       style={{
                         width: '100%', padding: '1.5rem', borderRadius: '1rem',
-                        background: '#2ff801', color: '#000', border: 'none', cursor: 'pointer',
+                        background: items.length === 0 ? 'rgba(47,248,1,0.3)' : '#2ff801',
+                        color: '#000', border: 'none', cursor: items.length === 0 ? 'not-allowed' : 'pointer',
                         fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '12px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
                         boxShadow: '0 0 20px rgba(47,248,1,0.2)',
                         transition: 'filter 0.2s, transform 0.1s',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.1)')}
+                      onMouseEnter={e => { if (items.length > 0) e.currentTarget.style.filter = 'brightness(1.1)' }}
                       onMouseLeave={e => (e.currentTarget.style.filter = '')}
-                      onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.98)')}
+                      onMouseDown={e => { if (items.length > 0) e.currentTarget.style.transform = 'scale(0.98)' }}
                       onMouseUp={e => (e.currentTarget.style.transform = '')}
                     >
-                      Proceed to Checkout
+                      {user ? 'Proceed to Checkout' : 'Sign In to Checkout'}
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
                     </button>
 
