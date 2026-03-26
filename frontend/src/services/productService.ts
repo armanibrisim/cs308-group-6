@@ -4,6 +4,7 @@ import { Product, ProductCategory } from '../types/product'
 export const productService = {
   // Get all products with optional filters
   async getProducts(params?: {
+    category_id?: string
     category?: string
     search?: string
     sortBy?: 'price' | 'popularity' | 'name'
