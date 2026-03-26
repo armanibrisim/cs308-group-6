@@ -209,45 +209,6 @@ export default function CartPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0d0d0d', color: '#e5e2e1' }}>
 
-      {/* ── Header ── */}
-      <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        backgroundColor: 'rgba(13,13,13,0.8)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 2rem', height: '4rem',
-      }}>
-        <span
-          className="font-wide"
-          style={{ fontSize: '1.4rem', color: '#fff', cursor: 'pointer', textTransform: 'uppercase' }}
-          onClick={() => router.push('/')}
-        >
-          LUMEN
-        </span>
-
-        <nav style={{ display: 'flex', gap: '2.5rem', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          <button style={{ color: '#a1a1a1', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => router.push('/browse')}>Explore</button>
-          <button style={{ color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer' }}>Cart</button>
-          <button style={{ color: '#a1a1a1', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => router.push('/orders')}>Orders</button>
-        </nav>
-
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '0.5rem' }} onClick={() => router.push('/cart')}>
-            <span className="material-symbols-outlined" style={{ color: '#a1a1a1', fontSize: '20px' }}>shopping_bag</span>
-            {totalItems > 0 && (
-              <span style={{
-                position: 'absolute', top: '6px', right: '6px',
-                width: '10px', height: '10px', background: '#2ff801',
-                borderRadius: '50%', border: '2px solid #0d0d0d',
-              }} />
-            )}
-          </button>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }} onClick={() => router.push('/login')}>
-            <span className="material-symbols-outlined" style={{ color: '#a1a1a1', fontSize: '22px' }}>account_circle</span>
-          </button>
-        </div>
-      </header>
-
       {/* ── Free-shipping progress bar ── */}
       <div style={{ position: 'fixed', top: '4rem', left: 0, right: 0, height: '3px', zIndex: 50, background: 'rgba(255,255,255,0.05)' }}>
         <div style={{

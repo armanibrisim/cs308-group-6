@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { AuthProvider } from '../context/AuthContext'
+import { CategoryBar } from '../components/layout/CategoryBar'
+import { TopHeader } from '../components/layout/TopHeader'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,7 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <TopHeader />
+          <CategoryBar />
+          <div style={{ paddingTop: '7rem' }}>{children}</div>
+        </AuthProvider>
       </body>
     </html>
   )
