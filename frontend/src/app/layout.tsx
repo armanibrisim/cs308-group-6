@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { AuthProvider } from '../context/AuthContext'
-import { CategoryBar } from '../components/layout/CategoryBar'
-import { TopHeader } from '../components/layout/TopHeader'
+import { Navbar } from '../components/layout/Navbar'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,12 +20,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
         />
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
         <AuthProvider>
-          <TopHeader />
-          <CategoryBar />
-          <div style={{ paddingTop: '7rem' }}>{children}</div>
+          <Navbar />
+          <div style={{ paddingTop: '8rem' }}>{children}</div>
         </AuthProvider>
       </body>
     </html>

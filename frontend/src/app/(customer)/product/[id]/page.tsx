@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useRef, MouseEvent } from 'react'
+import { useState, useRef, MouseEvent, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { productService } from '../../../../services/productService'
 
 const NEON = '#39ff14'
 
@@ -11,36 +13,7 @@ const thumbnailImages = [
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAJ-SZZyix82Taa7DOs7fVkKVuYqJJk6_fJjxYPWs7ZKuSzZZuEdqfRz79mLhykKDY6xTvKoo2yOmGtPt22x7Lgt3P8UKRFYhhy0jpJqQIiYGwG9ejeJcOI075CCWg31K7E8sB1UYdjGqvgv_4yDsi9uM_zVokyusMr0-mZUNbkjc1TA76hg5BQdRujOdYO8DB4kB9ldxdoIkFRP32aQiEiR_WmpwQ_vmSGZQn9L45yJFkbYogAZQWpBOgCr2vZ2aVhR98_yx2aw2A',
 ]
 
-const relatedProducts = [
-  {
-    id: 1,
-    series: 'NEON_LINE',
-    name: 'LUMEN_RIG ALPHA-4',
-    price: '$2,450.00',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDgehdV35YUGR5tmcT8y7Xfz6WDBer4MZciGMdh_pvMnjtUAQ9sNwoB50vfC3nl8UJcu0lAx88qFJLWdKRI54XIA0Sn2v_VIHwP4W7XNCK3csVXjM_uBNd3uP_jnHIqHflXwIibFd8Qe5UPksYQEnFygD5hmiujst6MbOXs7Ovx98gfVpR7sWy4x1vjtXWg8jpsCy05JmEbnLomF3D5KcYl4_bNaVM5WGql4ln60ksgghJuo4tUAy1DxThFoMQulqwcgpCyNJZ3wl8',
-  },
-  {
-    id: 2,
-    series: 'PRO_SERIES',
-    name: 'LUMEN_RIG PHANTOM',
-    price: '$3,200.00',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIL1SCFlnKSjPGrAf8OGuvLE-DXVvNLMOraph6D4soqR6yll_qUocBMNDuwG1-2snBT6EuQsNRYTk0JDgYBtmiqac38nHZuD_BQCRvH5OmGu-GX0RyEKg8iYXDsezlNh3n2y-Am8ZWY-tpe-ykEKrRwNBZ4kRgCI7zZf7_x_e47A19d1XU0WfCT_8vY1En86wVfY7LuzjTwQkjwkcMmM6xTr3pnhvVeTsgyAC3RxNeKWvY3vz8Z1uLtpI5UHV6GVmdmFTbOD7F9fc',
-  },
-  {
-    id: 3,
-    series: 'ELITE_CORE',
-    name: 'LUMEN_RIG TITAN-X',
-    price: '$5,600.00',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCFZDU_YOfsNCpohGFfyBxZvfrnS88mTC6wzx_hYNVNaot2VaDp1CqeWO4AdZE1RBkEqbCr_Tdsf4mi6VuXPbhscNsKabZr6XwGGh4WAYpkY2mOR6dqbe-E-RzW7r2qd_gew9JVWjYJkJtea6k8dQsK1QUz9aVQpnq37zhFywvJPx1pDpj5a9hugFVYq0kke3q_nMBwuKOz7W9k8H75GcVtkWhlO6DfF750b4kOL01U24AvW0z8Qw6ov4EVda3cFpk0aoec0LmiQ0',
-  },
-]
 
-const moreCatalogueProducts = [
-  { id: 4, series: 'MOBILE', name: 'NEURAL_PAD 12', price: '$1,299', img: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=2030&auto=format&fit=crop' },
-  { id: 5, series: 'CONSOLE', name: 'CONSOLE_Q CORE', price: '$599', img: 'https://images.unsplash.com/photo-1605898962319-19452d3f3baa?q=80&w=2070&auto=format&fit=crop' },
-  { id: 6, series: 'MOBILE', name: 'LUMEN_PHONE Z', price: '$1,099', img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=2080&auto=format&fit=crop' },
-  { id: 7, series: 'PRO', name: 'WORKSTATION_W9', price: '$6,800', img: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=2064&auto=format&fit=crop' },
-]
 
 const tabs = [
   { id: 'desc', label: 'PRODUCT DESCRIPTION' },
@@ -88,10 +61,44 @@ function GlowBox({
 }
 
 export default function ProductDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const router = useRouter()
+
   const [activeTab, setActiveTab] = useState('desc')
-  const [mainImage, setMainImage] = useState(thumbnailImages[0])
   const [showCatalogue, setShowCatalogue] = useState(false)
   const [imageOpacity, setImageOpacity] = useState(1)
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [thumbnails, setThumbnails] = useState<string[]>(thumbnailImages)
+  const [mainImage, setMainImage] = useState(thumbnails[0])
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!id) return;
+    productService.getProduct(id)
+      .then(data => {
+        setProduct(data)
+        const img = (data as any).image_url || (data as any).imageUrl
+        if (img) {
+          setThumbnails([img])
+          setMainImage(img)
+        }
+        
+        // Fetch related products
+        const catId = (data as any).category_id || (data as any).categoryId
+        if (catId) {
+          productService.getProducts({ category: catId, limit: 8 })
+            .then(res => {
+              const related = res.products.filter(p => p.id !== data.id)
+              setRelatedProducts(related)
+            })
+            .catch(err => console.error("Failed to fetch related", err))
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [id])
 
   const switchImage = (src: string) => {
     setImageOpacity(0)
@@ -102,9 +109,17 @@ export default function ProductDetailPage() {
   }
 
   const navigateImage = (direction: number) => {
-    const currentIndex = thumbnailImages.indexOf(mainImage)
-    const nextIndex = (currentIndex + direction + thumbnailImages.length) % thumbnailImages.length
-    switchImage(thumbnailImages[nextIndex])
+    const currentIndex = thumbnails.indexOf(mainImage)
+    const nextIndex = (currentIndex + direction + thumbnails.length) % thumbnails.length
+    switchImage(thumbnails[nextIndex])
+  }
+
+  if (loading) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading product metrics...</div>
+  }
+
+  if (!product) {
+    return <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Entity not found context.</div>
   }
 
   return (
@@ -243,7 +258,7 @@ export default function ProductDetailPage() {
                 paddingBottom: '1rem',
               }}
             >
-              {thumbnailImages.map((src, i) => (
+              {thumbnails.map((src, i) => (
                 <div
                   key={i}
                   onClick={() => switchImage(src)}
@@ -262,7 +277,7 @@ export default function ProductDetailPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt={`Thumbnail ${i + 1}`}
+                    alt={`${product?.name} Image ${i + 1}`}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
@@ -319,7 +334,7 @@ export default function ProductDetailPage() {
                   marginBottom: '1rem',
                 }}
               >
-                LUMEN_RIG Z.X
+                {product?.name || 'UNKNOWN ENTITY'}
               </h1>
 
               {/* Rating */}
@@ -361,10 +376,10 @@ export default function ProductDetailPage() {
                       color: '#fff',
                     }}
                   >
-                    $4,899
+                    ${Math.floor(product?.price || 0).toLocaleString()}
                   </span>
                   <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif' }}>
-                    .00
+                    .{((product?.price || 0) % 1).toFixed(2).substring(2)}
                   </span>
                 </div>
                 <p
@@ -483,10 +498,11 @@ export default function ProductDetailPage() {
                   fontFamily: 'Space Grotesk, Inter, sans-serif',
                   letterSpacing: '0.3em',
                   color: activeTab === tab.id ? NEON : 'rgba(255,255,255,0.4)',
-                  borderBottom: activeTab === tab.id ? `2px solid ${NEON}` : '2px solid transparent',
                   background: 'none',
                   border: 'none',
-                  borderBottom: activeTab === tab.id ? `2px solid ${NEON}` : '2px solid transparent',
+                  borderBottomWidth: '2px',
+                  borderBottomStyle: 'solid',
+                  borderBottomColor: activeTab === tab.id ? NEON : 'transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'color 0.2s ease',
@@ -513,10 +529,8 @@ export default function ProductDetailPage() {
                 >
                   NEXT-GEN COMPUTING ARCHITECTURE
                 </h3>
-                <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.75, fontWeight: 300, marginBottom: '2rem' }}>
-                  The LUMEN_RIG Z.X represents the pinnacle of consumer hardware engineering. Built with a bespoke liquid-cooled
-                  ecosystem and the proprietary Kinetic-12X Neural Core, it delivers unparalleled processing power for the most
-                  demanding simulations, creative workflows, and cinematic gaming experiences.
+                <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.75, fontWeight: 300, marginBottom: '2rem', whiteSpace: 'pre-line' }}>
+                  {product?.description}
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginTop: '3rem' }}>
                   {[
@@ -548,12 +562,10 @@ export default function ProductDetailPage() {
             {activeTab === 'specs' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3rem 5rem' }}>
                 {[
-                  { label: 'PROCESSOR', name: 'KINETIC-12X NEURAL_CORE', detail: '24 Cores / 48 Threads @ 6.2GHz' },
-                  { label: 'GRAPHICS', name: 'RTX-9000 V-QUANTUM', detail: '48GB VRAM / Neural Trace 3.0' },
-                  { label: 'MEMORY', name: '128GB L-DDR6 OVERCLOCKED', detail: '12,000MT/s Dual-Channel' },
-                  { label: 'STORAGE', name: '4TB GEN-5 NVME CRYPT', detail: '15,000MB/s Read / 13,000MB/s Write' },
-                  { label: 'COOLING', name: 'CRYO-LIQUID 360 ELITE', detail: 'Triple Phase Custom Loop' },
-                  { label: 'OS', name: 'LUMEN_OS KINETIC', detail: 'Pre-tuned Low Latency Kernel' },
+                  { label: 'MODEL', name: product?.model || 'N/A', detail: product?.serial_number || product?.serialNumber || 'N/A' },
+                  { label: 'WARRANTY', name: product?.warranty || 'Standard', detail: 'Conditions Apply' },
+                  { label: 'DISTRIBUTOR', name: product?.distributor || 'LUMEN DIRECT', detail: 'Verified Partner' },
+                  { label: 'STOCK STATUS', name: (product?.stock_quantity || product?.stockQuantity || 0) > 0 ? 'AVAILABLE' : 'DEPLEATED', detail: `${product?.stock_quantity || product?.stockQuantity || 0} units active` },
                 ].map((spec) => (
                   <div key={spec.label}>
                     <p style={{ fontSize: '0.75rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em', marginBottom: '0.5rem', fontWeight: 700 }}>
@@ -655,28 +667,32 @@ export default function ProductDetailPage() {
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem', paddingTop: '2.5rem', paddingBottom: '2.5rem' }}>
-            {relatedProducts.map((product) => (
+            {relatedProducts.slice(0, 3).map((product) => (
               <GlowBox key={product.id} style={{ borderRadius: '1.5rem', cursor: 'pointer' }}>
-                <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
+                <div onClick={() => router.push(`/product/${product.id}`)} style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={product.img}
-                    alt={product.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1s ease' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1)')}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1)')}
-                  />
+                  {product.image_url || product.imageUrl ? (
+                    <img
+                      src={product.image_url || product.imageUrl}
+                      alt={product.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1s ease' }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1)')}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1)')}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
+                  )}
                 </div>
                 <div style={{ padding: '2rem' }}>
                   <p style={{ fontSize: '0.625rem', color: NEON, fontWeight: 700, letterSpacing: '0.3em', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
-                    {product.series}
+                    RELATED PRODUCT
                   </p>
-                  <h3 style={{ fontSize: '1.5rem', fontFamily: 'Space Grotesk, Inter, sans-serif', fontWeight: 700, color: '#e5e2e1', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontFamily: 'Space Grotesk, Inter, sans-serif', fontWeight: 700, color: '#e5e2e1', marginBottom: '1.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {product.name}
                   </h3>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.125rem' }}>
-                      {product.price}
+                      ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <div
                       style={{
@@ -719,30 +735,35 @@ export default function ProductDetailPage() {
                 transition: 'opacity 1s ease',
               }}
             >
-              {moreCatalogueProducts.map((product) => (
+              {relatedProducts.slice(3, 7).map((product) => (
                 <GlowBox key={product.id} style={{ borderRadius: '1.5rem', cursor: 'pointer' }}>
-                  <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
+                  <div onClick={() => router.push(`/product/${product.id}`)} style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={product.img}
-                      alt={product.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1s ease' }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1)')}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1)')}
-                    />
+                    {product.image_url || product.imageUrl ? (
+                      <img
+                        src={product.image_url || product.imageUrl}
+                        alt={product.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1s ease' }}
+                        onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1.1)')}
+                        onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = 'scale(1)')}
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
+                    )}
                   </div>
                   <div style={{ padding: '2rem' }}>
                     <p style={{ fontSize: '0.625rem', color: NEON, fontWeight: 700, letterSpacing: '0.3em', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
-                      {product.series}
+                      RELATED PRODUCT
                     </p>
-                    <h3 style={{ fontSize: '1.5rem', fontFamily: 'Space Grotesk, Inter, sans-serif', fontWeight: 700, color: '#e5e2e1', marginBottom: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontFamily: 'Space Grotesk, Inter, sans-serif', fontWeight: 700, color: '#e5e2e1', marginBottom: '1.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {product.name}
                     </h3>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.125rem' }}>
-                        {product.price}.00
+                        ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <div
+                        onClick={(e) => { e.stopPropagation(); router.push(`/product/${product.id}`) }}
                         style={{
                           width: '2.5rem',
                           height: '2.5rem',
@@ -753,6 +774,14 @@ export default function ProductDetailPage() {
                           justifyContent: 'center',
                           color: NEON,
                           transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          ;(e.currentTarget as HTMLDivElement).style.background = NEON
+                          ;(e.currentTarget as HTMLDivElement).style.color = '#000'
+                        }}
+                        onMouseLeave={(e) => {
+                          ;(e.currentTarget as HTMLDivElement).style.background = 'transparent'
+                          ;(e.currentTarget as HTMLDivElement).style.color = NEON
                         }}
                       >
                         <span className="material-symbols-outlined">arrow_forward</span>
