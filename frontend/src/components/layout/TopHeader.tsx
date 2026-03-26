@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
 
 export function TopHeader() {
   const router = useRouter()
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
 
   return (
@@ -115,7 +117,7 @@ export function TopHeader() {
         </button>
         <button
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}
-          onClick={() => router.push('/login')}
+          onClick={() => router.push(user ? '/profile' : '/login')}
         >
           <span className="material-symbols-outlined" style={{ color: '#a1a1a1', fontSize: '22px' }}>
             account_circle

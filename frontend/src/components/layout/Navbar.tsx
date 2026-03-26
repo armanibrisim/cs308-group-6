@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { MouseEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 
 export function Navbar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const handleMouseMove = (e: MouseEvent<HTMLAnchorElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -132,9 +134,19 @@ export function Navbar() {
           <Link href="/cart" className="text-white/60 hover:text-primary transition-all duration-300 transform hover:scale-110">
             <span className="material-symbols-outlined text-2xl">shopping_cart</span>
           </Link>
-          <Link href={user ? (user.role === 'customer' ? '/profile' : `/${user.role.replace('_', '-')}`) : '/login'} className="text-white/60 hover:text-primary transition-all duration-300 transform hover:scale-110">
-            <span className="material-symbols-outlined text-2xl">person</span>
-          </Link>
+          <button
+            onClick={() => {
+              if (user) {
+                logout();
+                router.push('/login');
+              } else {
+                router.push('/login');
+              }
+            }}
+            className="text-white/60 hover:text-primary transition-all duration-300 transform hover:scale-110 bg-transparent border-none cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-2xl">{user ? 'logout' : 'person'}</span>
+          </button>
         </div>
       </div>
     </nav>
