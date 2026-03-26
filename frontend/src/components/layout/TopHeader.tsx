@@ -63,7 +63,7 @@ export function TopHeader() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ürün, kategori veya marka ara"
+            placeholder="Search products, categories, or brands"
             style={{
               border: 'none',
               outline: 'none',
