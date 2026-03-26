@@ -35,6 +35,7 @@ class ProductResponse(BaseModel):
     serial_number: str
     description: str
     stock_quantity: int
+    in_stock: bool
     price: float
     warranty: str
     distributor: str
@@ -46,6 +47,7 @@ class ProductResponse(BaseModel):
 
 class CategoryCreate(BaseModel):
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = None
     parent_category_id: Optional[str] = None
 
@@ -53,6 +55,7 @@ class CategoryCreate(BaseModel):
 class CategoryResponse(BaseModel):
     id: str
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = None
     parent_category_id: Optional[str] = None
 

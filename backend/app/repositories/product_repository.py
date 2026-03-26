@@ -38,11 +38,16 @@ def get_product_by_id(product_id: str) -> Optional[dict]:
 def list_products(
     category_id: Optional[str] = None,
     search: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    sort_field: Optional[str] = None,
+    sort_order: str = "asc",
     page: int = 1,
     limit: int = 20,
 ) -> tuple[list[dict], int]:
-    """Return (products, total_count) applying optional filters."""
+    """Return (products, total_count) applying optional filters.
+
+    sort_field: 'price' | 'name' | 'newest'
+    sort_order: 'asc' | 'desc'
+    """
     db = _db()
     query = db.collection(PRODUCTS_COLLECTION)
 
@@ -62,12 +67,13 @@ def list_products(
         ]
 
     # Sorting
-    if sort_by == "price_asc":
-        products.sort(key=lambda p: p.get("price", 0))
-    elif sort_by == "price_desc":
-        products.sort(key=lambda p: p.get("price", 0), reverse=True)
-    elif sort_by == "name_asc":
-        products.sort(key=lambda p: p.get("name", "").lower())
+    reverse = sort_order == "desc"
+    if sort_field == "price":
+        products.sort(key=lambda p: p.get("price", 0), reverse=reverse)
+    elif sort_field == "name":
+        products.sort(key=lambda p: p.get("name", "").lower(), reverse=reverse)
+    elif sort_field == "newest":
+        products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
 
     total = len(products)
 
@@ -76,6 +82,16 @@ def list_products(
     products = products[start: start + limit]
 
     return products, total
+
+
+def list_featured_products(limit: int = 8) -> tuple[list[dict], int]:
+    """Return newest products ordered by created_at descending."""
+    db = _db()
+    docs = list(db.collection(PRODUCTS_COLLECTION).stream())
+    products = [d.to_dict() for d in docs]
+    products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
+    total = len(products)
+    return products[:limit], total
 
 
 def update_product(product_id: str, updates: dict) -> None:
@@ -130,3 +146,17 @@ def get_category_by_id(category_id: str) -> Optional[dict]:
     if not doc.exists:
         return None
     return doc.to_dict()
+
+
+def get_category_by_slug(slug: str) -> Optional[dict]:
+    """Lookup a category by its slug field."""
+    db = _db()
+    docs = (
+        db.collection(CATEGORIES_COLLECTION)
+        .where(filter=FieldFilter("slug", "==", slug))
+        .limit(1)
+        .stream()
+    )
+    for doc in docs:
+        return doc.to_dict()
+    return None

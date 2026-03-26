@@ -1,0 +1,1659 @@
+[
+    {
+        "name": "Apple MacBook Pro 14 Inch Space Grey",
+        "model": "LAP-APP-APP-078-V1",
+        "serial_number": "f120a9a9-e779-49cf-b1aa-36b87c878642",
+        "description": "The MacBook Pro 14 Inch in Space Grey is a powerful and sleek laptop, featuring Apple's M1 Pro chip for exceptional performance and a stunning Retina display.",
+        "stock_quantity": 34,
+        "price": 1999.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "laptops",
+        "image_url": "images/6088b21a-aed2-424c-9e8a-fc5af2efc9d0/1.webp",
+        "all_images": [
+            "images/6088b21a-aed2-424c-9e8a-fc5af2efc9d0/1.webp",
+            "images/6088b21a-aed2-424c-9e8a-fc5af2efc9d0/2.webp",
+            "images/6088b21a-aed2-424c-9e8a-fc5af2efc9d0/3.webp"
+        ]
+    },
+    {
+        "name": "Asus Zenbook Pro Dual Screen Laptop",
+        "model": "LAP-ASU-ASU-079-V1",
+        "serial_number": "e2689ff5-42ee-4c4c-9332-e70c93025e66",
+        "description": "The Asus Zenbook Pro Dual Screen Laptop is a high-performance device with dual screens, providing productivity and versatility for creative professionals.",
+        "stock_quantity": 55,
+        "price": 1799.99,
+        "warranty": "3 year warranty",
+        "distributor": "Asus",
+        "category_id": "laptops",
+        "image_url": "images/b948c543-5a9c-4864-90a6-69ba5525e73c/1.webp",
+        "all_images": [
+            "images/b948c543-5a9c-4864-90a6-69ba5525e73c/1.webp",
+            "images/b948c543-5a9c-4864-90a6-69ba5525e73c/2.webp",
+            "images/b948c543-5a9c-4864-90a6-69ba5525e73c/3.webp"
+        ]
+    },
+    {
+        "name": "Huawei Matebook X Pro",
+        "model": "LAP-HUA-HUA-080-V1",
+        "serial_number": "7db1ab90-e30f-4137-9908-a7aef17b1051",
+        "description": "The Huawei Matebook X Pro is a slim and stylish laptop with a high-resolution touchscreen display, offering a premium experience for users on the go.",
+        "stock_quantity": 85,
+        "price": 1399.99,
+        "warranty": "No warranty",
+        "distributor": "Huawei",
+        "category_id": "laptops",
+        "image_url": "images/ec544728-6668-4de4-8523-39b2e17df645/1.webp",
+        "all_images": [
+            "images/ec544728-6668-4de4-8523-39b2e17df645/1.webp",
+            "images/ec544728-6668-4de4-8523-39b2e17df645/2.webp",
+            "images/ec544728-6668-4de4-8523-39b2e17df645/3.webp"
+        ]
+    },
+    {
+        "name": "Lenovo Yoga 920",
+        "model": "LAP-LEN-LEN-081-V1",
+        "serial_number": "96765fb4-34f8-4abe-9313-01b9026680ed",
+        "description": "The Lenovo Yoga 920 is a 2-in-1 convertible laptop with a flexible hinge, allowing you to use it as a laptop or tablet, offering versatility and portability.",
+        "stock_quantity": 50,
+        "price": 1099.99,
+        "warranty": "6 months warranty",
+        "distributor": "Lenovo",
+        "category_id": "laptops",
+        "image_url": "images/bde5c19c-5f08-4e7d-bbb1-225641071010/1.webp",
+        "all_images": [
+            "images/bde5c19c-5f08-4e7d-bbb1-225641071010/1.webp",
+            "images/bde5c19c-5f08-4e7d-bbb1-225641071010/2.webp",
+            "images/bde5c19c-5f08-4e7d-bbb1-225641071010/3.webp"
+        ]
+    },
+    {
+        "name": "New DELL XPS 13 9300 Laptop",
+        "model": "LAP-DEL-DEL-082-V1",
+        "serial_number": "bed99d0c-84f0-4a48-9d84-6823d491e047",
+        "description": "The New DELL XPS 13 9300 Laptop is a compact and powerful device, featuring a virtually borderless InfinityEdge display and high-end performance for various tasks.",
+        "stock_quantity": 84,
+        "price": 1499.99,
+        "warranty": "2 year warranty",
+        "distributor": "Dell",
+        "category_id": "laptops",
+        "image_url": "images/fa7762d0-ea64-4f30-858d-5914776f5a8f/1.webp",
+        "all_images": [
+            "images/fa7762d0-ea64-4f30-858d-5914776f5a8f/1.webp",
+            "images/fa7762d0-ea64-4f30-858d-5914776f5a8f/2.webp",
+            "images/fa7762d0-ea64-4f30-858d-5914776f5a8f/3.webp"
+        ]
+    },
+    {
+        "name": "Amazon Echo Plus",
+        "model": "MOB-AMA-AMA-099-V1",
+        "serial_number": "1b5bf563-b4f8-4a5e-9131-7bec375d50f0",
+        "description": "The Amazon Echo Plus is a smart speaker with built-in Alexa voice control. It features premium sound quality and serves as a hub for controlling smart home devices.",
+        "stock_quantity": 71,
+        "price": 99.99,
+        "warranty": "6 months warranty",
+        "distributor": "Amazon",
+        "category_id": "mobile-accessories",
+        "image_url": "images/42c429a9-9b23-4a28-adfa-6b08dc8e9339/1.webp",
+        "all_images": [
+            "images/42c429a9-9b23-4a28-adfa-6b08dc8e9339/1.webp",
+            "images/42c429a9-9b23-4a28-adfa-6b08dc8e9339/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpods",
+        "model": "MOB-APP-APP-100-V1",
+        "serial_number": "e62ee2f5-d721-4054-be96-4775b785a75b",
+        "description": "The Apple Airpods offer a seamless wireless audio experience. With easy pairing, high-quality sound, and Siri integration, they are perfect for on-the-go listening.",
+        "stock_quantity": 77,
+        "price": 129.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/56579e54-f2cd-437a-81dd-9e498ffcfb9e/1.webp",
+        "all_images": [
+            "images/56579e54-f2cd-437a-81dd-9e498ffcfb9e/1.webp",
+            "images/56579e54-f2cd-437a-81dd-9e498ffcfb9e/2.webp",
+            "images/56579e54-f2cd-437a-81dd-9e498ffcfb9e/3.webp"
+        ]
+    },
+    {
+        "name": "Apple AirPods Max Silver",
+        "model": "MOB-APP-APP-101-V1",
+        "serial_number": "1cd7a18d-87d5-4488-9570-1b1990f29a9b",
+        "description": "The Apple AirPods Max in Silver are premium over-ear headphones with high-fidelity audio, adaptive EQ, and active noise cancellation. Experience immersive sound in style.",
+        "stock_quantity": 69,
+        "price": 549.99,
+        "warranty": "No warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/de611add-4b86-42b2-a93a-394001dc8c38/1.webp",
+        "all_images": [
+            "images/de611add-4b86-42b2-a93a-394001dc8c38/1.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpower Wireless Charger",
+        "model": "MOB-APP-APP-102-V1",
+        "serial_number": "0986228e-342c-47c9-b981-9f003067e3ab",
+        "description": "The Apple AirPower Wireless Charger provides a convenient way to charge your compatible Apple devices wirelessly. Simply place your devices on the charging mat for effortless charging.",
+        "stock_quantity": 11,
+        "price": 79.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/121a0fef-fc4c-42dd-a1ad-a5ff0577c9aa/1.webp",
+        "all_images": [
+            "images/121a0fef-fc4c-42dd-a1ad-a5ff0577c9aa/1.webp"
+        ]
+    },
+    {
+        "name": "Apple HomePod Mini Cosmic Grey",
+        "model": "MOB-APP-APP-103-V1",
+        "serial_number": "93c5772e-355f-4362-be5d-9455f898938a",
+        "description": "The Apple HomePod Mini in Cosmic Grey is a compact smart speaker that delivers impressive audio and integrates seamlessly with the Apple ecosystem for a smart home experience.",
+        "stock_quantity": 37,
+        "price": 99.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/1f795816-747b-4b1d-a4ac-731041db7cf9/1.webp",
+        "all_images": [
+            "images/1f795816-747b-4b1d-a4ac-731041db7cf9/1.webp"
+        ]
+    },
+    {
+        "name": "Apple iPhone Charger",
+        "model": "MOB-APP-APP-104-V1",
+        "serial_number": "909c3cb3-c004-4e2f-b9fe-4b9d10748237",
+        "description": "The Apple iPhone Charger is a high-quality charger designed for fast and efficient charging of your iPhone. Ensure your device stays powered up and ready to go.",
+        "stock_quantity": 41,
+        "price": 19.99,
+        "warranty": "1 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/93638e9c-0ce4-459a-93a0-519597d6a186/1.webp",
+        "all_images": [
+            "images/93638e9c-0ce4-459a-93a0-519597d6a186/1.webp",
+            "images/93638e9c-0ce4-459a-93a0-519597d6a186/2.webp"
+        ]
+    },
+    {
+        "name": "Apple MagSafe Battery Pack",
+        "model": "MOB-APP-APP-105-V1",
+        "serial_number": "cd69d933-0c78-49e8-8dfa-2351eee3f9e5",
+        "description": "The Apple MagSafe Battery Pack is a portable and convenient way to add extra battery life to your MagSafe-compatible iPhone. Attach it magnetically for a secure connection.",
+        "stock_quantity": 11,
+        "price": 99.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/2d06887d-54b1-4525-a9a0-dbbc50ad69d1/1.webp",
+        "all_images": [
+            "images/2d06887d-54b1-4525-a9a0-dbbc50ad69d1/1.webp",
+            "images/2d06887d-54b1-4525-a9a0-dbbc50ad69d1/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Watch Series 4 Gold",
+        "model": "MOB-APP-APP-106-V1",
+        "serial_number": "e7973e57-5de0-4f2e-bb51-92bee1cfdf75",
+        "description": "The Apple Watch Series 4 in Gold is a stylish and advanced smartwatch with features like heart rate monitoring, fitness tracking, and a beautiful Retina display.",
+        "stock_quantity": 43,
+        "price": 349.99,
+        "warranty": "6 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/eb40f285-cc2c-46a1-a118-a7dea810aa09/1.webp",
+        "all_images": [
+            "images/eb40f285-cc2c-46a1-a118-a7dea810aa09/1.webp",
+            "images/eb40f285-cc2c-46a1-a118-a7dea810aa09/2.webp",
+            "images/eb40f285-cc2c-46a1-a118-a7dea810aa09/3.webp"
+        ]
+    },
+    {
+        "name": "Beats Flex Wireless Earphones",
+        "model": "MOB-BEA-BEA-107-V1",
+        "serial_number": "4df22ec1-d6fc-43a3-baf7-fa9e54d8b2ef",
+        "description": "The Beats Flex Wireless Earphones offer a comfortable and versatile audio experience. With magnetic earbuds and up to 12 hours of battery life, they are ideal for everyday use.",
+        "stock_quantity": 60,
+        "price": 49.99,
+        "warranty": "1 year warranty",
+        "distributor": "Beats",
+        "category_id": "mobile-accessories",
+        "image_url": "images/53ccd2f6-b9b8-410c-b411-637c79da7513/1.webp",
+        "all_images": [
+            "images/53ccd2f6-b9b8-410c-b411-637c79da7513/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 12 Silicone Case with MagSafe Plum",
+        "model": "MOB-APP-IPH-108-V1",
+        "serial_number": "cd6d6ef7-9cfd-4a35-9f61-4cc7b52a8038",
+        "description": "The iPhone 12 Silicone Case with MagSafe in Plum is a stylish and protective case designed for the iPhone 12. It features MagSafe technology for easy attachment of accessories.",
+        "stock_quantity": 79,
+        "price": 29.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/bd4f0348-4780-4f7b-a72e-a0758dad7b73/1.webp",
+        "all_images": [
+            "images/bd4f0348-4780-4f7b-a72e-a0758dad7b73/1.webp",
+            "images/bd4f0348-4780-4f7b-a72e-a0758dad7b73/2.webp",
+            "images/bd4f0348-4780-4f7b-a72e-a0758dad7b73/3.webp",
+            "images/bd4f0348-4780-4f7b-a72e-a0758dad7b73/4.webp"
+        ]
+    },
+    {
+        "name": "Monopod",
+        "model": "MOB-TEC-MON-109-V1",
+        "serial_number": "0865ff7f-497e-4000-b7ef-6bfa1b164dca",
+        "description": "The Monopod is a versatile camera accessory for stable and adjustable shooting. Perfect for capturing selfies, group photos, and videos with ease.",
+        "stock_quantity": 58,
+        "price": 19.99,
+        "warranty": "1 year warranty",
+        "distributor": "TechGear",
+        "category_id": "mobile-accessories",
+        "image_url": "images/80bc0f5a-78a5-4ff7-8b96-84da6bf77a61/1.webp",
+        "all_images": [
+            "images/80bc0f5a-78a5-4ff7-8b96-84da6bf77a61/1.webp",
+            "images/80bc0f5a-78a5-4ff7-8b96-84da6bf77a61/2.webp"
+        ]
+    },
+    {
+        "name": "Selfie Lamp with iPhone",
+        "model": "MOB-GAD-SEL-110-V1",
+        "serial_number": "e26c3b42-7a19-48a3-a209-fe414b823efe",
+        "description": "The Selfie Lamp with iPhone is a portable and adjustable LED light designed to enhance your selfies and video calls. Attach it to your iPhone for well-lit photos.",
+        "stock_quantity": 68,
+        "price": 14.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "GadgetMaster",
+        "category_id": "mobile-accessories",
+        "image_url": "images/e062777b-ca2e-49f2-bab9-7978c4872f0f/1.webp",
+        "all_images": [
+            "images/e062777b-ca2e-49f2-bab9-7978c4872f0f/1.webp"
+        ]
+    },
+    {
+        "name": "Selfie Stick Monopod",
+        "model": "MOB-SNA-SEL-111-V1",
+        "serial_number": "eec6fc21-4ac8-45c5-b2f0-460791d60a7d",
+        "description": "The Selfie Stick Monopod is a extendable and foldable device for capturing the perfect selfie or group photo. Compatible with smartphones and cameras.",
+        "stock_quantity": 21,
+        "price": 12.99,
+        "warranty": "3 year warranty",
+        "distributor": "SnapTech",
+        "category_id": "mobile-accessories",
+        "image_url": "images/8156e7ab-9044-4079-b679-c1e9c15fbacc/1.webp",
+        "all_images": [
+            "images/8156e7ab-9044-4079-b679-c1e9c15fbacc/1.webp"
+        ]
+    },
+    {
+        "name": "TV Studio Camera Pedestal",
+        "model": "MOB-PRO-STU-112-V1",
+        "serial_number": "3e781826-8407-411c-9259-e93a108d1e76",
+        "description": "The TV Studio Camera Pedestal is a professional-grade camera support system for smooth and precise camera movements in a studio setting. Ideal for broadcast and production.",
+        "stock_quantity": 25,
+        "price": 499.99,
+        "warranty": "3 months warranty",
+        "distributor": "ProVision",
+        "category_id": "mobile-accessories",
+        "image_url": "images/607ef0bf-4bb8-40a9-b6dc-082e249a45d9/1.webp",
+        "all_images": [
+            "images/607ef0bf-4bb8-40a9-b6dc-082e249a45d9/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 5s",
+        "model": "SMA-APP-IPH-121-V1",
+        "serial_number": "1fe7e2a7-e36b-4172-bf3a-bcfab3d66803",
+        "description": "The iPhone 5s is a classic smartphone known for its compact design and advanced features during its release. While it's an older model, it still provides a reliable user experience.",
+        "stock_quantity": 35,
+        "price": 199.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/d5a5899c-8291-4e1e-b96b-c3d24a73b838/1.webp",
+        "all_images": [
+            "images/d5a5899c-8291-4e1e-b96b-c3d24a73b838/1.webp",
+            "images/d5a5899c-8291-4e1e-b96b-c3d24a73b838/2.webp",
+            "images/d5a5899c-8291-4e1e-b96b-c3d24a73b838/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 6",
+        "model": "SMA-APP-IPH-122-V1",
+        "serial_number": "381a6515-09c8-477a-ab43-f8f57e25d818",
+        "description": "The iPhone 6 is a stylish and capable smartphone with a larger display and improved performance. It introduced new features and design elements, making it a popular choice in its time.",
+        "stock_quantity": 70,
+        "price": 299.99,
+        "warranty": "1 month warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/9df33c5b-8071-4b61-808c-fb4ed3ba30a5/1.webp",
+        "all_images": [
+            "images/9df33c5b-8071-4b61-808c-fb4ed3ba30a5/1.webp",
+            "images/9df33c5b-8071-4b61-808c-fb4ed3ba30a5/2.webp",
+            "images/9df33c5b-8071-4b61-808c-fb4ed3ba30a5/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 13 Pro",
+        "model": "SMA-APP-IPH-123-V1",
+        "serial_number": "f987d77b-2a92-4c9a-bc37-8728c53f3764",
+        "description": "The iPhone 13 Pro is a cutting-edge smartphone with a powerful camera system, high-performance chip, and stunning display. It offers advanced features for users who demand top-notch technology.",
+        "stock_quantity": 66,
+        "price": 1099.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/84573ce9-2311-4f4a-84cb-6d5dee954b47/1.webp",
+        "all_images": [
+            "images/84573ce9-2311-4f4a-84cb-6d5dee954b47/1.webp",
+            "images/84573ce9-2311-4f4a-84cb-6d5dee954b47/2.webp",
+            "images/84573ce9-2311-4f4a-84cb-6d5dee954b47/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone X",
+        "model": "SMA-APP-IPH-124-V1",
+        "serial_number": "a851c4f1-0eb8-48a7-9808-ded1e164a048",
+        "description": "The iPhone X is a flagship smartphone featuring a bezel-less OLED display, facial recognition technology (Face ID), and impressive performance. It represents a milestone in iPhone design and innovation.",
+        "stock_quantity": 47,
+        "price": 899.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/1856de49-c541-489f-bd12-6668b4c433fe/1.webp",
+        "all_images": [
+            "images/1856de49-c541-489f-bd12-6668b4c433fe/1.webp",
+            "images/1856de49-c541-489f-bd12-6668b4c433fe/2.webp",
+            "images/1856de49-c541-489f-bd12-6668b4c433fe/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo A57",
+        "model": "SMA-OPP-OPP-125-V1",
+        "serial_number": "bd7a4789-b8c1-42c5-903c-e018d7a30332",
+        "description": "The Oppo A57 is a mid-range smartphone known for its sleek design and capable features. It offers a balance of performance and affordability, making it a popular choice.",
+        "stock_quantity": 29,
+        "price": 249.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/2cd594b7-c32d-4750-9f40-cf416f8fff31/1.webp",
+        "all_images": [
+            "images/2cd594b7-c32d-4750-9f40-cf416f8fff31/1.webp",
+            "images/2cd594b7-c32d-4750-9f40-cf416f8fff31/2.webp",
+            "images/2cd594b7-c32d-4750-9f40-cf416f8fff31/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo F19 Pro Plus",
+        "model": "SMA-OPP-OPP-126-V1",
+        "serial_number": "56618692-33a3-4bf0-ac07-07dd1e7af3da",
+        "description": "The Oppo F19 Pro Plus is a feature-rich smartphone with a focus on camera capabilities. It boasts advanced photography features and a powerful performance for a premium user experience.",
+        "stock_quantity": 88,
+        "price": 399.99,
+        "warranty": "3 year warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/b3330dd6-9b51-45d2-bd30-1bd7ae130e4c/1.webp",
+        "all_images": [
+            "images/b3330dd6-9b51-45d2-bd30-1bd7ae130e4c/1.webp",
+            "images/b3330dd6-9b51-45d2-bd30-1bd7ae130e4c/2.webp",
+            "images/b3330dd6-9b51-45d2-bd30-1bd7ae130e4c/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo K1",
+        "model": "SMA-OPP-OPP-127-V1",
+        "serial_number": "5fe16884-7da6-44c0-8327-81189489c552",
+        "description": "The Oppo K1 series offers a range of smartphones with various features and specifications. Known for their stylish design and reliable performance, the Oppo K1 series caters to diverse user preferences.",
+        "stock_quantity": 65,
+        "price": 299.99,
+        "warranty": "1 month warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/2a31ddd0-1bad-4158-9a1b-cd2d658d6d53/1.webp",
+        "all_images": [
+            "images/2a31ddd0-1bad-4158-9a1b-cd2d658d6d53/1.webp",
+            "images/2a31ddd0-1bad-4158-9a1b-cd2d658d6d53/2.webp",
+            "images/2a31ddd0-1bad-4158-9a1b-cd2d658d6d53/3.webp",
+            "images/2a31ddd0-1bad-4158-9a1b-cd2d658d6d53/4.webp"
+        ]
+    },
+    {
+        "name": "Realme C35",
+        "model": "SMA-REA-REA-128-V1",
+        "serial_number": "fc98c1e8-2ccc-4471-b87f-e6017743eec0",
+        "description": "The Realme C35 is a budget-friendly smartphone with a focus on providing essential features for everyday use. It offers a reliable performance and user-friendly experience.",
+        "stock_quantity": 58,
+        "price": 149.99,
+        "warranty": "3 year warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/970c91d8-7639-42ba-8a40-86f5909e32c8/1.webp",
+        "all_images": [
+            "images/970c91d8-7639-42ba-8a40-86f5909e32c8/1.webp",
+            "images/970c91d8-7639-42ba-8a40-86f5909e32c8/2.webp",
+            "images/970c91d8-7639-42ba-8a40-86f5909e32c8/3.webp"
+        ]
+    },
+    {
+        "name": "Realme X",
+        "model": "SMA-REA-REA-129-V1",
+        "serial_number": "13b0322f-8901-4b1f-a553-edc1218f0025",
+        "description": "The Realme X is a mid-range smartphone known for its sleek design and impressive display. It offers a good balance of performance and camera capabilities for users seeking a quality device.",
+        "stock_quantity": 22,
+        "price": 299.99,
+        "warranty": "1 month warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/2ae0800b-6ba5-4d0d-af6c-ebfa8e5aab06/1.webp",
+        "all_images": [
+            "images/2ae0800b-6ba5-4d0d-af6c-ebfa8e5aab06/1.webp",
+            "images/2ae0800b-6ba5-4d0d-af6c-ebfa8e5aab06/2.webp",
+            "images/2ae0800b-6ba5-4d0d-af6c-ebfa8e5aab06/3.webp"
+        ]
+    },
+    {
+        "name": "Realme XT",
+        "model": "SMA-REA-REA-130-V1",
+        "serial_number": "d414480d-35dc-43fe-8c8a-4dce2dfaccf9",
+        "description": "The Realme XT is a feature-rich smartphone with a focus on camera technology. It comes equipped with advanced camera sensors, delivering high-quality photos and videos for photography enthusiasts.",
+        "stock_quantity": 90,
+        "price": 349.99,
+        "warranty": "3 year warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/c6648a5f-d3b9-408a-878f-3af5bb36aae3/1.webp",
+        "all_images": [
+            "images/c6648a5f-d3b9-408a-878f-3af5bb36aae3/1.webp",
+            "images/c6648a5f-d3b9-408a-878f-3af5bb36aae3/2.webp",
+            "images/c6648a5f-d3b9-408a-878f-3af5bb36aae3/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S7",
+        "model": "SMA-SAM-SAM-131-V1",
+        "serial_number": "ed5433ce-8613-414f-ab2a-5929c80e8cd6",
+        "description": "The Samsung Galaxy S7 is a flagship smartphone known for its sleek design and advanced features. It features a high-resolution display, powerful camera, and robust performance.",
+        "stock_quantity": 77,
+        "price": 299.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/0c01b7dd-dab1-42b9-8ef1-1cc3431e20b2/1.webp",
+        "all_images": [
+            "images/0c01b7dd-dab1-42b9-8ef1-1cc3431e20b2/1.webp",
+            "images/0c01b7dd-dab1-42b9-8ef1-1cc3431e20b2/2.webp",
+            "images/0c01b7dd-dab1-42b9-8ef1-1cc3431e20b2/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S8",
+        "model": "SMA-SAM-SAM-132-V1",
+        "serial_number": "4eee2e03-6170-4de5-84c3-9109cf97de56",
+        "description": "The Samsung Galaxy S8 is a premium smartphone with an Infinity Display, offering a stunning visual experience. It boasts advanced camera capabilities and cutting-edge technology.",
+        "stock_quantity": 10,
+        "price": 499.99,
+        "warranty": "2 year warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/8d7efe4b-5a60-4bef-b748-9db6e05226d3/1.webp",
+        "all_images": [
+            "images/8d7efe4b-5a60-4bef-b748-9db6e05226d3/1.webp",
+            "images/8d7efe4b-5a60-4bef-b748-9db6e05226d3/2.webp",
+            "images/8d7efe4b-5a60-4bef-b748-9db6e05226d3/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S10",
+        "model": "SMA-SAM-SAM-133-V1",
+        "serial_number": "f1416f96-c98b-45de-b24e-8e00d9071f5a",
+        "description": "The Samsung Galaxy S10 is a flagship device featuring a dynamic AMOLED display, versatile camera system, and powerful performance. It represents innovation and excellence in smartphone technology.",
+        "stock_quantity": 29,
+        "price": 699.99,
+        "warranty": "No warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/78614abc-5afe-45c2-96e3-23d913e497a8/1.webp",
+        "all_images": [
+            "images/78614abc-5afe-45c2-96e3-23d913e497a8/1.webp",
+            "images/78614abc-5afe-45c2-96e3-23d913e497a8/2.webp",
+            "images/78614abc-5afe-45c2-96e3-23d913e497a8/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo S1",
+        "model": "SMA-VIV-VIV-134-V1",
+        "serial_number": "f8892711-bc5d-48f8-93dd-c6baa9a8771e",
+        "description": "The Vivo S1 is a stylish and mid-range smartphone offering a blend of design and performance. It features a vibrant display, capable camera system, and reliable functionality.",
+        "stock_quantity": 60,
+        "price": 249.99,
+        "warranty": "6 months warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/6f04e7fc-5d27-4c75-afab-7c6a9e44ea32/1.webp",
+        "all_images": [
+            "images/6f04e7fc-5d27-4c75-afab-7c6a9e44ea32/1.webp",
+            "images/6f04e7fc-5d27-4c75-afab-7c6a9e44ea32/2.webp",
+            "images/6f04e7fc-5d27-4c75-afab-7c6a9e44ea32/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo V9",
+        "model": "SMA-VIV-VIV-135-V1",
+        "serial_number": "adfb5cfb-cc5b-4b7f-8d52-baa8fe048dea",
+        "description": "The Vivo V9 is a smartphone known for its sleek design and emphasis on capturing high-quality selfies. It features a notch display, dual-camera setup, and a modern design.",
+        "stock_quantity": 92,
+        "price": 299.99,
+        "warranty": "2 year warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/53704d6d-a36d-4505-b26d-a7051ba1b74d/1.webp",
+        "all_images": [
+            "images/53704d6d-a36d-4505-b26d-a7051ba1b74d/1.webp",
+            "images/53704d6d-a36d-4505-b26d-a7051ba1b74d/2.webp",
+            "images/53704d6d-a36d-4505-b26d-a7051ba1b74d/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo X21",
+        "model": "SMA-VIV-VIV-136-V1",
+        "serial_number": "6959099b-2820-4bf7-aef8-418ef45989c8",
+        "description": "The Vivo X21 is a premium smartphone with a focus on cutting-edge technology. It features an in-display fingerprint sensor, a high-resolution display, and advanced camera capabilities.",
+        "stock_quantity": 17,
+        "price": 499.99,
+        "warranty": "1 year warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/fca5f4b6-8e05-4ccc-bc89-56bb408fa024/1.webp",
+        "all_images": [
+            "images/fca5f4b6-8e05-4ccc-bc89-56bb408fa024/1.webp",
+            "images/fca5f4b6-8e05-4ccc-bc89-56bb408fa024/2.webp",
+            "images/fca5f4b6-8e05-4ccc-bc89-56bb408fa024/3.webp"
+        ]
+    },
+    {
+        "name": "iPad Mini 2021 Starlight",
+        "model": "TAB-APP-IPA-159-V1",
+        "serial_number": "e88a1d47-afd8-4365-b98e-d522b02dee72",
+        "description": "The iPad Mini 2021 in Starlight is a compact and powerful tablet from Apple. Featuring a stunning Retina display, powerful A-series chip, and a sleek design, it offers a premium tablet experience.",
+        "stock_quantity": 57,
+        "price": 499.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "tablets",
+        "image_url": "images/4f61438f-436e-41ce-9a87-c2ed66407d1a/1.webp",
+        "all_images": [
+            "images/4f61438f-436e-41ce-9a87-c2ed66407d1a/1.webp",
+            "images/4f61438f-436e-41ce-9a87-c2ed66407d1a/2.webp",
+            "images/4f61438f-436e-41ce-9a87-c2ed66407d1a/3.webp",
+            "images/4f61438f-436e-41ce-9a87-c2ed66407d1a/4.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy Tab S8 Plus Grey",
+        "model": "TAB-SAM-SAM-160-V1",
+        "serial_number": "02f9ddc1-cd64-411b-842b-2e82c78a5920",
+        "description": "The Samsung Galaxy Tab S8 Plus in Grey is a high-performance Android tablet by Samsung. With a large AMOLED display, powerful processor, and S Pen support, it's ideal for productivity and entertainment.",
+        "stock_quantity": 72,
+        "price": 599.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "tablets",
+        "image_url": "images/477186ea-2a2e-49e2-9e3e-7f07a6753227/1.webp",
+        "all_images": [
+            "images/477186ea-2a2e-49e2-9e3e-7f07a6753227/1.webp",
+            "images/477186ea-2a2e-49e2-9e3e-7f07a6753227/2.webp",
+            "images/477186ea-2a2e-49e2-9e3e-7f07a6753227/3.webp",
+            "images/477186ea-2a2e-49e2-9e3e-7f07a6753227/4.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy Tab White",
+        "model": "TAB-SAM-SAM-161-V1",
+        "serial_number": "a065d2f8-891b-494d-9e97-da9fdb6735d6",
+        "description": "The Samsung Galaxy Tab in White is a sleek and versatile Android tablet. With a vibrant display, long-lasting battery, and a range of features, it offers a great user experience for various tasks.",
+        "stock_quantity": 102,
+        "price": 349.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "tablets",
+        "image_url": "images/a35a02ba-98c4-462e-a585-ba23ff787f4f/1.webp",
+        "all_images": [
+            "images/a35a02ba-98c4-462e-a585-ba23ff787f4f/1.webp",
+            "images/a35a02ba-98c4-462e-a585-ba23ff787f4f/2.webp",
+            "images/a35a02ba-98c4-462e-a585-ba23ff787f4f/3.webp",
+            "images/a35a02ba-98c4-462e-a585-ba23ff787f4f/4.webp"
+        ]
+    },
+    {
+        "name": "Apple MacBook Pro 14 Inch Space Grey - Variant 2",
+        "model": "LAP-APP-APP-078-V2",
+        "serial_number": "51bf1814-5c0a-4a2e-b5dd-366e1db7b8a8",
+        "description": "The MacBook Pro 14 Inch in Space Grey is a powerful and sleek laptop, featuring Apple's M1 Pro chip for exceptional performance and a stunning Retina display.",
+        "stock_quantity": 44,
+        "price": 2009.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "laptops",
+        "image_url": "images/e2f6624a-4e87-46ac-b37a-780e7f246a1a/1.webp",
+        "all_images": [
+            "images/e2f6624a-4e87-46ac-b37a-780e7f246a1a/1.webp",
+            "images/e2f6624a-4e87-46ac-b37a-780e7f246a1a/2.webp",
+            "images/e2f6624a-4e87-46ac-b37a-780e7f246a1a/3.webp"
+        ]
+    },
+    {
+        "name": "Asus Zenbook Pro Dual Screen Laptop - Variant 2",
+        "model": "LAP-ASU-ASU-079-V2",
+        "serial_number": "44848a9f-6770-4366-99fa-ecaa2b5bfc70",
+        "description": "The Asus Zenbook Pro Dual Screen Laptop is a high-performance device with dual screens, providing productivity and versatility for creative professionals.",
+        "stock_quantity": 65,
+        "price": 1809.99,
+        "warranty": "3 year warranty",
+        "distributor": "Asus",
+        "category_id": "laptops",
+        "image_url": "images/302de81c-8f2f-4760-9a5f-e4686dc6c6d2/1.webp",
+        "all_images": [
+            "images/302de81c-8f2f-4760-9a5f-e4686dc6c6d2/1.webp",
+            "images/302de81c-8f2f-4760-9a5f-e4686dc6c6d2/2.webp",
+            "images/302de81c-8f2f-4760-9a5f-e4686dc6c6d2/3.webp"
+        ]
+    },
+    {
+        "name": "Huawei Matebook X Pro - Variant 2",
+        "model": "LAP-HUA-HUA-080-V2",
+        "serial_number": "cafd138a-2ddf-435a-8796-8989f6d5572e",
+        "description": "The Huawei Matebook X Pro is a slim and stylish laptop with a high-resolution touchscreen display, offering a premium experience for users on the go.",
+        "stock_quantity": 95,
+        "price": 1409.99,
+        "warranty": "No warranty",
+        "distributor": "Huawei",
+        "category_id": "laptops",
+        "image_url": "images/c7e2fc72-bee2-40dc-b289-de70ae923986/1.webp",
+        "all_images": [
+            "images/c7e2fc72-bee2-40dc-b289-de70ae923986/1.webp",
+            "images/c7e2fc72-bee2-40dc-b289-de70ae923986/2.webp",
+            "images/c7e2fc72-bee2-40dc-b289-de70ae923986/3.webp"
+        ]
+    },
+    {
+        "name": "Lenovo Yoga 920 - Variant 2",
+        "model": "LAP-LEN-LEN-081-V2",
+        "serial_number": "90f573d9-a8b3-4242-9296-1458aa01cac6",
+        "description": "The Lenovo Yoga 920 is a 2-in-1 convertible laptop with a flexible hinge, allowing you to use it as a laptop or tablet, offering versatility and portability.",
+        "stock_quantity": 60,
+        "price": 1109.99,
+        "warranty": "6 months warranty",
+        "distributor": "Lenovo",
+        "category_id": "laptops",
+        "image_url": "images/547a877d-4c04-47a2-9354-4ce42a9b74a1/1.webp",
+        "all_images": [
+            "images/547a877d-4c04-47a2-9354-4ce42a9b74a1/1.webp",
+            "images/547a877d-4c04-47a2-9354-4ce42a9b74a1/2.webp",
+            "images/547a877d-4c04-47a2-9354-4ce42a9b74a1/3.webp"
+        ]
+    },
+    {
+        "name": "New DELL XPS 13 9300 Laptop - Variant 2",
+        "model": "LAP-DEL-DEL-082-V2",
+        "serial_number": "d2431666-b1a5-4c32-b506-99c653cd2789",
+        "description": "The New DELL XPS 13 9300 Laptop is a compact and powerful device, featuring a virtually borderless InfinityEdge display and high-end performance for various tasks.",
+        "stock_quantity": 94,
+        "price": 1509.99,
+        "warranty": "2 year warranty",
+        "distributor": "Dell",
+        "category_id": "laptops",
+        "image_url": "images/ba34a702-c4e7-49cd-996a-72374855e4f2/1.webp",
+        "all_images": [
+            "images/ba34a702-c4e7-49cd-996a-72374855e4f2/1.webp",
+            "images/ba34a702-c4e7-49cd-996a-72374855e4f2/2.webp",
+            "images/ba34a702-c4e7-49cd-996a-72374855e4f2/3.webp"
+        ]
+    },
+    {
+        "name": "Amazon Echo Plus - Variant 2",
+        "model": "MOB-AMA-AMA-099-V2",
+        "serial_number": "13d49992-9ba1-474e-a136-936b3d09c42b",
+        "description": "The Amazon Echo Plus is a smart speaker with built-in Alexa voice control. It features premium sound quality and serves as a hub for controlling smart home devices.",
+        "stock_quantity": 81,
+        "price": 109.99,
+        "warranty": "6 months warranty",
+        "distributor": "Amazon",
+        "category_id": "mobile-accessories",
+        "image_url": "images/41ca071c-4fcf-4fac-a25f-db675099c87c/1.webp",
+        "all_images": [
+            "images/41ca071c-4fcf-4fac-a25f-db675099c87c/1.webp",
+            "images/41ca071c-4fcf-4fac-a25f-db675099c87c/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpods - Variant 2",
+        "model": "MOB-APP-APP-100-V2",
+        "serial_number": "77cae2ce-cc7e-4db2-887f-369f7051ee6c",
+        "description": "The Apple Airpods offer a seamless wireless audio experience. With easy pairing, high-quality sound, and Siri integration, they are perfect for on-the-go listening.",
+        "stock_quantity": 87,
+        "price": 139.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/e10e36e8-8f6d-42c6-869f-5cd17476d2ab/1.webp",
+        "all_images": [
+            "images/e10e36e8-8f6d-42c6-869f-5cd17476d2ab/1.webp",
+            "images/e10e36e8-8f6d-42c6-869f-5cd17476d2ab/2.webp",
+            "images/e10e36e8-8f6d-42c6-869f-5cd17476d2ab/3.webp"
+        ]
+    },
+    {
+        "name": "Apple AirPods Max Silver - Variant 2",
+        "model": "MOB-APP-APP-101-V2",
+        "serial_number": "b84a28b7-f9f0-4e47-ad61-cee5e5e71d3c",
+        "description": "The Apple AirPods Max in Silver are premium over-ear headphones with high-fidelity audio, adaptive EQ, and active noise cancellation. Experience immersive sound in style.",
+        "stock_quantity": 79,
+        "price": 559.99,
+        "warranty": "No warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/e7a04951-b2eb-43d6-812a-38e5cfd607b2/1.webp",
+        "all_images": [
+            "images/e7a04951-b2eb-43d6-812a-38e5cfd607b2/1.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpower Wireless Charger - Variant 2",
+        "model": "MOB-APP-APP-102-V2",
+        "serial_number": "433dc1de-c9e8-4d8f-91e9-d9c3d811b7ae",
+        "description": "The Apple AirPower Wireless Charger provides a convenient way to charge your compatible Apple devices wirelessly. Simply place your devices on the charging mat for effortless charging.",
+        "stock_quantity": 21,
+        "price": 89.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/af9b6454-fc15-4a28-b97f-837f09fb8612/1.webp",
+        "all_images": [
+            "images/af9b6454-fc15-4a28-b97f-837f09fb8612/1.webp"
+        ]
+    },
+    {
+        "name": "Apple HomePod Mini Cosmic Grey - Variant 2",
+        "model": "MOB-APP-APP-103-V2",
+        "serial_number": "616c3a08-6fd3-4eec-bca5-7da051432a5b",
+        "description": "The Apple HomePod Mini in Cosmic Grey is a compact smart speaker that delivers impressive audio and integrates seamlessly with the Apple ecosystem for a smart home experience.",
+        "stock_quantity": 47,
+        "price": 109.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/f7d5a0e1-b33e-409f-9df5-94cd59a6134c/1.webp",
+        "all_images": [
+            "images/f7d5a0e1-b33e-409f-9df5-94cd59a6134c/1.webp"
+        ]
+    },
+    {
+        "name": "Apple iPhone Charger - Variant 2",
+        "model": "MOB-APP-APP-104-V2",
+        "serial_number": "7f5969c9-6d19-4735-b14c-9c0163a4d9f9",
+        "description": "The Apple iPhone Charger is a high-quality charger designed for fast and efficient charging of your iPhone. Ensure your device stays powered up and ready to go.",
+        "stock_quantity": 51,
+        "price": 29.99,
+        "warranty": "1 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/8fdae650-874c-40bc-8cf0-d6144bc7d7d1/1.webp",
+        "all_images": [
+            "images/8fdae650-874c-40bc-8cf0-d6144bc7d7d1/1.webp",
+            "images/8fdae650-874c-40bc-8cf0-d6144bc7d7d1/2.webp"
+        ]
+    },
+    {
+        "name": "Apple MagSafe Battery Pack - Variant 2",
+        "model": "MOB-APP-APP-105-V2",
+        "serial_number": "610718c5-0fda-4b69-bf61-fe82377492fa",
+        "description": "The Apple MagSafe Battery Pack is a portable and convenient way to add extra battery life to your MagSafe-compatible iPhone. Attach it magnetically for a secure connection.",
+        "stock_quantity": 21,
+        "price": 109.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/d5f26b6b-d63e-4115-bcea-84b3bf52da98/1.webp",
+        "all_images": [
+            "images/d5f26b6b-d63e-4115-bcea-84b3bf52da98/1.webp",
+            "images/d5f26b6b-d63e-4115-bcea-84b3bf52da98/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Watch Series 4 Gold - Variant 2",
+        "model": "MOB-APP-APP-106-V2",
+        "serial_number": "e867645b-c9fa-49c9-834a-f706d9a1fc82",
+        "description": "The Apple Watch Series 4 in Gold is a stylish and advanced smartwatch with features like heart rate monitoring, fitness tracking, and a beautiful Retina display.",
+        "stock_quantity": 53,
+        "price": 359.99,
+        "warranty": "6 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/dacf5f23-f305-4336-b9a6-31629790b46e/1.webp",
+        "all_images": [
+            "images/dacf5f23-f305-4336-b9a6-31629790b46e/1.webp",
+            "images/dacf5f23-f305-4336-b9a6-31629790b46e/2.webp",
+            "images/dacf5f23-f305-4336-b9a6-31629790b46e/3.webp"
+        ]
+    },
+    {
+        "name": "Beats Flex Wireless Earphones - Variant 2",
+        "model": "MOB-BEA-BEA-107-V2",
+        "serial_number": "e2efff12-0d12-45f9-aaad-3de85bba9533",
+        "description": "The Beats Flex Wireless Earphones offer a comfortable and versatile audio experience. With magnetic earbuds and up to 12 hours of battery life, they are ideal for everyday use.",
+        "stock_quantity": 70,
+        "price": 59.99,
+        "warranty": "1 year warranty",
+        "distributor": "Beats",
+        "category_id": "mobile-accessories",
+        "image_url": "images/cfea4c45-b62c-4f10-b2ff-21a07db3c554/1.webp",
+        "all_images": [
+            "images/cfea4c45-b62c-4f10-b2ff-21a07db3c554/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 12 Silicone Case with MagSafe Plum - Variant 2",
+        "model": "MOB-APP-IPH-108-V2",
+        "serial_number": "7461d3f1-f696-427a-bca5-a9946a4eea73",
+        "description": "The iPhone 12 Silicone Case with MagSafe in Plum is a stylish and protective case designed for the iPhone 12. It features MagSafe technology for easy attachment of accessories.",
+        "stock_quantity": 89,
+        "price": 39.989999999999995,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/746046d5-dc3d-489e-b513-ba16d4a444e8/1.webp",
+        "all_images": [
+            "images/746046d5-dc3d-489e-b513-ba16d4a444e8/1.webp",
+            "images/746046d5-dc3d-489e-b513-ba16d4a444e8/2.webp",
+            "images/746046d5-dc3d-489e-b513-ba16d4a444e8/3.webp",
+            "images/746046d5-dc3d-489e-b513-ba16d4a444e8/4.webp"
+        ]
+    },
+    {
+        "name": "Monopod - Variant 2",
+        "model": "MOB-TEC-MON-109-V2",
+        "serial_number": "2695354c-50d8-4700-a835-3766516919cc",
+        "description": "The Monopod is a versatile camera accessory for stable and adjustable shooting. Perfect for capturing selfies, group photos, and videos with ease.",
+        "stock_quantity": 68,
+        "price": 29.99,
+        "warranty": "1 year warranty",
+        "distributor": "TechGear",
+        "category_id": "mobile-accessories",
+        "image_url": "images/4ca8b942-cc45-40f9-8da7-82541ef21311/1.webp",
+        "all_images": [
+            "images/4ca8b942-cc45-40f9-8da7-82541ef21311/1.webp",
+            "images/4ca8b942-cc45-40f9-8da7-82541ef21311/2.webp"
+        ]
+    },
+    {
+        "name": "Selfie Lamp with iPhone - Variant 2",
+        "model": "MOB-GAD-SEL-110-V2",
+        "serial_number": "93aa3c03-6e3e-46a6-87de-f8bc212b16df",
+        "description": "The Selfie Lamp with iPhone is a portable and adjustable LED light designed to enhance your selfies and video calls. Attach it to your iPhone for well-lit photos.",
+        "stock_quantity": 78,
+        "price": 24.990000000000002,
+        "warranty": "Lifetime warranty",
+        "distributor": "GadgetMaster",
+        "category_id": "mobile-accessories",
+        "image_url": "images/73cbff58-503d-4eec-a057-ea2c60fa7b24/1.webp",
+        "all_images": [
+            "images/73cbff58-503d-4eec-a057-ea2c60fa7b24/1.webp"
+        ]
+    },
+    {
+        "name": "Selfie Stick Monopod - Variant 2",
+        "model": "MOB-SNA-SEL-111-V2",
+        "serial_number": "6f1541b0-f735-41f2-9ae7-b05398d7ee2f",
+        "description": "The Selfie Stick Monopod is a extendable and foldable device for capturing the perfect selfie or group photo. Compatible with smartphones and cameras.",
+        "stock_quantity": 31,
+        "price": 22.990000000000002,
+        "warranty": "3 year warranty",
+        "distributor": "SnapTech",
+        "category_id": "mobile-accessories",
+        "image_url": "images/8ec9cc2f-a4fc-446f-a919-08d0ba4780b7/1.webp",
+        "all_images": [
+            "images/8ec9cc2f-a4fc-446f-a919-08d0ba4780b7/1.webp"
+        ]
+    },
+    {
+        "name": "TV Studio Camera Pedestal - Variant 2",
+        "model": "MOB-PRO-STU-112-V2",
+        "serial_number": "d0f03ac9-1574-4ae5-b9a4-d81d470c72ca",
+        "description": "The TV Studio Camera Pedestal is a professional-grade camera support system for smooth and precise camera movements in a studio setting. Ideal for broadcast and production.",
+        "stock_quantity": 35,
+        "price": 509.99,
+        "warranty": "3 months warranty",
+        "distributor": "ProVision",
+        "category_id": "mobile-accessories",
+        "image_url": "images/b827a7e0-f3f8-4ba7-9925-9a87c32ac708/1.webp",
+        "all_images": [
+            "images/b827a7e0-f3f8-4ba7-9925-9a87c32ac708/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 5s - Variant 2",
+        "model": "SMA-APP-IPH-121-V2",
+        "serial_number": "79a27d6b-33b5-42e7-b198-1d2b07e5f9d8",
+        "description": "The iPhone 5s is a classic smartphone known for its compact design and advanced features during its release. While it's an older model, it still provides a reliable user experience.",
+        "stock_quantity": 45,
+        "price": 209.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/d405babb-68af-4744-b418-4bdf257f2d3f/1.webp",
+        "all_images": [
+            "images/d405babb-68af-4744-b418-4bdf257f2d3f/1.webp",
+            "images/d405babb-68af-4744-b418-4bdf257f2d3f/2.webp",
+            "images/d405babb-68af-4744-b418-4bdf257f2d3f/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 6 - Variant 2",
+        "model": "SMA-APP-IPH-122-V2",
+        "serial_number": "eaa5f0d8-7ced-4dcf-8fa0-8285e695dedf",
+        "description": "The iPhone 6 is a stylish and capable smartphone with a larger display and improved performance. It introduced new features and design elements, making it a popular choice in its time.",
+        "stock_quantity": 80,
+        "price": 309.99,
+        "warranty": "1 month warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/80aff62f-ecbf-4918-8fcc-db522ef680c9/1.webp",
+        "all_images": [
+            "images/80aff62f-ecbf-4918-8fcc-db522ef680c9/1.webp",
+            "images/80aff62f-ecbf-4918-8fcc-db522ef680c9/2.webp",
+            "images/80aff62f-ecbf-4918-8fcc-db522ef680c9/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 13 Pro - Variant 2",
+        "model": "SMA-APP-IPH-123-V2",
+        "serial_number": "97f18351-caa8-47bd-90e3-bb31de227190",
+        "description": "The iPhone 13 Pro is a cutting-edge smartphone with a powerful camera system, high-performance chip, and stunning display. It offers advanced features for users who demand top-notch technology.",
+        "stock_quantity": 76,
+        "price": 1109.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/a5cd3b79-c185-4394-9a32-e9dc495915d5/1.webp",
+        "all_images": [
+            "images/a5cd3b79-c185-4394-9a32-e9dc495915d5/1.webp",
+            "images/a5cd3b79-c185-4394-9a32-e9dc495915d5/2.webp",
+            "images/a5cd3b79-c185-4394-9a32-e9dc495915d5/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone X - Variant 2",
+        "model": "SMA-APP-IPH-124-V2",
+        "serial_number": "4876d631-f384-4ddb-9dc9-a585d2199c49",
+        "description": "The iPhone X is a flagship smartphone featuring a bezel-less OLED display, facial recognition technology (Face ID), and impressive performance. It represents a milestone in iPhone design and innovation.",
+        "stock_quantity": 57,
+        "price": 909.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/9b08e163-fe28-4dd3-9d07-9ba6fcfcdb10/1.webp",
+        "all_images": [
+            "images/9b08e163-fe28-4dd3-9d07-9ba6fcfcdb10/1.webp",
+            "images/9b08e163-fe28-4dd3-9d07-9ba6fcfcdb10/2.webp",
+            "images/9b08e163-fe28-4dd3-9d07-9ba6fcfcdb10/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo A57 - Variant 2",
+        "model": "SMA-OPP-OPP-125-V2",
+        "serial_number": "e463468b-7103-4351-bccd-7787644a7efe",
+        "description": "The Oppo A57 is a mid-range smartphone known for its sleek design and capable features. It offers a balance of performance and affordability, making it a popular choice.",
+        "stock_quantity": 39,
+        "price": 259.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/c88621e2-3552-44ec-b518-4cdd39447ff5/1.webp",
+        "all_images": [
+            "images/c88621e2-3552-44ec-b518-4cdd39447ff5/1.webp",
+            "images/c88621e2-3552-44ec-b518-4cdd39447ff5/2.webp",
+            "images/c88621e2-3552-44ec-b518-4cdd39447ff5/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo F19 Pro Plus - Variant 2",
+        "model": "SMA-OPP-OPP-126-V2",
+        "serial_number": "e410eaf9-2311-4557-a998-732938079916",
+        "description": "The Oppo F19 Pro Plus is a feature-rich smartphone with a focus on camera capabilities. It boasts advanced photography features and a powerful performance for a premium user experience.",
+        "stock_quantity": 98,
+        "price": 409.99,
+        "warranty": "3 year warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/c0465384-dad4-46ad-8190-9223bd387040/1.webp",
+        "all_images": [
+            "images/c0465384-dad4-46ad-8190-9223bd387040/1.webp",
+            "images/c0465384-dad4-46ad-8190-9223bd387040/2.webp",
+            "images/c0465384-dad4-46ad-8190-9223bd387040/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo K1 - Variant 2",
+        "model": "SMA-OPP-OPP-127-V2",
+        "serial_number": "5e48b3e6-f9cf-4ce9-a2e2-38f6a3c0deb5",
+        "description": "The Oppo K1 series offers a range of smartphones with various features and specifications. Known for their stylish design and reliable performance, the Oppo K1 series caters to diverse user preferences.",
+        "stock_quantity": 75,
+        "price": 309.99,
+        "warranty": "1 month warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/c8fa1ac7-5ec1-4be5-8e45-50e70df4a85e/1.webp",
+        "all_images": [
+            "images/c8fa1ac7-5ec1-4be5-8e45-50e70df4a85e/1.webp",
+            "images/c8fa1ac7-5ec1-4be5-8e45-50e70df4a85e/2.webp",
+            "images/c8fa1ac7-5ec1-4be5-8e45-50e70df4a85e/3.webp",
+            "images/c8fa1ac7-5ec1-4be5-8e45-50e70df4a85e/4.webp"
+        ]
+    },
+    {
+        "name": "Realme C35 - Variant 2",
+        "model": "SMA-REA-REA-128-V2",
+        "serial_number": "51fd570a-7a2e-40a5-b24a-36b83230a3c9",
+        "description": "The Realme C35 is a budget-friendly smartphone with a focus on providing essential features for everyday use. It offers a reliable performance and user-friendly experience.",
+        "stock_quantity": 68,
+        "price": 159.99,
+        "warranty": "3 year warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/3f72d19a-95a7-45e2-87d1-7f024bf17b14/1.webp",
+        "all_images": [
+            "images/3f72d19a-95a7-45e2-87d1-7f024bf17b14/1.webp",
+            "images/3f72d19a-95a7-45e2-87d1-7f024bf17b14/2.webp",
+            "images/3f72d19a-95a7-45e2-87d1-7f024bf17b14/3.webp"
+        ]
+    },
+    {
+        "name": "Realme X - Variant 2",
+        "model": "SMA-REA-REA-129-V2",
+        "serial_number": "60b64234-e32b-445a-b887-5c96494e89a5",
+        "description": "The Realme X is a mid-range smartphone known for its sleek design and impressive display. It offers a good balance of performance and camera capabilities for users seeking a quality device.",
+        "stock_quantity": 32,
+        "price": 309.99,
+        "warranty": "1 month warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/1de735ff-3509-4418-ab31-1301054e7f05/1.webp",
+        "all_images": [
+            "images/1de735ff-3509-4418-ab31-1301054e7f05/1.webp",
+            "images/1de735ff-3509-4418-ab31-1301054e7f05/2.webp",
+            "images/1de735ff-3509-4418-ab31-1301054e7f05/3.webp"
+        ]
+    },
+    {
+        "name": "Realme XT - Variant 2",
+        "model": "SMA-REA-REA-130-V2",
+        "serial_number": "f055bd93-34b3-4734-a389-c83850b753c5",
+        "description": "The Realme XT is a feature-rich smartphone with a focus on camera technology. It comes equipped with advanced camera sensors, delivering high-quality photos and videos for photography enthusiasts.",
+        "stock_quantity": 100,
+        "price": 359.99,
+        "warranty": "3 year warranty",
+        "distributor": "Realme",
+        "category_id": "smartphones",
+        "image_url": "images/ae44dbf0-1038-4c14-8048-4c17655a988d/1.webp",
+        "all_images": [
+            "images/ae44dbf0-1038-4c14-8048-4c17655a988d/1.webp",
+            "images/ae44dbf0-1038-4c14-8048-4c17655a988d/2.webp",
+            "images/ae44dbf0-1038-4c14-8048-4c17655a988d/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S7 - Variant 2",
+        "model": "SMA-SAM-SAM-131-V2",
+        "serial_number": "b059d17e-1fab-4327-a7fc-b388028f0f12",
+        "description": "The Samsung Galaxy S7 is a flagship smartphone known for its sleek design and advanced features. It features a high-resolution display, powerful camera, and robust performance.",
+        "stock_quantity": 87,
+        "price": 309.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/03489a10-ed69-464b-b34a-aa4fd591bea5/1.webp",
+        "all_images": [
+            "images/03489a10-ed69-464b-b34a-aa4fd591bea5/1.webp",
+            "images/03489a10-ed69-464b-b34a-aa4fd591bea5/2.webp",
+            "images/03489a10-ed69-464b-b34a-aa4fd591bea5/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S8 - Variant 2",
+        "model": "SMA-SAM-SAM-132-V2",
+        "serial_number": "d2587e16-e0aa-467c-b359-177d84496b10",
+        "description": "The Samsung Galaxy S8 is a premium smartphone with an Infinity Display, offering a stunning visual experience. It boasts advanced camera capabilities and cutting-edge technology.",
+        "stock_quantity": 20,
+        "price": 509.99,
+        "warranty": "2 year warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/436339a9-fc5c-426d-8059-d5e5bf0670cc/1.webp",
+        "all_images": [
+            "images/436339a9-fc5c-426d-8059-d5e5bf0670cc/1.webp",
+            "images/436339a9-fc5c-426d-8059-d5e5bf0670cc/2.webp",
+            "images/436339a9-fc5c-426d-8059-d5e5bf0670cc/3.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy S10 - Variant 2",
+        "model": "SMA-SAM-SAM-133-V2",
+        "serial_number": "0152ca09-d501-4e05-886b-43ffdb41bc26",
+        "description": "The Samsung Galaxy S10 is a flagship device featuring a dynamic AMOLED display, versatile camera system, and powerful performance. It represents innovation and excellence in smartphone technology.",
+        "stock_quantity": 39,
+        "price": 709.99,
+        "warranty": "No warranty",
+        "distributor": "Samsung",
+        "category_id": "smartphones",
+        "image_url": "images/59492d46-abed-4255-a33b-c932c2c489f3/1.webp",
+        "all_images": [
+            "images/59492d46-abed-4255-a33b-c932c2c489f3/1.webp",
+            "images/59492d46-abed-4255-a33b-c932c2c489f3/2.webp",
+            "images/59492d46-abed-4255-a33b-c932c2c489f3/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo S1 - Variant 2",
+        "model": "SMA-VIV-VIV-134-V2",
+        "serial_number": "566d7573-e6a0-4e20-909f-9ae0416bb0ca",
+        "description": "The Vivo S1 is a stylish and mid-range smartphone offering a blend of design and performance. It features a vibrant display, capable camera system, and reliable functionality.",
+        "stock_quantity": 70,
+        "price": 259.99,
+        "warranty": "6 months warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/ed7a30d7-ae30-4e8e-838f-47ded893b58c/1.webp",
+        "all_images": [
+            "images/ed7a30d7-ae30-4e8e-838f-47ded893b58c/1.webp",
+            "images/ed7a30d7-ae30-4e8e-838f-47ded893b58c/2.webp",
+            "images/ed7a30d7-ae30-4e8e-838f-47ded893b58c/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo V9 - Variant 2",
+        "model": "SMA-VIV-VIV-135-V2",
+        "serial_number": "1e555c34-dcd0-4620-9f95-592f95afa4c4",
+        "description": "The Vivo V9 is a smartphone known for its sleek design and emphasis on capturing high-quality selfies. It features a notch display, dual-camera setup, and a modern design.",
+        "stock_quantity": 102,
+        "price": 309.99,
+        "warranty": "2 year warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/10543872-28ad-4246-9732-e9c87f3cd0d7/1.webp",
+        "all_images": [
+            "images/10543872-28ad-4246-9732-e9c87f3cd0d7/1.webp",
+            "images/10543872-28ad-4246-9732-e9c87f3cd0d7/2.webp",
+            "images/10543872-28ad-4246-9732-e9c87f3cd0d7/3.webp"
+        ]
+    },
+    {
+        "name": "Vivo X21 - Variant 2",
+        "model": "SMA-VIV-VIV-136-V2",
+        "serial_number": "7533a3ee-61bf-4f3a-838f-4827eb4c7943",
+        "description": "The Vivo X21 is a premium smartphone with a focus on cutting-edge technology. It features an in-display fingerprint sensor, a high-resolution display, and advanced camera capabilities.",
+        "stock_quantity": 27,
+        "price": 509.99,
+        "warranty": "1 year warranty",
+        "distributor": "Vivo",
+        "category_id": "smartphones",
+        "image_url": "images/6be2f758-0a83-44e5-907d-3f9e2cddc8b8/1.webp",
+        "all_images": [
+            "images/6be2f758-0a83-44e5-907d-3f9e2cddc8b8/1.webp",
+            "images/6be2f758-0a83-44e5-907d-3f9e2cddc8b8/2.webp",
+            "images/6be2f758-0a83-44e5-907d-3f9e2cddc8b8/3.webp"
+        ]
+    },
+    {
+        "name": "iPad Mini 2021 Starlight - Variant 2",
+        "model": "TAB-APP-IPA-159-V2",
+        "serial_number": "6b12ce0b-a2dd-4100-98a0-f7744c4446f6",
+        "description": "The iPad Mini 2021 in Starlight is a compact and powerful tablet from Apple. Featuring a stunning Retina display, powerful A-series chip, and a sleek design, it offers a premium tablet experience.",
+        "stock_quantity": 67,
+        "price": 509.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "tablets",
+        "image_url": "images/d6d998cb-0b78-47d8-8209-a1cb047887f4/1.webp",
+        "all_images": [
+            "images/d6d998cb-0b78-47d8-8209-a1cb047887f4/1.webp",
+            "images/d6d998cb-0b78-47d8-8209-a1cb047887f4/2.webp",
+            "images/d6d998cb-0b78-47d8-8209-a1cb047887f4/3.webp",
+            "images/d6d998cb-0b78-47d8-8209-a1cb047887f4/4.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy Tab S8 Plus Grey - Variant 2",
+        "model": "TAB-SAM-SAM-160-V2",
+        "serial_number": "f318a4ef-0d32-4199-8619-83a3123fb10f",
+        "description": "The Samsung Galaxy Tab S8 Plus in Grey is a high-performance Android tablet by Samsung. With a large AMOLED display, powerful processor, and S Pen support, it's ideal for productivity and entertainment.",
+        "stock_quantity": 82,
+        "price": 609.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "tablets",
+        "image_url": "images/5b9bd0ff-6d26-4e42-8678-c776aad4b387/1.webp",
+        "all_images": [
+            "images/5b9bd0ff-6d26-4e42-8678-c776aad4b387/1.webp",
+            "images/5b9bd0ff-6d26-4e42-8678-c776aad4b387/2.webp",
+            "images/5b9bd0ff-6d26-4e42-8678-c776aad4b387/3.webp",
+            "images/5b9bd0ff-6d26-4e42-8678-c776aad4b387/4.webp"
+        ]
+    },
+    {
+        "name": "Samsung Galaxy Tab White - Variant 2",
+        "model": "TAB-SAM-SAM-161-V2",
+        "serial_number": "9bd36309-b5c8-4362-8035-88bed8ff969a",
+        "description": "The Samsung Galaxy Tab in White is a sleek and versatile Android tablet. With a vibrant display, long-lasting battery, and a range of features, it offers a great user experience for various tasks.",
+        "stock_quantity": 112,
+        "price": 359.99,
+        "warranty": "3 months warranty",
+        "distributor": "Samsung",
+        "category_id": "tablets",
+        "image_url": "images/fdc1e2ae-81e8-4047-9102-8b26b2d6e88a/1.webp",
+        "all_images": [
+            "images/fdc1e2ae-81e8-4047-9102-8b26b2d6e88a/1.webp",
+            "images/fdc1e2ae-81e8-4047-9102-8b26b2d6e88a/2.webp",
+            "images/fdc1e2ae-81e8-4047-9102-8b26b2d6e88a/3.webp",
+            "images/fdc1e2ae-81e8-4047-9102-8b26b2d6e88a/4.webp"
+        ]
+    },
+    {
+        "name": "Apple MacBook Pro 14 Inch Space Grey - Variant 3",
+        "model": "LAP-APP-APP-078-V3",
+        "serial_number": "05394223-e9e9-4055-9d32-bcd9b8228beb",
+        "description": "The MacBook Pro 14 Inch in Space Grey is a powerful and sleek laptop, featuring Apple's M1 Pro chip for exceptional performance and a stunning Retina display.",
+        "stock_quantity": 54,
+        "price": 2019.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "laptops",
+        "image_url": "images/ff112bc2-75b8-4ad9-83cb-148b02cd967f/1.webp",
+        "all_images": [
+            "images/ff112bc2-75b8-4ad9-83cb-148b02cd967f/1.webp",
+            "images/ff112bc2-75b8-4ad9-83cb-148b02cd967f/2.webp",
+            "images/ff112bc2-75b8-4ad9-83cb-148b02cd967f/3.webp"
+        ]
+    },
+    {
+        "name": "Asus Zenbook Pro Dual Screen Laptop - Variant 3",
+        "model": "LAP-ASU-ASU-079-V3",
+        "serial_number": "2eeff3de-a6f9-484b-90f5-2c9256081249",
+        "description": "The Asus Zenbook Pro Dual Screen Laptop is a high-performance device with dual screens, providing productivity and versatility for creative professionals.",
+        "stock_quantity": 75,
+        "price": 1819.99,
+        "warranty": "3 year warranty",
+        "distributor": "Asus",
+        "category_id": "laptops",
+        "image_url": "images/592507f2-3a1a-4f3a-b159-80d8bd91c319/1.webp",
+        "all_images": [
+            "images/592507f2-3a1a-4f3a-b159-80d8bd91c319/1.webp",
+            "images/592507f2-3a1a-4f3a-b159-80d8bd91c319/2.webp",
+            "images/592507f2-3a1a-4f3a-b159-80d8bd91c319/3.webp"
+        ]
+    },
+    {
+        "name": "Huawei Matebook X Pro - Variant 3",
+        "model": "LAP-HUA-HUA-080-V3",
+        "serial_number": "3cd652ef-5e5a-4498-b016-b7d63e750b74",
+        "description": "The Huawei Matebook X Pro is a slim and stylish laptop with a high-resolution touchscreen display, offering a premium experience for users on the go.",
+        "stock_quantity": 105,
+        "price": 1419.99,
+        "warranty": "No warranty",
+        "distributor": "Huawei",
+        "category_id": "laptops",
+        "image_url": "images/ab67f789-2ed0-49c8-877d-f94ce89e5ebe/1.webp",
+        "all_images": [
+            "images/ab67f789-2ed0-49c8-877d-f94ce89e5ebe/1.webp",
+            "images/ab67f789-2ed0-49c8-877d-f94ce89e5ebe/2.webp",
+            "images/ab67f789-2ed0-49c8-877d-f94ce89e5ebe/3.webp"
+        ]
+    },
+    {
+        "name": "Lenovo Yoga 920 - Variant 3",
+        "model": "LAP-LEN-LEN-081-V3",
+        "serial_number": "e70fe033-36cc-433d-9033-a4a0418dee34",
+        "description": "The Lenovo Yoga 920 is a 2-in-1 convertible laptop with a flexible hinge, allowing you to use it as a laptop or tablet, offering versatility and portability.",
+        "stock_quantity": 70,
+        "price": 1119.99,
+        "warranty": "6 months warranty",
+        "distributor": "Lenovo",
+        "category_id": "laptops",
+        "image_url": "images/4c34f4eb-4cbe-4b96-a886-dfb3a9e36104/1.webp",
+        "all_images": [
+            "images/4c34f4eb-4cbe-4b96-a886-dfb3a9e36104/1.webp",
+            "images/4c34f4eb-4cbe-4b96-a886-dfb3a9e36104/2.webp",
+            "images/4c34f4eb-4cbe-4b96-a886-dfb3a9e36104/3.webp"
+        ]
+    },
+    {
+        "name": "New DELL XPS 13 9300 Laptop - Variant 3",
+        "model": "LAP-DEL-DEL-082-V3",
+        "serial_number": "c564822a-260d-4598-b908-b4255a55ecf8",
+        "description": "The New DELL XPS 13 9300 Laptop is a compact and powerful device, featuring a virtually borderless InfinityEdge display and high-end performance for various tasks.",
+        "stock_quantity": 104,
+        "price": 1519.99,
+        "warranty": "2 year warranty",
+        "distributor": "Dell",
+        "category_id": "laptops",
+        "image_url": "images/5f2b3a3f-e52a-4252-80e0-98e86a5ea92b/1.webp",
+        "all_images": [
+            "images/5f2b3a3f-e52a-4252-80e0-98e86a5ea92b/1.webp",
+            "images/5f2b3a3f-e52a-4252-80e0-98e86a5ea92b/2.webp",
+            "images/5f2b3a3f-e52a-4252-80e0-98e86a5ea92b/3.webp"
+        ]
+    },
+    {
+        "name": "Amazon Echo Plus - Variant 3",
+        "model": "MOB-AMA-AMA-099-V3",
+        "serial_number": "de8c4d7f-97cd-414f-bb4a-c0f9f763b7e6",
+        "description": "The Amazon Echo Plus is a smart speaker with built-in Alexa voice control. It features premium sound quality and serves as a hub for controlling smart home devices.",
+        "stock_quantity": 91,
+        "price": 119.99,
+        "warranty": "6 months warranty",
+        "distributor": "Amazon",
+        "category_id": "mobile-accessories",
+        "image_url": "images/36f55c58-9cba-4e14-880a-2672a10344d1/1.webp",
+        "all_images": [
+            "images/36f55c58-9cba-4e14-880a-2672a10344d1/1.webp",
+            "images/36f55c58-9cba-4e14-880a-2672a10344d1/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpods - Variant 3",
+        "model": "MOB-APP-APP-100-V3",
+        "serial_number": "46dd4afb-7858-4e35-bc7c-c10641d6a3cc",
+        "description": "The Apple Airpods offer a seamless wireless audio experience. With easy pairing, high-quality sound, and Siri integration, they are perfect for on-the-go listening.",
+        "stock_quantity": 97,
+        "price": 149.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/f10e8dcc-c55e-445a-903a-f5d550892610/1.webp",
+        "all_images": [
+            "images/f10e8dcc-c55e-445a-903a-f5d550892610/1.webp",
+            "images/f10e8dcc-c55e-445a-903a-f5d550892610/2.webp",
+            "images/f10e8dcc-c55e-445a-903a-f5d550892610/3.webp"
+        ]
+    },
+    {
+        "name": "Apple AirPods Max Silver - Variant 3",
+        "model": "MOB-APP-APP-101-V3",
+        "serial_number": "bf880eec-57dd-4f91-aa11-be6b486810b8",
+        "description": "The Apple AirPods Max in Silver are premium over-ear headphones with high-fidelity audio, adaptive EQ, and active noise cancellation. Experience immersive sound in style.",
+        "stock_quantity": 89,
+        "price": 569.99,
+        "warranty": "No warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/1c7871f2-5584-4cf4-9c6d-eac87e896708/1.webp",
+        "all_images": [
+            "images/1c7871f2-5584-4cf4-9c6d-eac87e896708/1.webp"
+        ]
+    },
+    {
+        "name": "Apple Airpower Wireless Charger - Variant 3",
+        "model": "MOB-APP-APP-102-V3",
+        "serial_number": "55aaeb9b-204f-45ed-985d-a16770cd1457",
+        "description": "The Apple AirPower Wireless Charger provides a convenient way to charge your compatible Apple devices wirelessly. Simply place your devices on the charging mat for effortless charging.",
+        "stock_quantity": 31,
+        "price": 99.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/0de2554f-b0ee-4eab-9d80-61f68aaec1a1/1.webp",
+        "all_images": [
+            "images/0de2554f-b0ee-4eab-9d80-61f68aaec1a1/1.webp"
+        ]
+    },
+    {
+        "name": "Apple HomePod Mini Cosmic Grey - Variant 3",
+        "model": "MOB-APP-APP-103-V3",
+        "serial_number": "3127cec0-7dea-41fc-ad1f-998c25e47ab5",
+        "description": "The Apple HomePod Mini in Cosmic Grey is a compact smart speaker that delivers impressive audio and integrates seamlessly with the Apple ecosystem for a smart home experience.",
+        "stock_quantity": 57,
+        "price": 119.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/fdfcb2ab-d198-44a2-8a32-8cb5cda5fa63/1.webp",
+        "all_images": [
+            "images/fdfcb2ab-d198-44a2-8a32-8cb5cda5fa63/1.webp"
+        ]
+    },
+    {
+        "name": "Apple iPhone Charger - Variant 3",
+        "model": "MOB-APP-APP-104-V3",
+        "serial_number": "95dfa079-2a47-453c-8409-229ef60bab04",
+        "description": "The Apple iPhone Charger is a high-quality charger designed for fast and efficient charging of your iPhone. Ensure your device stays powered up and ready to go.",
+        "stock_quantity": 61,
+        "price": 39.989999999999995,
+        "warranty": "1 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/3cf21a66-83f5-4ce5-a833-32439d32b875/1.webp",
+        "all_images": [
+            "images/3cf21a66-83f5-4ce5-a833-32439d32b875/1.webp",
+            "images/3cf21a66-83f5-4ce5-a833-32439d32b875/2.webp"
+        ]
+    },
+    {
+        "name": "Apple MagSafe Battery Pack - Variant 3",
+        "model": "MOB-APP-APP-105-V3",
+        "serial_number": "f99d5cfd-e208-401d-a2ff-9ebb852c7436",
+        "description": "The Apple MagSafe Battery Pack is a portable and convenient way to add extra battery life to your MagSafe-compatible iPhone. Attach it magnetically for a secure connection.",
+        "stock_quantity": 31,
+        "price": 119.99,
+        "warranty": "2 year warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/403798c2-216d-4046-b6eb-6e7125fae97f/1.webp",
+        "all_images": [
+            "images/403798c2-216d-4046-b6eb-6e7125fae97f/1.webp",
+            "images/403798c2-216d-4046-b6eb-6e7125fae97f/2.webp"
+        ]
+    },
+    {
+        "name": "Apple Watch Series 4 Gold - Variant 3",
+        "model": "MOB-APP-APP-106-V3",
+        "serial_number": "9a6fdeb8-6025-4b56-91b1-4927766a3691",
+        "description": "The Apple Watch Series 4 in Gold is a stylish and advanced smartwatch with features like heart rate monitoring, fitness tracking, and a beautiful Retina display.",
+        "stock_quantity": 63,
+        "price": 369.99,
+        "warranty": "6 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/7136ca41-0daa-4d37-a4fc-b70ff88ac409/1.webp",
+        "all_images": [
+            "images/7136ca41-0daa-4d37-a4fc-b70ff88ac409/1.webp",
+            "images/7136ca41-0daa-4d37-a4fc-b70ff88ac409/2.webp",
+            "images/7136ca41-0daa-4d37-a4fc-b70ff88ac409/3.webp"
+        ]
+    },
+    {
+        "name": "Beats Flex Wireless Earphones - Variant 3",
+        "model": "MOB-BEA-BEA-107-V3",
+        "serial_number": "a961be23-dda6-4b16-ab6b-a016b175d6cb",
+        "description": "The Beats Flex Wireless Earphones offer a comfortable and versatile audio experience. With magnetic earbuds and up to 12 hours of battery life, they are ideal for everyday use.",
+        "stock_quantity": 80,
+        "price": 69.99000000000001,
+        "warranty": "1 year warranty",
+        "distributor": "Beats",
+        "category_id": "mobile-accessories",
+        "image_url": "images/2c36ff13-fa76-4494-8506-30204479f2e2/1.webp",
+        "all_images": [
+            "images/2c36ff13-fa76-4494-8506-30204479f2e2/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 12 Silicone Case with MagSafe Plum - Variant 3",
+        "model": "MOB-APP-IPH-108-V3",
+        "serial_number": "dd236d8a-9683-4586-bbed-cf58b646daf5",
+        "description": "The iPhone 12 Silicone Case with MagSafe in Plum is a stylish and protective case designed for the iPhone 12. It features MagSafe technology for easy attachment of accessories.",
+        "stock_quantity": 99,
+        "price": 49.989999999999995,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "mobile-accessories",
+        "image_url": "images/3a032e60-4cbb-406c-8a50-16ff2c8995b6/1.webp",
+        "all_images": [
+            "images/3a032e60-4cbb-406c-8a50-16ff2c8995b6/1.webp",
+            "images/3a032e60-4cbb-406c-8a50-16ff2c8995b6/2.webp",
+            "images/3a032e60-4cbb-406c-8a50-16ff2c8995b6/3.webp",
+            "images/3a032e60-4cbb-406c-8a50-16ff2c8995b6/4.webp"
+        ]
+    },
+    {
+        "name": "Monopod - Variant 3",
+        "model": "MOB-TEC-MON-109-V3",
+        "serial_number": "2faec5c5-756e-46de-82f2-73405d108833",
+        "description": "The Monopod is a versatile camera accessory for stable and adjustable shooting. Perfect for capturing selfies, group photos, and videos with ease.",
+        "stock_quantity": 78,
+        "price": 39.989999999999995,
+        "warranty": "1 year warranty",
+        "distributor": "TechGear",
+        "category_id": "mobile-accessories",
+        "image_url": "images/a3b74fba-f51b-4f8c-867c-31971b6239c4/1.webp",
+        "all_images": [
+            "images/a3b74fba-f51b-4f8c-867c-31971b6239c4/1.webp",
+            "images/a3b74fba-f51b-4f8c-867c-31971b6239c4/2.webp"
+        ]
+    },
+    {
+        "name": "Selfie Lamp with iPhone - Variant 3",
+        "model": "MOB-GAD-SEL-110-V3",
+        "serial_number": "4175157e-70e5-4c40-b85e-cbe3c7eea5a5",
+        "description": "The Selfie Lamp with iPhone is a portable and adjustable LED light designed to enhance your selfies and video calls. Attach it to your iPhone for well-lit photos.",
+        "stock_quantity": 88,
+        "price": 34.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "GadgetMaster",
+        "category_id": "mobile-accessories",
+        "image_url": "images/7e699190-c4b1-4cdd-887e-027df589015c/1.webp",
+        "all_images": [
+            "images/7e699190-c4b1-4cdd-887e-027df589015c/1.webp"
+        ]
+    },
+    {
+        "name": "Selfie Stick Monopod - Variant 3",
+        "model": "MOB-SNA-SEL-111-V3",
+        "serial_number": "778e6d01-c31e-4843-a207-c936fcc3eedf",
+        "description": "The Selfie Stick Monopod is a extendable and foldable device for capturing the perfect selfie or group photo. Compatible with smartphones and cameras.",
+        "stock_quantity": 41,
+        "price": 32.99,
+        "warranty": "3 year warranty",
+        "distributor": "SnapTech",
+        "category_id": "mobile-accessories",
+        "image_url": "images/ea26f4af-63b1-413d-91cc-3da46485e6a9/1.webp",
+        "all_images": [
+            "images/ea26f4af-63b1-413d-91cc-3da46485e6a9/1.webp"
+        ]
+    },
+    {
+        "name": "TV Studio Camera Pedestal - Variant 3",
+        "model": "MOB-PRO-STU-112-V3",
+        "serial_number": "41253454-af97-4c15-9eea-891edc7079b4",
+        "description": "The TV Studio Camera Pedestal is a professional-grade camera support system for smooth and precise camera movements in a studio setting. Ideal for broadcast and production.",
+        "stock_quantity": 45,
+        "price": 519.99,
+        "warranty": "3 months warranty",
+        "distributor": "ProVision",
+        "category_id": "mobile-accessories",
+        "image_url": "images/a9f0e39d-42d9-469f-a663-01bedc0ccf3b/1.webp",
+        "all_images": [
+            "images/a9f0e39d-42d9-469f-a663-01bedc0ccf3b/1.webp"
+        ]
+    },
+    {
+        "name": "iPhone 5s - Variant 3",
+        "model": "SMA-APP-IPH-121-V3",
+        "serial_number": "aee78553-cff7-4d6c-9f6f-6296b9789087",
+        "description": "The iPhone 5s is a classic smartphone known for its compact design and advanced features during its release. While it's an older model, it still provides a reliable user experience.",
+        "stock_quantity": 55,
+        "price": 219.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/7cad3e78-bcda-4b1b-b907-8efd17e8ea35/1.webp",
+        "all_images": [
+            "images/7cad3e78-bcda-4b1b-b907-8efd17e8ea35/1.webp",
+            "images/7cad3e78-bcda-4b1b-b907-8efd17e8ea35/2.webp",
+            "images/7cad3e78-bcda-4b1b-b907-8efd17e8ea35/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 6 - Variant 3",
+        "model": "SMA-APP-IPH-122-V3",
+        "serial_number": "5950c9f4-4a17-4e14-b9d5-21515aeabe73",
+        "description": "The iPhone 6 is a stylish and capable smartphone with a larger display and improved performance. It introduced new features and design elements, making it a popular choice in its time.",
+        "stock_quantity": 90,
+        "price": 319.99,
+        "warranty": "1 month warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/a5232c16-cb87-409d-b93f-505017c16a2a/1.webp",
+        "all_images": [
+            "images/a5232c16-cb87-409d-b93f-505017c16a2a/1.webp",
+            "images/a5232c16-cb87-409d-b93f-505017c16a2a/2.webp",
+            "images/a5232c16-cb87-409d-b93f-505017c16a2a/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone 13 Pro - Variant 3",
+        "model": "SMA-APP-IPH-123-V3",
+        "serial_number": "28eb3336-9763-4abe-b92c-88b549b84996",
+        "description": "The iPhone 13 Pro is a cutting-edge smartphone with a powerful camera system, high-performance chip, and stunning display. It offers advanced features for users who demand top-notch technology.",
+        "stock_quantity": 86,
+        "price": 1119.99,
+        "warranty": "3 year warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/bc9eb4ea-c271-478b-ade7-1d0dabf57ee2/1.webp",
+        "all_images": [
+            "images/bc9eb4ea-c271-478b-ade7-1d0dabf57ee2/1.webp",
+            "images/bc9eb4ea-c271-478b-ade7-1d0dabf57ee2/2.webp",
+            "images/bc9eb4ea-c271-478b-ade7-1d0dabf57ee2/3.webp"
+        ]
+    },
+    {
+        "name": "iPhone X - Variant 3",
+        "model": "SMA-APP-IPH-124-V3",
+        "serial_number": "070d534b-efa7-4f76-bba2-943cb3a207a2",
+        "description": "The iPhone X is a flagship smartphone featuring a bezel-less OLED display, facial recognition technology (Face ID), and impressive performance. It represents a milestone in iPhone design and innovation.",
+        "stock_quantity": 67,
+        "price": 919.99,
+        "warranty": "3 months warranty",
+        "distributor": "Apple",
+        "category_id": "smartphones",
+        "image_url": "images/c021f655-b478-46c5-86b5-1c392bb26cb3/1.webp",
+        "all_images": [
+            "images/c021f655-b478-46c5-86b5-1c392bb26cb3/1.webp",
+            "images/c021f655-b478-46c5-86b5-1c392bb26cb3/2.webp",
+            "images/c021f655-b478-46c5-86b5-1c392bb26cb3/3.webp"
+        ]
+    },
+    {
+        "name": "Oppo A57 - Variant 3",
+        "model": "SMA-OPP-OPP-125-V3",
+        "serial_number": "3ba26f60-ad7e-432f-a23a-3e676b3b3666",
+        "description": "The Oppo A57 is a mid-range smartphone known for its sleek design and capable features. It offers a balance of performance and affordability, making it a popular choice.",
+        "stock_quantity": 49,
+        "price": 269.99,
+        "warranty": "Lifetime warranty",
+        "distributor": "Oppo",
+        "category_id": "smartphones",
+        "image_url": "images/f30252f2-b9a2-49a9-8105-7b3a0253b1ea/1.webp",
+        "all_images": [
+            "images/f30252f2-b9a2-49a9-8105-7b3a0253b1ea/1.webp",
+            "images/f30252f2-b9a2-49a9-8105-7b3a0253b1ea/2.webp",
+            "images/f30252f2-b9a2-49a9-8105-7b3a0253b1ea/3.webp"
+        ]
+    }
+]

@@ -1,7 +1,17 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { productService } from '../services/productService'
+
+interface FeaturedProduct {
+  id: string
+  name: string
+  price: number
+  image_url?: string | null
+  description?: string
+  in_stock: boolean
+}
 
 const heroSlides = [
   {
@@ -53,6 +63,29 @@ const trustItems = ['Free Shipping', 'Secure Checkout', 'Easy Returns', '24/7 Su
 export default function HomePage() {
   const router = useRouter()
   const [activeSlide, setActiveSlide] = useState(0)
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
+  const [loadingFeatured, setLoadingFeatured] = useState(true)
+
+  useEffect(() => {
+    productService
+      .getProducts({ limit: 8 })
+      .then(({ products }) => {
+        setFeaturedProducts(
+          products.map((p) => ({
+            id: (p as unknown as { id: string }).id,
+            name: p.name,
+            price: p.price,
+            image_url: (p as unknown as { image_url?: string | null }).image_url,
+            description: p.description,
+            in_stock: (p as unknown as { in_stock: boolean }).in_stock,
+          }))
+        )
+      })
+      .catch(() => {
+        // leave empty — skeletons will persist
+      })
+      .finally(() => setLoadingFeatured(false))
+  }, [])
 
   const prevSlide = () => {
     setActiveSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length)
@@ -222,7 +255,7 @@ export default function HomePage() {
           ))}
         </section>
 
-        {/* FeaturedProductsPlaceholder */}
+        {/* FeaturedProducts */}
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.95rem', gap: '1rem', flexWrap: 'wrap' }}>
             <h2 className="font-wide" style={{ fontSize: '1.2rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
@@ -239,14 +272,59 @@ export default function HomePage() {
               gap: '1rem',
             }}
           >
-            {Array.from({ length: 8 }).map((_, index) => (
-              <article key={`slot-${index}`} className="glass-panel" style={{ borderRadius: '18px', padding: '0.9rem' }}>
-                <div style={{ height: '145px', borderRadius: '12px', marginBottom: '0.75rem', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
-                <div style={{ height: '12px', borderRadius: '9999px', width: '72%', marginBottom: '0.55rem', background: 'rgba(255,255,255,0.16)' }} />
-                <div style={{ height: '10px', borderRadius: '9999px', width: '44%', marginBottom: '0.85rem', background: 'rgba(255,255,255,0.11)' }} />
-                <div style={{ height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.09)' }} />
-              </article>
-            ))}
+            {loadingFeatured || featuredProducts.length === 0
+              ? Array.from({ length: 8 }).map((_, index) => (
+                  <article key={`slot-${index}`} className="glass-panel" style={{ borderRadius: '18px', padding: '0.9rem' }}>
+                    <div style={{ height: '145px', borderRadius: '12px', marginBottom: '0.75rem', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
+                    <div style={{ height: '12px', borderRadius: '9999px', width: '72%', marginBottom: '0.55rem', background: 'rgba(255,255,255,0.16)' }} />
+                    <div style={{ height: '10px', borderRadius: '9999px', width: '44%', marginBottom: '0.85rem', background: 'rgba(255,255,255,0.11)' }} />
+                    <div style={{ height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.09)' }} />
+                  </article>
+                ))
+              : featuredProducts.map((product) => (
+                  <article
+                    key={product.id}
+                    className="glass-panel"
+                    style={{ borderRadius: '18px', padding: '0.9rem', cursor: 'pointer' }}
+                    onClick={() => router.push(`/product/${product.id}`)}
+                  >
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        style={{ height: '145px', width: '100%', objectFit: 'cover', borderRadius: '12px', marginBottom: '0.75rem' }}
+                      />
+                    ) : (
+                      <div style={{ height: '145px', borderRadius: '12px', marginBottom: '0.75rem', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
+                    )}
+                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: '0.3rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {product.name}
+                    </p>
+                    <p style={{ fontSize: '0.95rem', fontWeight: 800, color: '#2ff801', marginBottom: '0.75rem' }}>
+                      ${product.price.toFixed(2)}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={!product.in_stock}
+                      onClick={(e) => { e.stopPropagation(); router.push(`/product/${product.id}`) }}
+                      style={{
+                        width: '100%',
+                        height: '34px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: product.in_stock ? 'pointer' : 'not-allowed',
+                        background: product.in_stock ? 'rgba(47,248,1,0.15)' : 'rgba(255,255,255,0.09)',
+                        color: product.in_stock ? '#2ff801' : 'rgba(255,255,255,0.35)',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {product.in_stock ? 'Add to Cart' : 'Out of Stock'}
+                    </button>
+                  </article>
+                ))}
           </div>
         </section>
 

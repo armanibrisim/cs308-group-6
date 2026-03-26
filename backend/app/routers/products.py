@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import require_role
 from app.models.product import (
@@ -15,25 +15,55 @@ from app.services.product_service import (
     add_category,
     add_product,
     fetch_categories,
+    fetch_featured_products,
     fetch_product,
     fetch_products,
     modify_product,
     remove_product,
+    search_products,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
 
 
+# ── Static sub-routes must come before /{product_id} ──────────────────────────
+
+@router.get("/featured", response_model=ProductListResponse)
+async def get_featured_products(limit: int = Query(default=8, ge=1, le=50)):
+    return fetch_featured_products(limit)
+
+
+@router.get("/search", response_model=list[ProductResponse])
+async def search_products_endpoint(q: str = Query(..., min_length=1)):
+    return search_products(q)
+
+
+# ── Main product list ──────────────────────────────────────────────────────────
+
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     category_id: Optional[str] = None,
+    category: Optional[str] = None,        # filter by category name/slug
     search: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    sort_by: Optional[str] = None,         # legacy: price_asc | price_desc | name_asc
+    sortBy: Optional[str] = None,          # new: price | name | newest
+    sortOrder: Optional[str] = None,       # new: asc | desc
     page: int = 1,
     limit: int = 20,
 ):
-    return fetch_products(category_id, search, sort_by, page, limit)
+    return fetch_products(
+        category_id=category_id,
+        category=category,
+        search=search,
+        sort_by=sort_by,
+        sort_by_field=sortBy,
+        sort_order=sortOrder,
+        page=page,
+        limit=limit,
+    )
 
+
+# ── Single product ─────────────────────────────────────────────────────────────
 
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: str):
@@ -65,7 +95,7 @@ async def delete_product_endpoint(
     remove_product(product_id)
 
 
-# ── Categories ────────────────────────────────────────────────────────────────
+# ── Categories ─────────────────────────────────────────────────────────────────
 
 categories_router = APIRouter(prefix="/categories", tags=["categories"])
 
