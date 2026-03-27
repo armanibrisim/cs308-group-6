@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { productService } from '../services/productService'
+import { SideNav } from '../components/layout/SideNav'
 
 interface FeaturedProduct {
   id: string
@@ -98,37 +99,13 @@ export default function HomePage() {
   const slide = heroSlides[activeSlide]
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0d0d0d', color: '#e5e2e1' }}>
-      {/* ── Side nav ── */}
-      <aside style={{
-        position: 'fixed', left: '1.5rem', top: '50%', transform: 'translateY(-50%)',
-        zIndex: 50, background: 'rgba(26,26,26,0.4)', backdropFilter: 'blur(40px)',
-        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '40px',
-        padding: '2.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', alignItems: 'center',
-      }}>
-        {([
-          { icon: 'home',         label: 'Home',    path: '/',        active: true  },
-          { icon: 'inventory_2',  label: 'Product', path: '/browse', active: false },
-        ] as const).map(({ icon, label, path, active }) => (
-          <button key={label} onClick={() => router.push(path)} title={label}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <span className="material-symbols-outlined" style={{
-              fontSize: '22px',
-              color: active ? '#2ff801' : '#a1a1a1',
-              filter: active ? 'drop-shadow(0 0 8px rgba(47,248,1,0.6))' : undefined,
-            }}>{icon}</span>
-            <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: active ? '#2ff801' : '#a1a1a1' }}>
-              {label}
-            </span>
-          </button>
-        ))}
-      </aside>
+    <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1' }}>
+      <SideNav />
 
       {/* ── Main showcase content ── */}
       <main style={{
-        paddingTop: '2rem', paddingBottom: '3rem',
-        paddingLeft: '7rem', paddingRight: '2rem',
-        maxWidth: '1440px', margin: '0 auto',
+        paddingTop: '0', paddingBottom: '3rem',
+        paddingLeft: '9rem', paddingRight: '4rem',
         minHeight: 'calc(100vh - 7rem)',
         display: 'flex', flexDirection: 'column', gap: '1.75rem',
       }}>

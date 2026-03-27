@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { cartService } from '../../../services/cartService'
 import { CartItem } from '../../../types/cart'
+import { SideNav } from '../../../components/layout/SideNav'
 
 // ── Local-storage guest cart ──────────────────────────────────────────────────
 
@@ -142,64 +143,75 @@ export default function CartPage() {
     window.scrollTo({ top: 0 })
   }, [loadCart])
 
-  // ── Increment ─────────────────────────────────────────────────────────────
+  // ── Debounce refs: track pending backend sync per item ────────────────────
+  const syncTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  async function increment(id: string) {
-    const item = items.find(i => i.id === id)
-    if (!item) return
-
-    const newQty = item.quantity + 1
-    if (item.maxStock !== undefined && newQty > item.maxStock) return
-
-    if (user) {
+  function syncToBackend(id: string, newQty: number, prevItems: DisplayItem[]) {
+    if (!user) return
+    clearTimeout(syncTimers.current[id])
+    syncTimers.current[id] = setTimeout(async () => {
       try {
-        const cart = await cartService.updateItem(id, { quantity: newQty })
-        setItems(toDisplayItems(cart.items))
+        await cartService.updateItem(id, { quantity: newQty })
       } catch {
+        // revert to previous state on failure
+        setItems(prevItems)
         setError('Could not update quantity.')
       }
-    } else {
-      const updated = items.map(i => i.id === id ? { ...i, quantity: newQty } : i)
-      setItems(updated)
-      saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
-    }
+    }, 400)
+  }
+
+  // ── Increment ─────────────────────────────────────────────────────────────
+
+  function increment(id: string) {
+    setItems(prev => {
+      const item = prev.find(i => i.id === id)
+      if (!item) return prev
+      if (item.maxStock !== undefined && item.quantity >= item.maxStock) return prev
+      const newQty = item.quantity + 1
+      const updated = prev.map(i => i.id === id ? { ...i, quantity: newQty } : i)
+      if (user) {
+        syncToBackend(id, newQty, prev)
+      } else {
+        saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
+      }
+      return updated
+    })
   }
 
   // ── Decrement ─────────────────────────────────────────────────────────────
 
-  async function decrement(id: string) {
+  function decrement(id: string) {
     const item = items.find(i => i.id === id)
-    if (!item || item.quantity <= 1) return
-
-    const newQty = item.quantity - 1
-
-    if (user) {
-      try {
-        const cart = await cartService.updateItem(id, { quantity: newQty })
-        setItems(toDisplayItems(cart.items))
-      } catch {
-        setError('Could not update quantity.')
+    if (item && item.quantity <= 1) { remove(id); return }
+    setItems(prev => {
+      const it = prev.find(i => i.id === id)
+      if (!it || it.quantity <= 1) return prev
+      const newQty = it.quantity - 1
+      const updated = prev.map(i => i.id === id ? { ...i, quantity: newQty } : i)
+      if (user) {
+        syncToBackend(id, newQty, prev)
+      } else {
+        saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
       }
-    } else {
-      const updated = items.map(i => i.id === id ? { ...i, quantity: newQty } : i)
-      setItems(updated)
-      saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
-    }
+      return updated
+    })
   }
 
   // ── Remove ────────────────────────────────────────────────────────────────
 
   async function remove(id: string) {
+    // optimistic: remove from UI immediately
+    const prev = items
+    setItems(items.filter(i => i.id !== id))
     if (user) {
       try {
-        const cart = await cartService.removeItem(id)
-        setItems(toDisplayItems(cart.items))
+        await cartService.removeItem(id)
       } catch {
+        setItems(prev)
         setError('Could not remove item.')
       }
     } else {
       const updated = items.filter(i => i.id !== id)
-      setItems(updated)
       saveGuestCart(updated.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, description: i.description })))
     }
   }
@@ -207,44 +219,13 @@ export default function CartPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0d0d0d', color: '#e5e2e1' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1' }}>
 
-      {/* ── Free-shipping progress bar ── */}
-      <div style={{ position: 'fixed', top: '4rem', left: 0, right: 0, height: '3px', zIndex: 50, background: 'rgba(255,255,255,0.05)' }}>
-        <div style={{
-          height: '100%', background: '#2ff801',
-          boxShadow: '0 0 15px rgba(47,248,1,0.6)',
-          width: `${progress}%`, transition: 'width 1s ease-out',
-        }} />
-      </div>
 
-      {/* ── Side nav ── */}
-      <aside style={{
-        position: 'fixed', left: '1.5rem', top: '50%', transform: 'translateY(-50%)',
-        zIndex: 50, background: 'rgba(26,26,26,0.4)', backdropFilter: 'blur(40px)',
-        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '40px',
-        padding: '2.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '2.5rem', alignItems: 'center',
-      }}>
-        {([
-          { icon: 'home',         label: 'Home',    path: '/',        active: false },
-          { icon: 'inventory_2',  label: 'Product', path: '/browse',  active: false },
-          { icon: 'shopping_bag', label: 'Cart',    path: '/cart',    active: true  },
-          { icon: 'receipt_long', label: 'Orders',  path: '/orders',  active: false },
-        ] as const).map(({ icon, label, path, active }) => (
-          <button key={label} onClick={() => router.push(path)} title={label}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <span className="material-symbols-outlined" style={{
-              fontSize: '22px',
-              color: active ? '#2ff801' : '#a1a1a1',
-              filter: active ? 'drop-shadow(0 0 8px rgba(47,248,1,0.6))' : undefined,
-            }}>{icon}</span>
-            <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: active ? '#2ff801' : '#a1a1a1' }}>{label}</span>
-          </button>
-        ))}
-      </aside>
+      <SideNav />
 
       {/* ── Main ── */}
-      <main style={{ paddingTop: '8rem', paddingBottom: '3rem', paddingLeft: '7rem', paddingRight: '2rem', maxWidth: '1440px', margin: '0 auto' }}>
+      <main style={{ paddingTop: '0', paddingBottom: '3rem', paddingLeft: '9rem', paddingRight: '4rem' }}>
         <div className="cart-layout">
 
           {/* ── Cart items ── */}
@@ -388,9 +369,31 @@ export default function CartPage() {
             <div style={{ position: 'sticky', top: '7rem' }}>
               <GlowCard className="rounded-[40px]">
                 <div className="glass-panel" style={{ borderRadius: '40px', padding: '3rem' }}>
-                  <h2 className="font-wide" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '3rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <h2 className="font-wide" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem', color: 'rgba(255,255,255,0.9)' }}>
                     Order Summary
                   </h2>
+
+                  {/* Free shipping progress */}
+                  <div style={{ marginBottom: '2.5rem', padding: '1.5rem', borderRadius: '1.25rem', background: shipping === 0 ? 'rgba(47,248,1,0.06)' : 'rgba(255,255,255,0.03)', border: `1px solid ${shipping === 0 ? 'rgba(47,248,1,0.2)' : 'rgba(255,255,255,0.06)'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', color: shipping === 0 ? '#2ff801' : 'rgba(255,255,255,0.7)' }}>
+                        {shipping === 0 ? '✓ Free Shipping Unlocked!' : 'Free Shipping Progress'}
+                      </span>
+                      {shipping > 0 && (
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#2ff801' }}>
+                          {fmt(FREE_SHIPPING_THRESHOLD - subtotal)} away
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ height: '6px', borderRadius: '9999px', background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: '9999px', background: '#2ff801', boxShadow: '0 0 12px rgba(47,248,1,0.6)', width: `${progress}%`, transition: 'width 0.5s ease' }} />
+                    </div>
+                    {shipping > 0 && (
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '0.75rem' }}>
+                        Add <strong style={{ color: '#fff' }}>{fmt(FREE_SHIPPING_THRESHOLD - subtotal)}</strong> more to your cart for free shipping
+                      </p>
+                    )}
+                  </div>
 
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2.5rem', marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     {[

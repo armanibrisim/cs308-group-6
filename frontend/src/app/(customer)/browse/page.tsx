@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { productService } from '../../../services/productService'
+import { SideNav } from '../../../components/layout/SideNav'
 
 const NEON = '#39ff14'
 
@@ -204,7 +205,8 @@ export default function BrowsePage() {
 
   return (
     <div style={{ minHeight: '100vh', color: '#e5e2e1', background: '#080808' }}>
-      <main style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 2.5rem 6rem' }}>
+      <SideNav />
+      <main style={{ paddingTop: '0', paddingBottom: '6rem', paddingLeft: '9rem', paddingRight: '4rem' }}>
 
         {/* ── Page header ── */}
         <div style={{ marginBottom: '3rem' }}>

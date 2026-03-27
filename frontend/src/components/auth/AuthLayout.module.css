@@ -1,6 +1,8 @@
 /* Base Auth Layout Styles */
 .pageWrapper {
   min-height: 100vh;
+  margin-top: -8rem;
+  padding-top: 8rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,7 +11,9 @@
   color: white;
   position: relative;
   overflow: hidden;
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
 }
 
 /* Login variant - single card layout */

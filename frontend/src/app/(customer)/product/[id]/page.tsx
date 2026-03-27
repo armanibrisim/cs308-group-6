@@ -3,6 +3,9 @@
 import { useState, useRef, MouseEvent, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { productService } from '../../../../services/productService'
+import { cartService } from '../../../../services/cartService'
+import { useAuth } from '../../../../context/AuthContext'
+import { SideNav } from '../../../../components/layout/SideNav'
 
 const NEON = '#39ff14'
 
@@ -51,6 +54,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const id = params.id as string
   const router = useRouter()
+  const { user } = useAuth()
 
   const [activeTab, setActiveTab] = useState('desc')
   const [showCatalogue, setShowCatalogue] = useState(false)
@@ -61,6 +65,9 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [thumbnails, setThumbnails] = useState<string[]>([])
   const [relatedProducts, setRelatedProducts] = useState<any[]>([])
+  const [qty, setQty] = useState(1)
+  const [cartStatus, setCartStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [cartError, setCartError] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -82,7 +89,7 @@ export default function ProductDetailPage() {
         const catId = (data as any).category_id || (data as any).categoryId
         if (catId) {
           productService
-            .getProducts({ category: catId, limit: 8 })
+            .getProducts({ categoryId: catId, limit: 8 })
             .then((res) => setRelatedProducts(res.products.filter((p: any) => p.id !== data.id)))
             .catch(() => {})
         }
@@ -125,7 +132,8 @@ export default function ProductDetailPage() {
 
   return (
     <div className="atmospheric-bg" style={{ minHeight: '100vh', color: '#e5e2e1', fontFamily: 'Inter, sans-serif' }}>
-      <main style={{ position: 'relative', zIndex: 10, paddingBottom: '6rem', paddingLeft: '2rem', paddingRight: '2rem', maxWidth: '1920px', margin: '0 auto' }}>
+      <SideNav />
+      <main style={{ position: 'relative', zIndex: 10, paddingBottom: '6rem', paddingLeft: '9rem', paddingRight: '2rem', maxWidth: '1920px', margin: '0 auto' }}>
 
         {/* ── Product Grid ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4rem', alignItems: 'start' }}>
@@ -249,12 +257,14 @@ export default function ProductDetailPage() {
             <GlowBox style={{ padding: '2.5rem', borderRadius: '1.5rem' }}>
 
               {/* Badges */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: `${NEON}33`, color: NEON, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, fontFamily: 'Space Grotesk, sans-serif' }}>
-                  FLAGSHIP SERIES
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' as const }}>
+                {(product?.category_id || product?.categoryId) && (
+                  <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: `${NEON}22`, color: NEON, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, fontFamily: 'Space Grotesk, sans-serif' }}>
+                    {(product?.category_id || product?.categoryId).replace(/-/g, ' ')}
+                  </span>
+                )}
                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? 'rgba(57,255,20,0.1)' : 'rgba(255,255,255,0.05)', color: inStock ? NEON : 'rgba(255,255,255,0.4)', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const }}>
-                  {inStock ? 'IN STOCK' : 'OUT OF STOCK'}
+                  {inStock ? `IN STOCK — ${stockQty} units` : 'OUT OF STOCK'}
                 </span>
               </div>
 
@@ -264,17 +274,26 @@ export default function ProductDetailPage() {
               </h1>
 
               {/* Rating */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: NEON }}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <span key={s} className="material-symbols-outlined" style={{ fontSize: '1.125rem', fontVariationSettings: "'FILL' 1" }}>star</span>
-                  ))}
-                  <span style={{ fontSize: '1.125rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginLeft: '0.5rem' }}>5.0</span>
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.2em', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
-                  842 DEPLOYMENTS
-                </span>
-              </div>
+              {(() => {
+                const avg = product?.average_rating ?? product?.rating ?? null
+                const count = product?.review_count ?? null
+                const hasRating = avg != null && avg > 0
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: hasRating ? NEON : 'rgba(255,255,255,0.2)' }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <span key={s} className="material-symbols-outlined" style={{ fontSize: '1.125rem', fontVariationSettings: hasRating && s <= Math.round(avg!) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                      ))}
+                      <span style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginLeft: '0.5rem', color: hasRating ? NEON : 'rgba(255,255,255,0.3)' }}>
+                        {hasRating ? avg!.toFixed(1) : 'N/A'}
+                      </span>
+                    </div>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.2em', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
+                      {count != null && count > 0 ? `${count} REVIEW${count !== 1 ? 'S' : ''}` : 'NO RATINGS YET'}
+                    </span>
+                  </div>
+                )
+              })()}
 
               {/* Price */}
               <div style={{ marginBottom: '3rem' }}>
@@ -286,17 +305,52 @@ export default function ProductDetailPage() {
                     .{((product?.price || 0) % 1).toFixed(2).substring(2)}
                   </span>
                 </div>
-                <p style={{ color: `${NEON}99`, fontSize: '0.75rem', marginTop: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase' as const }}>
-                  ULTRA-PERFORMANCE GUARANTEED
-                </p>
+              </div>
+
+              {/* Qty selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontFamily: 'Space Grotesk, sans-serif' }}>QTY</span>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                  <button
+                    className="qty-btn"
+                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty <= 1 ? 'not-allowed' : 'pointer', color: qty <= 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => setQty(q => Math.max(1, q - 1))}
+                    disabled={qty <= 1}
+                  >−</button>
+                  <span style={{ minWidth: '2.5rem', textAlign: 'center', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#fff' }}>{qty}</span>
+                  <button
+                    className="qty-btn"
+                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty >= stockQty ? 'not-allowed' : 'pointer', color: qty >= stockQty ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => setQty(q => Math.min(stockQty, q + 1))}
+                    disabled={qty >= stockQty}
+                  >+</button>
+                </div>
+                {stockQty > 0 && (
+                  <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>{stockQty} IN STOCK</span>
+                )}
               </div>
 
               {/* CTA */}
               <button
+                disabled={!inStock || cartStatus === 'loading'}
+                onClick={async () => {
+                  if (!user) { router.push('/login'); return }
+                  setCartStatus('loading')
+                  setCartError('')
+                  try {
+                    await cartService.addItem({ product_id: id, quantity: qty })
+                    setCartStatus('success')
+                    setTimeout(() => router.push('/cart'), 800)
+                  } catch (err: any) {
+                    setCartError(err.message || 'Failed to add to cart')
+                    setCartStatus('error')
+                    setTimeout(() => setCartStatus('idle'), 3000)
+                  }
+                }}
                 style={{
                   width: '100%',
-                  background: NEON,
-                  color: '#000',
+                  background: cartStatus === 'success' ? '#22c55e' : cartStatus === 'error' ? '#ef4444' : inStock ? NEON : 'rgba(255,255,255,0.08)',
+                  color: cartStatus === 'error' ? '#fff' : '#000',
                   fontFamily: 'Space Grotesk, sans-serif',
                   fontWeight: 700,
                   padding: '1.5rem',
@@ -304,15 +358,17 @@ export default function ProductDetailPage() {
                   fontSize: '0.875rem',
                   letterSpacing: '0.3em',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: !inStock || cartStatus === 'loading' ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.75rem',
-                  marginBottom: '2rem',
-                  transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                  marginBottom: cartStatus === 'error' ? '0.75rem' : '2rem',
+                  transition: 'box-shadow 0.2s ease, transform 0.2s ease, background 0.3s ease',
+                  opacity: !inStock ? 0.5 : 1,
                 }}
                 onMouseEnter={(e) => {
+                  if (!inStock || cartStatus !== 'idle') return
                   ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 40px rgba(57,255,20,0.35)'
                   ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.02)'
                 }}
@@ -320,11 +376,17 @@ export default function ProductDetailPage() {
                   ;(e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
                   ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'
                 }}
-                onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.98)')}
+                onMouseDown={(e) => { if (inStock && cartStatus === 'idle') (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.98)' }}
               >
-                INITIALIZE PURCHASE
-                <span className="material-symbols-outlined">bolt</span>
+                {cartStatus === 'loading' && <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>}
+                {cartStatus === 'success' && <span className="material-symbols-outlined">check_circle</span>}
+                {cartStatus === 'error' && <span className="material-symbols-outlined">error</span>}
+                {cartStatus === 'idle' && <span className="material-symbols-outlined">shopping_cart</span>}
+                {cartStatus === 'loading' ? 'ADDING...' : cartStatus === 'success' ? 'ADDED TO CART!' : cartStatus === 'error' ? 'FAILED' : inStock ? 'ADD TO CART' : 'OUT OF STOCK'}
               </button>
+              {cartStatus === 'error' && cartError && (
+                <p style={{ color: '#ef4444', fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: '2rem', textAlign: 'center' }}>{cartError}</p>
+              )}
 
               {/* Secondary actions */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -405,21 +467,15 @@ export default function ProductDetailPage() {
             {/* Description */}
             {activeTab === 'desc' && (
               <div style={{ maxWidth: '56rem' }}>
-                <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: NEON, marginBottom: '1.5rem' }}>
-                  NEXT-GEN COMPUTING ARCHITECTURE
-                </h3>
-                <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.75, fontWeight: 300, marginBottom: '2rem', whiteSpace: 'pre-line' }}>
-                  {product?.description}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginTop: '3rem' }}>
-                  {[
-                    { icon: 'ac_unit', title: 'Zero-Thermal Tech', desc: 'Advanced cryo-loop technology maintaining sub-30°C under peak loads.' },
-                    { icon: 'neurology', title: 'Neural Linkage', desc: 'AI-driven overclocking that adapts to your specific application needs.' },
-                    { icon: 'speed', title: 'Instant-Boot', desc: 'Sub-3 second cold boot via Quantum NVMe architecture.' },
-                  ].map((feature) => (
-                    <FeatureCard key={feature.icon} icon={feature.icon} title={feature.title} desc={feature.desc} />
-                  ))}
-                </div>
+                {product?.description ? (
+                  <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.85, fontWeight: 300, whiteSpace: 'pre-line' }}>
+                    {product.description}
+                  </p>
+                ) : (
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
+                    NO DESCRIPTION AVAILABLE
+                  </p>
+                )}
               </div>
             )}
 
@@ -427,15 +483,19 @@ export default function ProductDetailPage() {
             {activeTab === 'specs' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3rem 5rem' }}>
                 {[
-                  { label: 'MODEL', name: product?.model || 'N/A', detail: product?.serial_number || product?.serialNumber || 'N/A' },
-                  { label: 'WARRANTY', name: product?.warranty || 'Standard', detail: 'Conditions Apply' },
-                  { label: 'DISTRIBUTOR', name: product?.distributor || 'LUMEN DIRECT', detail: 'Verified Partner' },
-                  { label: 'STOCK STATUS', name: inStock ? 'AVAILABLE' : 'DEPLETED', detail: `${stockQty} units active` },
+                  { label: 'PRODUCT ID', value: product?.id || 'N/A' },
+                  { label: 'MODEL', value: product?.model || 'N/A' },
+                  { label: 'SERIAL NUMBER', value: product?.serial_number || product?.serialNumber || 'N/A' },
+                  { label: 'CATEGORY', value: (product?.category_id || product?.categoryId || 'N/A').replace(/-/g, ' ').toUpperCase() },
+                  { label: 'PRICE', value: `$${(product?.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+                  { label: 'STOCK QUANTITY', value: `${stockQty} units` },
+                  { label: 'WARRANTY', value: product?.warranty || 'N/A' },
+                  { label: 'DISTRIBUTOR', value: product?.distributor || 'N/A' },
+                  { label: 'AVAILABILITY', value: inStock ? 'IN STOCK' : 'OUT OF STOCK' },
                 ].map((spec) => (
                   <div key={spec.label}>
                     <p style={{ fontSize: '0.75rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em', marginBottom: '0.5rem', fontWeight: 700 }}>{spec.label}</p>
-                    <p style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', color: '#fff', fontWeight: 300 }}>{spec.name}</p>
-                    <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem' }}>{spec.detail}</p>
+                    <p style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', color: '#fff', fontWeight: 300, wordBreak: 'break-all' as const }}>{spec.value}</p>
                   </div>
                 ))}
               </div>
@@ -445,23 +505,28 @@ export default function ProductDetailPage() {
             {activeTab === 'reviews' && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                  <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>SYSTEM FEEDBACK</h3>
+                  <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>USER REVIEWS</h3>
                   <button
                     style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `${NEON}1A`)}
                     onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'none')}
                   >
-                    WRITE A LOG
+                    WRITE A REVIEW
                   </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
-                  {[
-                    { user: 'VERTEX_COMMANDER', text: '"Absolute beast. The render times on 8K raw footage are virtually nonexistent now. Best investment for our studio."' },
-                    { user: 'NOVA_STRIDER', text: '"The aesthetic alone is worth it, but the thermal management is what really shines. Quiet as a whisper even under heavy load."' },
-                  ].map((review) => (
-                    <ReviewCard key={review.user} user={review.user} text={review.text} />
-                  ))}
-                </div>
+                {(product?.reviews && product.reviews.length > 0) ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                    {product.reviews.map((review: any) => (
+                      <ReviewCard key={review.id || review.user_id} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} />
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
+                    <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>NO REVIEWS YET</p>
+                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -469,20 +534,24 @@ export default function ProductDetailPage() {
             {activeTab === 'returns' && (
               <div style={{ maxWidth: '42rem' }}>
                 <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: NEON, marginBottom: '1.5rem' }}>
-                  QUANTUM WARRANTY &amp; RETURNS
+                  WARRANTY &amp; RETURN POLICY
                 </h3>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: 0, listStyle: 'none' }}>
-                  {[
-                    { icon: 'verified', text: '30-Day Hassle-Free System Return Policy.' },
-                    { icon: 'shield', text: '3-Year Standard Quantum Hardware Warranty included.' },
-                    { icon: 'support_agent', text: '24/7 Priority Technician Access for hardware failure.' },
-                    { icon: 'local_shipping', text: 'Free return shipping on all defective components.' },
-                  ].map((item) => (
-                    <li key={item.icon} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
-                      <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>{item.icon}</span>
-                      <span>{item.text}</span>
-                    </li>
-                  ))}
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                    <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>shield</span>
+                    <span>
+                      <strong style={{ color: '#fff', fontFamily: 'Space Grotesk, sans-serif' }}>Warranty: </strong>
+                      {product?.warranty || 'No warranty information available.'}
+                    </span>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                    <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>verified</span>
+                    <span>30-day return policy from date of purchase.</span>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                    <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>support_agent</span>
+                    <span>Contact support for return authorisation and shipping details.</span>
+                  </li>
                 </ul>
               </div>
             )}
@@ -619,7 +688,7 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-function ReviewCard({ user, text }: { user: string; text: string }) {
+function ReviewCard({ user, text, rating }: { user: string; text: string; rating?: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
@@ -641,7 +710,7 @@ function ReviewCard({ user, text }: { user: string; text: string }) {
         </div>
         <div style={{ display: 'flex', color: '#39ff14' }}>
           {[1, 2, 3, 4, 5].map((s) => (
-            <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: "'FILL' 1" }}>star</span>
+            <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
           ))}
         </div>
       </div>
@@ -670,16 +739,18 @@ function RelatedCard({ product, onClick }: { product: any; onClick: () => void }
       className="hover-glow grounded-box"
       style={{ borderRadius: '1.5rem', cursor: 'pointer', overflow: 'hidden' }}
     >
-      <div style={{ aspectRatio: '16/10', overflow: 'hidden', position: 'relative' }}>
-        {product.image_url || product.imageUrl ? (
+      <div style={{ aspectRatio: '16/10', position: 'relative', background: '#111' }}>
+        {(product.all_images?.[0] || product.image_url || product.imageUrl) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={product.image_url || product.imageUrl}
+            src={product.all_images?.[0] || product.image_url || product.imageUrl}
             alt={product.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.7s ease', transform: hovered ? 'scale(1.1)' : 'scale(1)' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.7s ease', transform: hovered ? 'scale(1.06)' : 'scale(1)' }}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.08)' }}>image_not_supported</span>
+          </div>
         )}
       </div>
       <div style={{ padding: '2rem' }}>
