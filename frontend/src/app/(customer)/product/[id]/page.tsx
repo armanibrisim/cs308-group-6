@@ -334,11 +334,30 @@ export default function ProductDetailPage() {
               <button
                 disabled={!inStock || cartStatus === 'loading'}
                 onClick={async () => {
-                  if (!user) { router.push('/login'); return }
                   setCartStatus('loading')
                   setCartError('')
                   try {
-                    await cartService.addItem({ product_id: id, quantity: qty })
+                    if (user) {
+                      await cartService.addItem({ product_id: id, quantity: qty })
+                    } else {
+                      // Guest cart — persist to localStorage
+                      const GUEST_CART_KEY = 'lumen_guest_cart'
+                      const existing = (() => { try { return JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]') } catch { return [] } })()
+                      const idx = existing.findIndex((i: any) => i.id === id)
+                      if (idx >= 0) {
+                        existing[idx].quantity = Math.min(existing[idx].quantity + qty, stockQty)
+                      } else {
+                        existing.push({
+                          id,
+                          name: product?.name || '',
+                          price: product?.price || 0,
+                          quantity: qty,
+                          image: (product as any)?.all_images?.[0] || (product as any)?.image_url || '',
+                          description: product?.description || '',
+                        })
+                      }
+                      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(existing))
+                    }
                     setCartStatus('success')
                     setTimeout(() => router.push('/cart'), 800)
                   } catch (err: any) {
