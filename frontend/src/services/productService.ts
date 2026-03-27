@@ -5,19 +5,21 @@ export const productService = {
   // Get all products with optional filters
   async getProducts(params?: {
     category?: string
+    categoryId?: string
     search?: string
-    sortBy?: 'price' | 'popularity' | 'name'
+    sortBy?: 'price' | 'popularity' | 'name' | 'newest'
     sortOrder?: 'asc' | 'desc'
     page?: number
     limit?: number
   }): Promise<{ products: Product[]; total: number }> {
     const queryParams = new URLSearchParams()
-    
+
     if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString())
-        }
+      const { categoryId, ...rest } = params
+      // categoryId maps to the backend's category_id param (direct Firestore field match)
+      if (categoryId) queryParams.append('category_id', categoryId)
+      Object.entries(rest).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString())
       })
     }
 

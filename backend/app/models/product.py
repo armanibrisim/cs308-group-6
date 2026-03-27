@@ -41,6 +41,7 @@ class ProductResponse(BaseModel):
     distributor: str
     category_id: str
     image_url: Optional[str] = None
+    all_images: Optional[list[str]] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 

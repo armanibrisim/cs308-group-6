@@ -91,6 +91,7 @@ def _to_product_response(data: dict) -> ProductResponse:
         distributor=data["distributor"],
         category_id=data["category_id"],
         image_url=data.get("image_url"),
+        all_images=data.get("all_images"),
         created_at=data.get("created_at"),
         updated_at=data.get("updated_at"),
     )

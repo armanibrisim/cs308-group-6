@@ -27,12 +27,11 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #0d0d0d;
+  background-color: #080808;
   color: #e5e2e1;
   overflow-x: hidden;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(47, 248, 1, 0.03) 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.02) 0%, transparent 40%);
+    radial-gradient(circle at 20% 30%, rgba(47, 248, 1, 0.02) 0%, transparent 40%);
 }
 
 .font-wide {
@@ -57,7 +56,7 @@ body {
 }
 
 .atmospheric-bg {
-  background: radial-gradient(circle at top right, #0d0d0d 0%, #080808 100%);
+  background: #080808;
   position: relative;
 }
 
