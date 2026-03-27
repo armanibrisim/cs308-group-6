@@ -233,16 +233,25 @@ export function Navbar() {
         </div>
 
         {/* ── Centre: Search bar ── */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-8">
+        <form
+          className="hidden md:flex flex-1 max-w-xl mx-8"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value.trim()
+            if (q) router.push(`/browse?search=${encodeURIComponent(q)}`)
+            else router.push('/browse')
+          }}
+        >
           <div className="w-full relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/50">search</span>
             <input
+              name="q"
               className="w-full bg-white/5 border border-white/10 rounded-full py-3 pl-12 pr-6 font-headline text-xs tracking-[0.2em] focus:outline-none focus:border-primary/30 focus:bg-white/10 transition-all text-white placeholder-white/20"
               placeholder="SEARCH QUANTUM SYSTEMS..."
               type="text"
             />
           </div>
-        </div>
+        </form>
 
         {/* ── Right: Icons ── */}
         <div className="flex items-center gap-8">

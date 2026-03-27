@@ -119,8 +119,8 @@ export default function BrowsePage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
 
-  const [search, setSearch]         = useState('')
-  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch]         = useState(searchParams.get('search') || '')
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '')
   const [categoryId, setCategoryId] = useState(searchParams.get('category_id') || '')
 
   const selectCategory = (id: string) => {
@@ -155,9 +155,12 @@ export default function BrowsePage() {
     }).catch(() => {})
   }, [])
 
-  // Sync category from URL (e.g. navbar link click)
+  // Sync filters from URL (e.g. navbar search or category link)
   useEffect(() => {
     setCategoryId(searchParams.get('category_id') || '')
+    const s = searchParams.get('search') || ''
+    setSearch(s)
+    setSearchInput(s)
   }, [searchParams])
 
   // Fetch products whenever filters change (reset to page 1)
