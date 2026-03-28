@@ -186,6 +186,16 @@ backend/
 - Each Firestore document should have an explicit `id` field matching its document ID.
 - Never expose raw Firestore document references or internal IDs to the frontend directly — map
   them through Pydantic response models.
+- **Minimize Firestore reads.** Every document returned by a query counts as one read toward the
+  daily quota. Follow these rules:
+  - Never fetch the entire collection just to paginate or sort in Python — push `limit()` and
+    `order_by()` to the Firestore query whenever possible.
+  - Never call `get_product_by_id` (or any single-document fetch) inside a loop — batch or
+    cache results instead.
+  - Use an **in-memory TTL cache** in the repository layer for frequently-read, rarely-changed
+    collections (e.g. products, categories). Invalidate the cache on every write/delete.
+  - Prefer Firestore compound queries with `where()` + `limit()` over fetching all documents and
+    filtering in Python.
 
 ---
 

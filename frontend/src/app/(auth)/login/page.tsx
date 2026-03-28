@@ -8,6 +8,28 @@ import styles from '../../../components/auth/AuthLayout.module.css'
 import { AuthButton, AuthInput, AuthLayout, ImageSlider } from '../../../components/auth'
 import { useAuth } from '../../../context/AuthContext'
 import { authService } from '../../../services/authService'
+import { cartService } from '../../../services/cartService'
+
+const GUEST_CART_KEY = 'lumen_guest_cart'
+
+interface GuestCartItem {
+  id: string
+  quantity: number
+}
+
+function readGuestCart(): GuestCartItem[] {
+  try {
+    const raw = localStorage.getItem(GUEST_CART_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as GuestCartItem[]
+  } catch {
+    return []
+  }
+}
+
+function clearGuestCart(): void {
+  localStorage.removeItem(GUEST_CART_KEY)
+}
 
 const slides = [
   { url: '/1.webp', slogan: 'Beyond Imagination' },
@@ -31,8 +53,18 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      const guestItems = readGuestCart()
       const data = await authService.login({ email, password })
       login(data)
+      // Merge guest cart into authenticated cart (quantities are added server-side)
+      if (guestItems.length > 0) {
+        clearGuestCart()
+        await Promise.allSettled(
+          guestItems.map((item: GuestCartItem) =>
+            cartService.addItem({ product_id: item.id, quantity: item.quantity })
+          )
+        )
+      }
       if (data.role === 'sales_manager') {
         router.push('/sales-dashboard')
       } else if (data.role === 'product_manager') {

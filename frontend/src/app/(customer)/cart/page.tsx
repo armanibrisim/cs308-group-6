@@ -316,7 +316,6 @@ export default function CartPage() {
                           {/* Info */}
                           <div style={{ flex: 1, textAlign: 'left' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>{item.name}</h3>
-                            <p style={{ fontSize: '0.8rem', color: 'rgba(229,226,225,0.4)', marginBottom: '0.75rem' }}>{item.description}</p>
                             {item.maxStock !== undefined && item.maxStock < 5 && item.maxStock > 0 && (
                               <p style={{ fontSize: '9px', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.5rem' }}>
                                 Only {item.maxStock} left

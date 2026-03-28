@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -8,6 +9,44 @@ import firebase_admin.firestore as firestore_module
 
 PRODUCTS_COLLECTION = "products"
 CATEGORIES_COLLECTION = "categories"
+
+# ── Simple in-memory TTL cache ────────────────────────────────────────────────
+_CACHE_TTL = 60  # seconds
+
+_products_cache: Optional[dict] = None   # {"data": [...], "ts": float}
+_product_cache: dict[str, dict] = {}     # product_id -> {"data": dict, "ts": float}
+_categories_cache: Optional[dict] = None
+
+
+def _products_all() -> Optional[list[dict]]:
+    if _products_cache and time.time() - _products_cache["ts"] < _CACHE_TTL:
+        return _products_cache["data"]
+    return None
+
+
+def _set_products_all(products: list[dict]) -> None:
+    global _products_cache
+    _products_cache = {"data": products, "ts": time.time()}
+
+
+def _invalidate_products() -> None:
+    global _products_cache
+    _products_cache = None
+
+
+def _get_product(product_id: str) -> Optional[dict]:
+    entry = _product_cache.get(product_id)
+    if entry and time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["data"]
+    return None
+
+
+def _set_product(product_id: str, data: dict) -> None:
+    _product_cache[product_id] = {"data": data, "ts": time.time()}
+
+
+def _invalidate_product(product_id: str) -> None:
+    _product_cache.pop(product_id, None)
 
 
 def _db():
@@ -24,15 +63,21 @@ def create_product(data: dict) -> str:
     ref = db.collection(PRODUCTS_COLLECTION).document()
     data["id"] = ref.id
     ref.set(data)
+    _invalidate_products()
     return ref.id
 
 
 def get_product_by_id(product_id: str) -> Optional[dict]:
+    cached = _get_product(product_id)
+    if cached is not None:
+        return cached
     db = _db()
     doc = db.collection(PRODUCTS_COLLECTION).document(product_id).get()
     if not doc.exists:
         return None
-    return doc.to_dict()
+    data = doc.to_dict()
+    _set_product(product_id, data)
+    return data
 
 
 def list_products(
@@ -48,14 +93,23 @@ def list_products(
     sort_field: 'price' | 'name' | 'newest'
     sort_order: 'asc' | 'desc'
     """
-    db = _db()
-    query = db.collection(PRODUCTS_COLLECTION)
-
-    if category_id:
-        query = query.where(filter=FieldFilter("category_id", "==", category_id))
-
-    docs = list(query.stream())
-    products = [d.to_dict() for d in docs]
+    # Use cached full product list when no category filter (avoids full collection reads)
+    if not category_id:
+        products = _products_all()
+        if products is None:
+            db = _db()
+            docs = list(db.collection(PRODUCTS_COLLECTION).stream())
+            products = [d.to_dict() for d in docs]
+            _set_products_all(products)
+            for p in products:
+                _set_product(p["id"], p)
+    else:
+        db = _db()
+        query = db.collection(PRODUCTS_COLLECTION).where(
+            filter=FieldFilter("category_id", "==", category_id)
+        )
+        docs = list(query.stream())
+        products = [d.to_dict() for d in docs]
 
     # Text search on name and description (Firestore lacks full-text; filter in-memory)
     if search:
@@ -86,23 +140,31 @@ def list_products(
 
 def list_featured_products(limit: int = 8) -> tuple[list[dict], int]:
     """Return newest products ordered by created_at descending."""
-    db = _db()
-    docs = list(db.collection(PRODUCTS_COLLECTION).stream())
-    products = [d.to_dict() for d in docs]
-    products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
-    total = len(products)
-    return products[:limit], total
+    products = _products_all()
+    if products is None:
+        db = _db()
+        docs = list(db.collection(PRODUCTS_COLLECTION).stream())
+        products = [d.to_dict() for d in docs]
+        _set_products_all(products)
+        for p in products:
+            _set_product(p["id"], p)
+    sorted_products = sorted(products, key=lambda p: p.get("created_at", ""), reverse=True)
+    return sorted_products[:limit], len(sorted_products)
 
 
 def update_product(product_id: str, updates: dict) -> None:
     db = _db()
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     db.collection(PRODUCTS_COLLECTION).document(product_id).update(updates)
+    _invalidate_product(product_id)
+    _invalidate_products()
 
 
 def delete_product(product_id: str) -> None:
     db = _db()
     db.collection(PRODUCTS_COLLECTION).document(product_id).delete()
+    _invalidate_product(product_id)
+    _invalidate_products()
 
 
 def decrement_stock(product_id: str, quantity: int) -> None:
@@ -122,6 +184,8 @@ def decrement_stock(product_id: str, quantity: int) -> None:
         })
 
     _txn(db.transaction())
+    _invalidate_product(product_id)
+    _invalidate_products()
 
 
 # ── Category helpers ──────────────────────────────────────────────────────────
