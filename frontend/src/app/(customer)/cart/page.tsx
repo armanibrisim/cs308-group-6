@@ -52,7 +52,7 @@ const FREE_SHIPPING_THRESHOLD = 5000
 const TAX_RATE = 0.08
 
 function fmt(n: number) {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
 // ── GlowCard component ────────────────────────────────────────────────────────
