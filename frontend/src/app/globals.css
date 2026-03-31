@@ -39,7 +39,6 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Glassmorphism */
 .glass-panel {
   background: rgba(26, 26, 26, 0.6);
   backdrop-filter: blur(20px);
@@ -49,87 +48,7 @@ body {
   position: relative;
 }
 
-/* Dynamic glow */
-.dynamic-glow-container {
-  position: relative;
-  z-index: 0;
-}
-.dynamic-glow-container::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(47, 248, 1, 0.1), transparent 70%);
-  filter: blur(30px);
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-  border-radius: inherit;
-  pointer-events: none;
-}
-.dynamic-glow-container:hover::after { opacity: 1; }
-
-@keyframes breathing-glow {
-  0%, 100% { opacity: 0.1; transform: scale(1); filter: blur(25px); }
-  50%       { opacity: 0.15; transform: scale(1.02); filter: blur(35px); }
-}
-
-.backlight-leak {
-  position: absolute;
-  inset: -15px;
-  background: radial-gradient(circle at 50% 50%, rgba(47, 248, 1, 0.03), transparent 70%);
-  z-index: -2;
-  pointer-events: none;
-  border-radius: inherit;
-  animation: breathing-glow 8s ease-in-out infinite;
-}
-
 .neon-glow { box-shadow: 0 0 25px rgba(47, 248, 1, 0.4); }
 
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.product-img {
-  filter: grayscale(1) brightness(0.9);
-  transition: filter 0.7s ease;
-}
-
-.product-card:hover .product-img {
-  filter: grayscale(0) brightness(1.1);
-}
-
-.qty-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
-.qty-btn:hover {
-  background: rgba(47, 248, 1, 0.05);
-  border-color: rgba(47, 248, 1, 0.2);
-  color: #2ff801;
-}
-
-/* Cart two-column layout */
-.cart-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 4rem;
-}
-@media (min-width: 1024px) {
-  .cart-layout { flex-direction: row; }
-  .cart-summary-col { width: 460px; flex-shrink: 0; }
-}
-
-/* Cart item card row layout */
-.cart-item-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1rem 2rem;
-}
-@media (min-width: 768px) {
-  .cart-item-inner {
-    flex-direction: row;
-    padding: 1rem 2rem;
-  }
-}
