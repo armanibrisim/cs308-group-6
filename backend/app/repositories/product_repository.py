@@ -1,0 +1,226 @@
+import time
+from datetime import datetime, timezone
+from typing import Optional
+
+from google.cloud.firestore_v1 import FieldFilter
+
+from app.firebase.client import get_firebase_app
+import firebase_admin.firestore as firestore_module
+
+PRODUCTS_COLLECTION = "products"
+CATEGORIES_COLLECTION = "categories"
+
+# ── Simple in-memory TTL cache ────────────────────────────────────────────────
+_CACHE_TTL = 60  # seconds
+
+_products_cache: Optional[dict] = None   # {"data": [...], "ts": float}
+_product_cache: dict[str, dict] = {}     # product_id -> {"data": dict, "ts": float}
+_categories_cache: Optional[dict] = None
+
+
+def _products_all() -> Optional[list[dict]]:
+    if _products_cache and time.time() - _products_cache["ts"] < _CACHE_TTL:
+        return _products_cache["data"]
+    return None
+
+
+def _set_products_all(products: list[dict]) -> None:
+    global _products_cache
+    _products_cache = {"data": products, "ts": time.time()}
+
+
+def _invalidate_products() -> None:
+    global _products_cache
+    _products_cache = None
+
+
+def _get_product(product_id: str) -> Optional[dict]:
+    entry = _product_cache.get(product_id)
+    if entry and time.time() - entry["ts"] < _CACHE_TTL:
+        return entry["data"]
+    return None
+
+
+def _set_product(product_id: str, data: dict) -> None:
+    _product_cache[product_id] = {"data": data, "ts": time.time()}
+
+
+def _invalidate_product(product_id: str) -> None:
+    _product_cache.pop(product_id, None)
+
+
+def _db():
+    get_firebase_app()
+    return firestore_module.client()
+
+
+def create_product(data: dict) -> str:
+    db = _db()
+    now = datetime.now(timezone.utc).isoformat()
+    data["created_at"] = now
+    data["updated_at"] = now
+
+    ref = db.collection(PRODUCTS_COLLECTION).document()
+    data["id"] = ref.id
+    ref.set(data)
+    _invalidate_products()
+    return ref.id
+
+
+def get_product_by_id(product_id: str) -> Optional[dict]:
+    cached = _get_product(product_id)
+    if cached is not None:
+        return cached
+    db = _db()
+    doc = db.collection(PRODUCTS_COLLECTION).document(product_id).get()
+    if not doc.exists:
+        return None
+    data = doc.to_dict()
+    _set_product(product_id, data)
+    return data
+
+
+def list_products(
+    category_id: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_field: Optional[str] = None,
+    sort_order: str = "asc",
+    page: int = 1,
+    limit: int = 20,
+) -> tuple[list[dict], int]:
+    """Return (products, total_count) applying optional filters.
+
+    sort_field: 'price' | 'name' | 'newest'
+    sort_order: 'asc' | 'desc'
+    """
+    # Use cached full product list when no category filter (avoids full collection reads)
+    if not category_id:
+        products = _products_all()
+        if products is None:
+            db = _db()
+            docs = list(db.collection(PRODUCTS_COLLECTION).stream())
+            products = [d.to_dict() for d in docs]
+            _set_products_all(products)
+            for p in products:
+                _set_product(p["id"], p)
+    else:
+        db = _db()
+        query = db.collection(PRODUCTS_COLLECTION).where(
+            filter=FieldFilter("category_id", "==", category_id)
+        )
+        docs = list(query.stream())
+        products = [d.to_dict() for d in docs]
+
+    # Text search on name and description (Firestore lacks full-text; filter in-memory)
+    if search:
+        lower = search.lower()
+        products = [
+            p for p in products
+            if lower in p.get("name", "").lower()
+            or lower in p.get("description", "").lower()
+        ]
+
+    # Sorting
+    reverse = sort_order == "desc"
+    if sort_field == "price":
+        products.sort(key=lambda p: p.get("price", 0), reverse=reverse)
+    elif sort_field == "name":
+        products.sort(key=lambda p: p.get("name", "").lower(), reverse=reverse)
+    elif sort_field == "newest":
+        products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
+
+    total = len(products)
+
+    # Pagination
+    start = (page - 1) * limit
+    products = products[start: start + limit]
+
+    return products, total
+
+
+def list_featured_products(limit: int = 8) -> tuple[list[dict], int]:
+    """Return newest products ordered by created_at descending."""
+    products = _products_all()
+    if products is None:
+        db = _db()
+        docs = list(db.collection(PRODUCTS_COLLECTION).stream())
+        products = [d.to_dict() for d in docs]
+        _set_products_all(products)
+        for p in products:
+            _set_product(p["id"], p)
+    sorted_products = sorted(products, key=lambda p: p.get("created_at", ""), reverse=True)
+    return sorted_products[:limit], len(sorted_products)
+
+
+def update_product(product_id: str, updates: dict) -> None:
+    db = _db()
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    db.collection(PRODUCTS_COLLECTION).document(product_id).update(updates)
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
+def delete_product(product_id: str) -> None:
+    db = _db()
+    db.collection(PRODUCTS_COLLECTION).document(product_id).delete()
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
+def decrement_stock(product_id: str, quantity: int) -> None:
+    """Atomically decrement stock. Raises ValueError if insufficient stock."""
+    db = _db()
+    ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        snapshot = ref.get(transaction=transaction)
+        current_stock = snapshot.get("stock_quantity")
+        if current_stock < quantity:
+            raise ValueError("Insufficient stock")
+        transaction.update(ref, {
+            "stock_quantity": current_stock - quantity,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    _txn(db.transaction())
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
+# ── Category helpers ──────────────────────────────────────────────────────────
+
+def create_category(data: dict) -> str:
+    db = _db()
+    ref = db.collection(CATEGORIES_COLLECTION).document()
+    data["id"] = ref.id
+    ref.set(data)
+    return ref.id
+
+
+def list_categories() -> list[dict]:
+    db = _db()
+    docs = db.collection(CATEGORIES_COLLECTION).stream()
+    return [d.to_dict() for d in docs]
+
+
+def get_category_by_id(category_id: str) -> Optional[dict]:
+    db = _db()
+    doc = db.collection(CATEGORIES_COLLECTION).document(category_id).get()
+    if not doc.exists:
+        return None
+    return doc.to_dict()
+
+
+def get_category_by_slug(slug: str) -> Optional[dict]:
+    """Lookup a category by its slug field."""
+    db = _db()
+    docs = (
+        db.collection(CATEGORIES_COLLECTION)
+        .where(filter=FieldFilter("slug", "==", slug))
+        .limit(1)
+        .stream()
+    )
+    for doc in docs:
+        return doc.to_dict()
+    return None

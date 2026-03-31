@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /tmp)",
+      "Bash(npm install:*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
