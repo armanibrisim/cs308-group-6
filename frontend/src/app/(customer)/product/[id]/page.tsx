@@ -69,6 +69,48 @@ export default function ProductDetailPage() {
   const [cartStatus, setCartStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [cartError, setCartError] = useState('')
 
+  // ── Reviews ──
+  const commentsRef = useRef<HTMLDivElement>(null)
+  const [reviewFilter, setReviewFilter] = useState<0|1|2|3|4|5>(0)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
+  const [hoverStar, setHoverStar] = useState(0)
+  const [localReviews, setLocalReviews] = useState<{ id: string; username: string; rating: number; comment: string }[]>([])
+  const [reviewSuccess, setReviewSuccess] = useState(false)
+  const [reviewVotes, setReviewVotes] = useState<{[id: string]: {likes: number; dislikes: number; voted: 'like'|'dislike'|null}}>({})
+  const [reviewSort, setReviewSort] = useState<'default'|'most_liked'|'most_disliked'>('default')
+
+  const handleVote = (reviewId: string, type: 'like'|'dislike') => {
+    setReviewVotes(prev => {
+      const current = prev[reviewId] || { likes: 0, dislikes: 0, voted: null }
+      if (current.voted === type) {
+        return { ...prev, [reviewId]: { ...current, [type === 'like' ? 'likes' : 'dislikes']: current[type === 'like' ? 'likes' : 'dislikes'] - 1, voted: null } }
+      }
+      const undoOther = current.voted ? { [current.voted === 'like' ? 'likes' : 'dislikes']: current[current.voted === 'like' ? 'likes' : 'dislikes'] - 1 } : {}
+      return { ...prev, [reviewId]: { ...current, ...undoOther, [type === 'like' ? 'likes' : 'dislikes']: current[type === 'like' ? 'likes' : 'dislikes'] + 1, voted: type } }
+    })
+  }
+
+  const scrollToComments = () => {
+    setActiveTab('reviews')
+    setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
+
+  const submitReview = () => {
+    if (!newReview.comment.trim()) return
+    const username = (user?.first_name && user?.last_name)
+      ? `${user.first_name} ${user.last_name}`.toUpperCase()
+      : user?.first_name?.toUpperCase() || user?.email?.split('@')[0]?.toUpperCase() || 'ANONYMOUS'
+    setLocalReviews(prev => [
+      { id: Date.now().toString(), username, rating: newReview.rating, comment: newReview.comment.trim() },
+      ...prev,
+    ])
+    setNewReview({ rating: 5, comment: '' })
+    setShowReviewForm(false)
+    setReviewSuccess(true)
+    setTimeout(() => setReviewSuccess(false), 3000)
+  }
+
   useEffect(() => {
     if (!id) return
     productService
@@ -275,21 +317,30 @@ export default function ProductDetailPage() {
 
               {/* Rating */}
               {(() => {
-                const avg = product?.average_rating ?? product?.rating ?? null
-                const count = product?.review_count ?? null
+                const backendAvg = product?.average_rating ?? product?.rating ?? null
+                const backendCount = product?.review_count ?? 0
+                const totalCount = backendCount + localReviews.length
+                const localAvg = localReviews.length > 0 ? localReviews.reduce((s, r) => s + r.rating, 0) / localReviews.length : null
+                const avg = localAvg != null && backendAvg != null
+                  ? (backendAvg * backendCount + localAvg * localReviews.length) / totalCount
+                  : localAvg ?? backendAvg
                 const hasRating = avg != null && avg > 0
                 return (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: hasRating ? NEON : 'rgba(255,255,255,0.2)' }}>
+                    <button
+                      onClick={scrollToComments}
+                      title="View reviews"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: hasRating ? NEON : 'rgba(255,255,255,0.2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
                       {[1, 2, 3, 4, 5].map((s) => (
                         <span key={s} className="material-symbols-outlined" style={{ fontSize: '1.125rem', fontVariationSettings: hasRating && s <= Math.round(avg!) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
                       ))}
                       <span style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginLeft: '0.5rem', color: hasRating ? NEON : 'rgba(255,255,255,0.3)' }}>
                         {hasRating ? avg!.toFixed(1) : 'N/A'}
                       </span>
-                    </div>
+                    </button>
                     <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.2em', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
-                      {count != null && count > 0 ? `${count} REVIEW${count !== 1 ? 'S' : ''}` : 'NO RATINGS YET'}
+                      {totalCount > 0 ? `${totalCount} REVIEW${totalCount !== 1 ? 'S' : ''}` : 'NO RATINGS YET'}
                     </span>
                   </div>
                 )
@@ -522,30 +573,135 @@ export default function ProductDetailPage() {
 
             {/* Reviews */}
             {activeTab === 'reviews' && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+              <div ref={commentsRef}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap' as const, gap: '1rem' }}>
                   <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>USER REVIEWS</h3>
                   <button
-                    style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
+                    onClick={() => { if (!user) { router.push('/login'); return; } setShowReviewForm(v => !v) }}
+                    style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `${NEON}1A` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
                     onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `${NEON}1A`)}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'none')}
+                    onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
                   >
-                    WRITE A REVIEW
+                    {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
                   </button>
                 </div>
-                {(product?.reviews && product.reviews.length > 0) ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
-                    {product.reviews.map((review: any) => (
-                      <ReviewCard key={review.id || review.user_id} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} />
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>NO REVIEWS YET</p>
-                    <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>
+
+                {/* Success Message */}
+                {reviewSuccess && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: 'rgba(57,255,20,0.08)', border: `1px solid ${NEON}40`, borderRadius: '0.5rem' }}>
+                    <span className="material-symbols-outlined" style={{ color: NEON, fontSize: '1.25rem' }}>check_circle</span>
+                    <span style={{ color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem', letterSpacing: '0.15em' }}>REVIEW SUBMITTED SUCCESSFULLY</span>
                   </div>
                 )}
+
+                {/* Write Review Form */}
+                {showReviewForm && (
+                  <div style={{ marginBottom: '2rem', padding: '1.5rem', background: `${NEON}08`, border: `1px solid ${NEON}22`, borderRadius: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'rgba(57,255,20,0.05)', border: '1px solid rgba(57,255,20,0.15)', borderRadius: '0.5rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', color: NEON }}>account_circle</span>
+                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em' }}>POSTING AS</span>
+                      <span style={{ fontSize: '0.75rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.1em' }}>
+                        {(user?.first_name && user?.last_name)
+                          ? `${user.first_name} ${user.last_name}`.toUpperCase()
+                          : user?.first_name?.toUpperCase() || user?.email?.split('@')[0]?.toUpperCase() || 'ANONYMOUS'}
+                      </span>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>RATING</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <button key={s} onClick={() => setNewReview(r => ({ ...r, rating: s }))} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', color: NEON }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.75rem', fontVariationSettings: s <= (hoverStar || newReview.rating) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                          </button>
+                        ))}
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'Space Grotesk, sans-serif' }}>
+                          {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][hoverStar || newReview.rating]}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>
+                        YOUR COMMENT <span style={{ color: newReview.comment.length > 580 ? 'red' : 'rgba(255,255,255,0.3)' }}>({newReview.comment.length}/600)</span>
+                      </label>
+                      <textarea
+                        value={newReview.comment}
+                        onChange={(e) => setNewReview(r => ({ ...r, comment: e.target.value.slice(0, 600) }))}
+                        placeholder="Share your experience..."
+                        rows={4}
+                        style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.875rem', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical' as const, boxSizing: 'border-box' as const }}
+                      />
+                    </div>
+                    <button
+                      onClick={submitReview}
+                      disabled={!newReview.comment.trim()}
+                      style={{ padding: '0.75rem 2rem', background: newReview.comment.trim() ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: newReview.comment.trim() ? 'pointer' : 'not-allowed' }}
+                    >
+                      SUBMIT REVIEW
+                    </button>
+                  </div>
+                )}
+
+                {/* Star Filter Tabs */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' as const }}>
+                  {([0, 5, 4, 3, 2, 1] as const).map((f) => {
+                    const allReviews = [...(product?.reviews || []), ...localReviews]
+                    const cnt = f === 0 ? allReviews.length : allReviews.filter((r: any) => r.rating === f).length
+                    const isActive = reviewFilter === f
+                    return (
+                      <button key={f} onClick={() => setReviewFilter(f)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.9rem', borderRadius: '9999px', border: `1px solid ${isActive ? NEON : 'rgba(255,255,255,0.1)'}`, background: isActive ? `${NEON}18` : 'transparent', color: isActive ? NEON : 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
+                        {f === 0 ? <>ALL <span style={{ opacity: 0.6 }}>({cnt})</span></> : <>{f} <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: "'FILL' 1" }}>star</span> <span style={{ opacity: 0.6 }}>({cnt})</span></>}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Sort Buttons */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' as const }}>
+                  {([['default', 'DEFAULT', ''], ['most_liked', 'MOST LIKED', 'thumb_up'], ['most_disliked', 'MOST DISLIKED', 'thumb_down']] as const).map(([val, label, icon]) => (
+                    <button key={val} onClick={() => setReviewSort(val)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.85rem', borderRadius: '9999px', border: `1px solid ${reviewSort === val ? NEON : 'rgba(255,255,255,0.1)'}`, background: reviewSort === val ? `${NEON}18` : 'transparent', color: reviewSort === val ? NEON : 'rgba(255,255,255,0.45)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
+                      {icon && <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>{icon}</span>}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Review Cards */}
+                {(() => {
+                  const allReviews = [...(product?.reviews || []), ...localReviews]
+                  let filtered = reviewFilter === 0 ? allReviews : allReviews.filter((r: any) => r.rating === reviewFilter)
+                  filtered = [...filtered].sort((a: any, b: any) => {
+                    const aid = a.id || a.user_id || ''
+                    const bid = b.id || b.user_id || ''
+                    const av = reviewVotes[aid] || { likes: 0, dislikes: 0 }
+                    const bv = reviewVotes[bid] || { likes: 0, dislikes: 0 }
+                    if (reviewSort === 'most_liked') return bv.likes - av.likes
+                    if (reviewSort === 'most_disliked') return bv.dislikes - av.dislikes
+                    return 0
+                  })
+                  return filtered.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                      {filtered.map((review: any, idx: number) => {
+                        const rid = review.id || review.user_id || String(idx)
+                        const votes = reviewVotes[rid] || { likes: 0, dislikes: 0, voted: null }
+                        return (
+                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} />
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
+                        {reviewFilter === 0 ? 'NO REVIEWS YET' : `NO ${reviewFilter}★ REVIEWS`}
+                      </p>
+                      {reviewFilter === 0 && <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>}
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
@@ -707,8 +863,11 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-function ReviewCard({ user, text, rating }: { user: string; text: string; rating?: number }) {
+function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void }) {
   const ref = useRef<HTMLDivElement>(null)
+  const [expanded, setExpanded] = useState(false)
+  const TRUNCATE = 120
+  const isLong = text.length > TRUNCATE
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
     const rect = ref.current.getBoundingClientRect()
@@ -716,12 +875,8 @@ function ReviewCard({ user, text, rating }: { user: string; text: string; rating
     ref.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
   }
   return (
-    <div
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      className="hover-glow"
-      style={{ padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}
-    >
+    <div ref={ref} onMouseMove={handleMouseMove} className="hover-glow"
+      style={{ padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
         <div>
           <p style={{ fontWeight: 700, color: '#39ff14', fontFamily: 'Space Grotesk, sans-serif' }}>{user}</p>
@@ -733,7 +888,24 @@ function ReviewCard({ user, text, rating }: { user: string; text: string; rating
           ))}
         </div>
       </div>
-      <p style={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic' }}>{text}</p>
+      <p style={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
+        {isLong && !expanded ? text.slice(0, TRUNCATE) + '...' : text}
+      </p>
+      {isLong && (
+        <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', color: '#39ff14', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+          {expanded ? 'SHOW LESS ▲' : 'READ MORE ▼'}
+        </button>
+      )}
+      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
+        <button onClick={() => onVote('like')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: voted === 'like' ? 'rgba(57,255,20,0.08)' : 'none', border: `1px solid ${voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', fontVariationSettings: voted === 'like' ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
+          {likes > 0 && <span>{likes}</span>}
+        </button>
+        <button onClick={() => onVote('dislike')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: voted === 'dislike' ? 'rgba(255,68,68,0.08)' : 'none', border: `1px solid ${voted === 'dislike' ? '#ff4444' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'dislike' ? '#ff4444' : 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', fontVariationSettings: voted === 'dislike' ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+          {dislikes > 0 && <span>{dislikes}</span>}
+        </button>
+      </div>
     </div>
   )
 }

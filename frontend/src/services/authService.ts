@@ -18,6 +18,8 @@ export interface AuthResponse {
   email: string
   role: string
   token: string
+  first_name?: string
+  last_name?: string
 }
 
 export const authService = {
