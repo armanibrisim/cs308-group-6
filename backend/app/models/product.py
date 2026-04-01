@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -37,6 +37,8 @@ class ProductResponse(BaseModel):
     stock_quantity: int
     in_stock: bool
     price: float
+    original_price: Optional[float] = None
+    discount_percent: Optional[float] = None
     warranty: str
     distributor: str
     category_id: str
@@ -68,3 +70,14 @@ class ProductListResponse(BaseModel):
 
 class StockUpdate(BaseModel):
     stock_quantity: int = Field(ge=0)
+
+
+class DiscountApply(BaseModel):
+    product_ids: List[str]
+    discount_percent: float = Field(gt=0, le=100)
+
+
+class DiscountApplyResponse(BaseModel):
+    updated_count: int
+    notified_users: int
+    updated_products: List[ProductResponse]

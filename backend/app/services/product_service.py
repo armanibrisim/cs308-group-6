@@ -88,6 +88,8 @@ def _to_product_response(data: dict) -> ProductResponse:
         stock_quantity=data["stock_quantity"],
         in_stock=data.get("stock_quantity", 0) > 0,
         price=data["price"],
+        original_price=data.get("original_price"),
+        discount_percent=data.get("discount_percent"),
         warranty=data["warranty"],
         distributor=data["distributor"],
         category_id=data["category_id"],

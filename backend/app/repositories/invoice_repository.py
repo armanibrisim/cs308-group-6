@@ -30,6 +30,21 @@ def list_invoices() -> list[dict]:
     return results
 
 
+def list_invoices_by_date_range(start_date: str, end_date: str) -> list[dict]:
+    """Return invoices whose created_at falls within [start_date, end_date].
+
+    Dates should be ISO-8601 date strings (e.g. '2026-03-01').
+    Comparison works because created_at is stored as a full ISO-8601 string.
+    """
+    all_invoices = list_invoices()
+    # end_date is inclusive — add 'T' suffix so 2026-03-31 < 2026-03-31T... passes
+    end_inclusive = end_date + "T99"
+    return [
+        inv for inv in all_invoices
+        if start_date <= inv.get("created_at", "") <= end_inclusive
+    ]
+
+
 def get_invoice_by_id(invoice_id: str) -> Optional[dict]:
     db = _db()
     doc = db.collection(INVOICES_COLLECTION).document(invoice_id).get()
