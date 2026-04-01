@@ -167,6 +167,51 @@ def delete_product(product_id: str) -> None:
     _invalidate_products()
 
 
+def apply_discount(product_id: str, discount_percent: float) -> None:
+    """Apply a discount percentage to a product.
+
+    Sets original_price only on the very first discount (so it is never
+    overwritten by subsequent discounts). Only price and discount_percent
+    are updated on every call.
+    """
+    data = get_product_by_id(product_id)
+    if data is None:
+        raise ValueError(f"Product {product_id} not found")
+
+    updates: dict = {"discount_percent": discount_percent}
+
+    # Record the true base price the first time a discount is applied.
+    # After that, original_price is never touched.
+    if not data.get("original_price"):
+        updates["original_price"] = data["price"]
+        base = data["price"]
+    else:
+        base = data["original_price"]
+
+    updates["price"] = round(base * (1 - discount_percent / 100), 2)
+    update_product(product_id, updates)
+
+
+def remove_discount(product_id: str) -> None:
+    """Restore a product's price to its original_price.
+
+    Only price and discount_percent are touched — original_price is
+    left intact so it remains a permanent record of the base price.
+    """
+    data = get_product_by_id(product_id)
+    if data is None:
+        raise ValueError(f"Product {product_id} not found")
+
+    original_price = data.get("original_price")
+    if not original_price:
+        return  # No discount to remove
+
+    update_product(product_id, {
+        "price": original_price,
+        "discount_percent": None,
+    })
+
+
 def decrement_stock(product_id: str, quantity: int) -> None:
     """Atomically decrement stock. Raises ValueError if insufficient stock."""
     db = _db()

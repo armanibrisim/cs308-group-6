@@ -8,6 +8,7 @@ from app.routers.deliveries import router as deliveries_router
 from app.routers.invoices import router as invoices_router
 from app.routers.products import categories_router, router as products_router
 from app.routers.reviews import router as reviews_router
+from app.routers.sales import router as sales_router
 
 get_firebase_app()
 
@@ -28,6 +29,7 @@ app.include_router(cart_router)
 app.include_router(reviews_router)
 app.include_router(deliveries_router)
 app.include_router(invoices_router)
+app.include_router(sales_router)
 
 
 @app.get("/")
