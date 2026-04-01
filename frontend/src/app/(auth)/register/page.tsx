@@ -50,7 +50,7 @@ export default function RegisterPage() {
         first_name: firstName,
         last_name: lastName,
       })
-      login(data)
+      login({ ...data, first_name: firstName, last_name: lastName })
       router.push('/browse')
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('409')) {

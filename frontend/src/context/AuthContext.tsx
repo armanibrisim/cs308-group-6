@@ -7,6 +7,8 @@ interface AuthUser {
   email: string
   role: string
   token: string
+  first_name?: string
+  last_name?: string
 }
 
 interface AuthContextValue {
