@@ -9,6 +9,7 @@ from app.models.product import (
     ProductListResponse,
     ProductResponse,
     ProductUpdate,
+    StockUpdate,
 )
 from app.repositories.product_repository import (
     create_category,
@@ -167,6 +168,17 @@ def modify_product(product_id: str, payload: ProductUpdate) -> ProductResponse:
         )
     updates = {k: v for k, v in payload.model_dump().items() if v is not None}
     update_product(product_id, updates)
+    updated = get_product_by_id(product_id)
+    return _to_product_response(updated)
+
+
+def update_stock_quantity(product_id: str, payload: StockUpdate) -> ProductResponse:
+    if get_product_by_id(product_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+    update_product(product_id, {"stock_quantity": payload.stock_quantity})
     updated = get_product_by_id(product_id)
     return _to_product_response(updated)
 

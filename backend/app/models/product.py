@@ -64,3 +64,7 @@ class CategoryResponse(BaseModel):
 class ProductListResponse(BaseModel):
     products: list[ProductResponse]
     total: int
+
+
+class StockUpdate(BaseModel):
+    stock_quantity: int = Field(ge=0)
