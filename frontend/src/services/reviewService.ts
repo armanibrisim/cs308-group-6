@@ -3,6 +3,7 @@ import { apiService } from './api'
 export interface Review {
   id: string
   product_id: string
+  product_name?: string
   user_id: string
   username: string
   rating: number
@@ -55,6 +56,24 @@ export const reviewService = {
   async getMyVotes(productId: string, token: string): Promise<Record<string, string>> {
     return apiService.get(
       `/reviews/votes/my-votes?product_id=${productId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+  },
+
+  async getAllReviews(token: string): Promise<Review[]> {
+    return apiService.get<Review[]>('/reviews/all', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+
+  async updateReviewStatus(
+    reviewId: string,
+    status: 'approved' | 'rejected',
+    token: string
+  ): Promise<Review> {
+    return apiService.put<Review>(
+      `/reviews/${reviewId}/status`,
+      { status },
       { headers: { Authorization: `Bearer ${token}` } }
     )
   },
