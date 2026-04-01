@@ -14,11 +14,11 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`
     
     const config: RequestInit = {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      ...options,
     }
 
     const response = await fetch(url, config)

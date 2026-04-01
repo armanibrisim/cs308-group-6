@@ -4,6 +4,7 @@ import { useState, useRef, MouseEvent, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { productService } from '../../../../services/productService'
 import { cartService } from '../../../../services/cartService'
+import { reviewService, Review } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
@@ -75,19 +76,37 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
   const [hoverStar, setHoverStar] = useState(0)
-  const [localReviews, setLocalReviews] = useState<{ id: string; username: string; rating: number; comment: string }[]>([])
+  const [localReviews, setLocalReviews] = useState<Review[]>([])
   const [reviewSuccess, setReviewSuccess] = useState(false)
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewError, setReviewError] = useState('')
   const [reviewVotes, setReviewVotes] = useState<{[id: string]: {likes: number; dislikes: number; voted: 'like'|'dislike'|null}}>({})
   const [reviewSort, setReviewSort] = useState<'default'|'most_liked'|'most_disliked'>('default')
 
   const handleVote = (reviewId: string, type: 'like'|'dislike') => {
-    setReviewVotes(prev => {
-      const current = prev[reviewId] || { likes: 0, dislikes: 0, voted: null }
-      if (current.voted === type) {
-        return { ...prev, [reviewId]: { ...current, [type === 'like' ? 'likes' : 'dislikes']: current[type === 'like' ? 'likes' : 'dislikes'] - 1, voted: null } }
-      }
-      const undoOther = current.voted ? { [current.voted === 'like' ? 'likes' : 'dislikes']: current[current.voted === 'like' ? 'likes' : 'dislikes'] - 1 } : {}
-      return { ...prev, [reviewId]: { ...current, ...undoOther, [type === 'like' ? 'likes' : 'dislikes']: current[type === 'like' ? 'likes' : 'dislikes'] + 1, voted: type } }
+    if (!user?.token) { router.push('/login'); return }
+
+    // Optimistic update
+    const prev = reviewVotes[reviewId] || { likes: 0, dislikes: 0, voted: null }
+    const toggling = prev.voted === type
+    const switching = prev.voted && prev.voted !== type
+    const optimistic = {
+      likes: prev.likes
+        + (type === 'like' ? (toggling ? -1 : 1) : (switching && prev.voted === 'like' ? -1 : 0)),
+      dislikes: prev.dislikes
+        + (type === 'dislike' ? (toggling ? -1 : 1) : (switching && prev.voted === 'dislike' ? -1 : 0)),
+      voted: (toggling ? null : type) as 'like'|'dislike'|null,
+    }
+    setReviewVotes(s => ({ ...s, [reviewId]: optimistic }))
+
+    // Sync with backend in background — revert on failure
+    reviewService.voteReview(reviewId, type, user.token).then((result) => {
+      setReviewVotes(s => ({
+        ...s,
+        [reviewId]: { likes: result.likes, dislikes: result.dislikes, voted: result.user_vote as 'like'|'dislike'|null },
+      }))
+    }).catch(() => {
+      setReviewVotes(s => ({ ...s, [reviewId]: prev }))
     })
   }
 
@@ -96,19 +115,27 @@ export default function ProductDetailPage() {
     setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
-  const submitReview = () => {
-    if (!newReview.comment.trim()) return
-    const username = (user?.first_name && user?.last_name)
-      ? `${user.first_name} ${user.last_name}`.toUpperCase()
-      : user?.first_name?.toUpperCase() || user?.email?.split('@')[0]?.toUpperCase() || 'ANONYMOUS'
-    setLocalReviews(prev => [
-      { id: Date.now().toString(), username, rating: newReview.rating, comment: newReview.comment.trim() },
-      ...prev,
-    ])
-    setNewReview({ rating: 5, comment: '' })
-    setShowReviewForm(false)
-    setReviewSuccess(true)
-    setTimeout(() => setReviewSuccess(false), 3000)
+  const submitReview = async () => {
+    if (!newReview.comment.trim() || !user?.token) return
+    setReviewSubmitting(true)
+    setReviewError('')
+    try {
+      const submitted = await reviewService.submitReview(id, newReview.rating, newReview.comment.trim(), user.token)
+      setLocalReviews(prev => [submitted, ...prev])
+      setNewReview({ rating: 5, comment: '' })
+      setShowReviewForm(false)
+      setReviewSuccess(true)
+      setTimeout(() => setReviewSuccess(false), 3000)
+    } catch (err: any) {
+      const msg = err?.message || ''
+      if (msg.includes('409')) {
+        setReviewError('You have already reviewed this product.')
+      } else {
+        setReviewError('Failed to submit review. Please try again.')
+      }
+    } finally {
+      setReviewSubmitting(false)
+    }
   }
 
   useEffect(() => {
@@ -139,6 +166,45 @@ export default function ProductDetailPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    const loadReviews = async () => {
+      const reviews = await reviewService.getApprovedReviews(id).catch(() => [] as Review[])
+
+      // If logged in, also fetch the user's own review so pending ones stay visible after refresh
+      let ownReview: Review | null = null
+      if (user?.token) {
+        ownReview = await reviewService.getMyReview(id, user.token).catch(() => null)
+      }
+
+      // Prepend own review only if it's not already in the approved list
+      const alreadyIncluded = ownReview && reviews.some((r) => r.id === ownReview!.id)
+      const merged = ownReview && !alreadyIncluded ? [ownReview, ...reviews] : reviews
+
+      setLocalReviews(merged)
+
+      const counts: typeof reviewVotes = {}
+      merged.forEach((r) => {
+        counts[r.id] = { likes: r.likes ?? 0, dislikes: r.dislikes ?? 0, voted: null }
+      })
+      setReviewVotes(counts)
+    }
+    loadReviews()
+  }, [id, user?.token])
+
+  useEffect(() => {
+    if (!id || !user?.token) return
+    reviewService.getMyVotes(id, user.token).then((votes) => {
+      setReviewVotes((prev) => {
+        const updated = { ...prev }
+        Object.entries(votes).forEach(([reviewId, voteType]) => {
+          updated[reviewId] = { ...(updated[reviewId] || { likes: 0, dislikes: 0 }), voted: voteType as 'like' | 'dislike' }
+        })
+        return updated
+      })
+    }).catch(() => {})
+  }, [id, user?.token])
 
   const switchImage = (src: string) => {
     setImgOpacity(0)
@@ -633,12 +699,15 @@ export default function ProductDetailPage() {
                         style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.875rem', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical' as const, boxSizing: 'border-box' as const }}
                       />
                     </div>
+                    {reviewError && (
+                      <span style={{ color: 'red', fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem' }}>{reviewError}</span>
+                    )}
                     <button
                       onClick={submitReview}
-                      disabled={!newReview.comment.trim()}
-                      style={{ padding: '0.75rem 2rem', background: newReview.comment.trim() ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: newReview.comment.trim() ? 'pointer' : 'not-allowed' }}
+                      disabled={!newReview.comment.trim() || reviewSubmitting}
+                      style={{ padding: '0.75rem 2rem', background: newReview.comment.trim() && !reviewSubmitting ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: newReview.comment.trim() && !reviewSubmitting ? 'pointer' : 'not-allowed' }}
                     >
-                      SUBMIT REVIEW
+                      {reviewSubmitting ? 'SUBMITTING...' : 'SUBMIT REVIEW'}
                     </button>
                   </div>
                 )}
@@ -674,10 +743,11 @@ export default function ProductDetailPage() {
                   const allReviews = [...(product?.reviews || []), ...localReviews]
                   let filtered = reviewFilter === 0 ? allReviews : allReviews.filter((r: any) => r.rating === reviewFilter)
                   filtered = [...filtered].sort((a: any, b: any) => {
-                    const aid = a.id || a.user_id || ''
-                    const bid = b.id || b.user_id || ''
-                    const av = reviewVotes[aid] || { likes: 0, dislikes: 0 }
-                    const bv = reviewVotes[bid] || { likes: 0, dislikes: 0 }
+                    const aid = a.id || ''
+                    const bid = b.id || ''
+                    // Prefer reviewVotes (updated after voting), fall back to review's own counts
+                    const av = reviewVotes[aid] ?? { likes: a.likes ?? 0, dislikes: a.dislikes ?? 0 }
+                    const bv = reviewVotes[bid] ?? { likes: b.likes ?? 0, dislikes: b.dislikes ?? 0 }
                     if (reviewSort === 'most_liked') return bv.likes - av.likes
                     if (reviewSort === 'most_disliked') return bv.dislikes - av.dislikes
                     return 0
@@ -688,7 +758,7 @@ export default function ProductDetailPage() {
                         const rid = review.id || review.user_id || String(idx)
                         const votes = reviewVotes[rid] || { likes: 0, dislikes: 0, voted: null }
                         return (
-                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} />
+                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} />
                         )
                       })}
                     </div>
@@ -863,7 +933,7 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void }) {
+function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
   const TRUNCATE = 120
@@ -882,10 +952,15 @@ function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote }: { us
           <p style={{ fontWeight: 700, color: '#39ff14', fontFamily: 'Space Grotesk, sans-serif' }}>{user}</p>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>VERIFIED USER</p>
         </div>
-        <div style={{ display: 'flex', color: '#39ff14' }}>
-          {[1, 2, 3, 4, 5].map((s) => (
-            <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+          {pending && (
+            <span style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#f59e0b', border: '1px solid #f59e0b55', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: '#f59e0b11' }}>PENDING</span>
+          )}
+          <div style={{ display: 'flex', color: '#39ff14' }}>
+            {[1, 2, 3, 4, 5].map((s) => (
+              <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+            ))}
+          </div>
         </div>
       </div>
       <p style={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', marginBottom: '0.5rem' }}>

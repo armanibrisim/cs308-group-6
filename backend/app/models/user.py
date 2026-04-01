@@ -19,3 +19,5 @@ class AuthResponse(BaseModel):
     email: str
     role: str
     token: str
+    first_name: str = ""
+    last_name: str = ""

@@ -24,6 +24,15 @@ def get_user_by_email(email: str) -> tuple[str, dict] | None:
     return None
 
 
+def get_user_by_id(user_id: str) -> dict | None:
+    get_firebase_app()
+    db = firestore.client()
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        return None
+    return doc.to_dict()
+
+
 def create_user(email: str, password: str, first_name: str, last_name: str) -> str:
     get_firebase_app()
     db = firestore.client()

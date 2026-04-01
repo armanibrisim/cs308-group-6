@@ -27,16 +27,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        setUser(JSON.parse(stored))
+    const init = async () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (!stored) return
+        const parsed: AuthUser = JSON.parse(stored)
+        setUser(parsed)
+
+        // Refresh first_name/last_name from backend in case profile was updated
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/auth/me`,
+            { headers: { Authorization: `Bearer ${parsed.token}` } }
+          )
+          if (res.ok) {
+            const fresh = await res.json()
+            const updated = { ...parsed, first_name: fresh.first_name, last_name: fresh.last_name }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+            setUser(updated)
+          }
+        } catch {
+          // network error — keep stored data
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsLoading(false)
       }
-    } catch {
-      // ignore
-    } finally {
-      setIsLoading(false)
     }
+    init()
   }, [])
 
   const login = useCallback((authUser: AuthUser) => {

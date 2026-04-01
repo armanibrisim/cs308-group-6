@@ -17,7 +17,15 @@ def login_user(email: str, password: str) -> dict:
     role = data.get("role", "customer")
     token = create_access_token({"sub": doc_id, "email": email, "role": role})
 
-    return {"success": True, "doc_id": doc_id, "email": email, "role": role, "token": token}
+    return {
+        "success": True,
+        "doc_id": doc_id,
+        "email": email,
+        "role": role,
+        "token": token,
+        "first_name": data.get("first_name", ""),
+        "last_name": data.get("last_name", ""),
+    }
 
 
 def register_user(email: str, password: str, first_name: str, last_name: str) -> dict:
@@ -30,4 +38,12 @@ def register_user(email: str, password: str, first_name: str, last_name: str) ->
     doc_id = create_user(email, password, first_name, last_name)
     token = create_access_token({"sub": doc_id, "email": email, "role": "customer"})
 
-    return {"success": True, "doc_id": doc_id, "email": email, "role": "customer", "token": token}
+    return {
+        "success": True,
+        "doc_id": doc_id,
+        "email": email,
+        "role": "customer",
+        "token": token,
+        "first_name": first_name,
+        "last_name": last_name,
+    }
