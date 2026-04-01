@@ -131,6 +131,25 @@ def remove_vote(review_id: str, user_id: str, vote_type: str) -> None:
     )
 
 
+def get_all_reviews(
+    status: str | None = None,
+    limit: int = 50,
+    start_after: str | None = None,
+) -> list[dict]:
+    """Fetch all reviews with optional status filter, ordered by created_at desc, paginated."""
+    db = _db()
+    query = db.collection(REVIEWS_COLLECTION).order_by("created_at", direction="DESCENDING")
+
+    if status:
+        query = query.where(filter=FieldFilter("status", "==", status))
+
+    if start_after:
+        query = query.start_after({"created_at": start_after})
+
+    query = query.limit(limit)
+    return [d.to_dict() for d in query.stream()]
+
+
 def get_approved_ratings_for_product(product_id: str) -> list[int]:
     """Return list of ratings for all approved reviews of a product (for avg calculation)."""
     db = _db()

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_current_user, require_role
-from app.models.review import ReviewCreate, ReviewResponse, VoteCreate, VoteResponse
+from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, VoteCreate, VoteResponse
 from app.services.review_service import (
     approve_review,
+    fetch_all_reviews,
     fetch_approved_reviews,
     fetch_my_review,
     fetch_pending_reviews,
@@ -29,11 +30,32 @@ async def list_approved_reviews(product_id: str):
     return fetch_approved_reviews(product_id)
 
 
+@router.get("/all", response_model=list[ReviewResponse])
+async def list_all_reviews(
+    status: str | None = Query(default=None, pattern="^(pending|approved|rejected)$"),
+    limit: int = Query(default=50, ge=1, le=100),
+    start_after: str | None = Query(default=None),
+    _: dict = Depends(require_role("product_manager")),
+):
+    return fetch_all_reviews(status=status, limit=limit, start_after=start_after)
+
+
 @router.get("/pending", response_model=list[ReviewResponse])
 async def list_pending_reviews(
     _: dict = Depends(require_role("product_manager")),
 ):
     return fetch_pending_reviews()
+
+
+@router.put("/{review_id}/status", response_model=ReviewResponse)
+async def update_review_status(
+    review_id: str,
+    payload: ReviewStatusUpdate,
+    _: dict = Depends(require_role("product_manager")),
+):
+    if payload.status == "approved":
+        return approve_review(review_id)
+    return reject_review(review_id)
 
 
 @router.patch("/{review_id}/approve", response_model=ReviewResponse)

@@ -4,6 +4,7 @@ from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, 
 from app.repositories import review_repository
 from app.repositories.product_repository import (
     get_product_by_id,
+    get_product_names_by_ids,
     update_product,
 )
 from app.repositories.user_repository import get_user_by_id
@@ -125,6 +126,20 @@ def handle_vote(review_id: str, vote_type: str, user_id: str) -> VoteResponse:
         dislikes=updated.get("dislikes", 0),
         user_vote=new_user_vote,
     )
+
+
+def fetch_all_reviews(
+    status: str | None,
+    limit: int,
+    start_after: str | None,
+) -> list[ReviewResponse]:
+    reviews = review_repository.get_all_reviews(
+        status=status, limit=limit, start_after=start_after
+    )
+    # Batch-fetch product names in one Firestore call instead of looping
+    unique_ids = list({r["product_id"] for r in reviews})
+    product_names = get_product_names_by_ids(unique_ids)
+    return [ReviewResponse(**r, product_name=product_names.get(r["product_id"])) for r in reviews]
 
 
 def get_my_votes(user_id: str, product_id: str) -> dict[str, str]:
