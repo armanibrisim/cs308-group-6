@@ -80,6 +80,30 @@ def get_product_by_id(product_id: str) -> Optional[dict]:
     return data
 
 
+def get_product_names_by_ids(product_ids: list[str]) -> dict[str, str]:
+    """Return {product_id: name} for the given ids, using cache where possible."""
+    result: dict[str, str] = {}
+    uncached: list[str] = []
+
+    for pid in product_ids:
+        cached = _get_product(pid)
+        if cached is not None:
+            result[pid] = cached.get("name", pid)
+        else:
+            uncached.append(pid)
+
+    if uncached:
+        db = _db()
+        refs = [db.collection(PRODUCTS_COLLECTION).document(pid) for pid in uncached]
+        for doc in db.get_all(refs):
+            if doc.exists:
+                data = doc.to_dict()
+                _set_product(doc.id, data)
+                result[doc.id] = data.get("name", doc.id)
+
+    return result
+
+
 def list_products(
     category_id: Optional[str] = None,
     search: Optional[str] = None,

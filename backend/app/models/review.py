@@ -11,6 +11,7 @@ class ReviewCreate(BaseModel):
 class ReviewResponse(BaseModel):
     id: str
     product_id: str
+    product_name: Optional[str] = None
     user_id: str
     username: str
     rating: int
