@@ -10,6 +10,7 @@ from app.models.product import (
     ProductListResponse,
     ProductResponse,
     ProductUpdate,
+    StockUpdate,
 )
 from app.services.product_service import (
     add_category,
@@ -21,6 +22,7 @@ from app.services.product_service import (
     modify_product,
     remove_product,
     search_products,
+    update_stock_quantity,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -85,6 +87,15 @@ async def update_product(
     current_user: dict = Depends(require_role("product_manager")),
 ):
     return modify_product(product_id, body)
+
+
+@router.patch("/{product_id}/stock", response_model=ProductResponse)
+async def update_stock(
+    product_id: str,
+    body: StockUpdate,
+    current_user: dict = Depends(require_role("product_manager")),
+):
+    return update_stock_quantity(product_id, body)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
