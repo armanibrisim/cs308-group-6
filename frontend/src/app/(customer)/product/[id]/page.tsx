@@ -758,7 +758,7 @@ export default function ProductDetailPage() {
                         const rid = review.id || review.user_id || String(idx)
                         const votes = reviewVotes[rid] || { likes: 0, dislikes: 0, voted: null }
                         return (
-                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} />
+                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} rejected={review.status === 'rejected'} />
                         )
                       })}
                     </div>
@@ -933,9 +933,10 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean }) {
+function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending, rejected }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean; rejected?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const TRUNCATE = 120
   const isLong = text.length > TRUNCATE
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -945,32 +946,38 @@ function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pendin
     ref.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
   }
   return (
-    <div ref={ref} onMouseMove={handleMouseMove} className="hover-glow"
-      style={{ padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+    <div ref={ref} onMouseMove={rejected ? undefined : handleMouseMove} className={rejected ? undefined : 'hover-glow'}
+      onMouseEnter={() => rejected && setHovered(true)}
+      onMouseLeave={() => rejected && setHovered(false)}
+      style={{ padding: '2rem', background: rejected ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.02)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)', borderLeft: rejected ? '3px solid #ef4444' : '1px solid rgba(255,255,255,0.05)', opacity: rejected ? (hovered ? 1 : 0.5) : 1, filter: rejected ? (hovered ? 'none' : 'grayscale(1)') : 'none', transition: 'opacity 0.2s, filter 0.2s' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
         <div>
-          <p style={{ fontWeight: 700, color: '#39ff14', fontFamily: 'Space Grotesk, sans-serif' }}>{user}</p>
+          <p style={{ fontWeight: 700, color: rejected ? 'rgba(255,255,255,0.35)' : '#39ff14', fontFamily: 'Space Grotesk, sans-serif' }}>{user}</p>
           <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>VERIFIED USER</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
           {pending && (
             <span style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#f59e0b', border: '1px solid #f59e0b55', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: '#f59e0b11' }}>PENDING</span>
           )}
-          <div style={{ display: 'flex', color: '#39ff14' }}>
+          {rejected && (
+            <span style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: 'rgba(239,68,68,0.1)' }}>REJECTED</span>
+          )}
+          <div style={{ display: 'flex', color: rejected ? 'rgba(255,255,255,0.2)' : '#39ff14' }}>
             {[1, 2, 3, 4, 5].map((s) => (
               <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
             ))}
           </div>
         </div>
       </div>
-      <p style={{ color: 'rgba(255,255,255,0.7)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
+      <p style={{ color: rejected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
         {isLong && !expanded ? text.slice(0, TRUNCATE) + '...' : text}
       </p>
       {isLong && (
-        <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', color: '#39ff14', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+        <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', color: rejected ? 'rgba(255,255,255,0.3)' : '#39ff14', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
           {expanded ? 'SHOW LESS ▲' : 'READ MORE ▼'}
         </button>
       )}
+      {!rejected && (
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
         <button onClick={() => onVote('like')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: voted === 'like' ? 'rgba(57,255,20,0.08)' : 'none', border: `1px solid ${voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', fontVariationSettings: voted === 'like' ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
@@ -981,6 +988,7 @@ function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pendin
           {dislikes > 0 && <span>{dislikes}</span>}
         </button>
       </div>
+      )}
     </div>
   )
 }
