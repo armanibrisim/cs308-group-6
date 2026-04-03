@@ -97,8 +97,9 @@ def get_user_votes_for_product(user_id: str, product_id: str) -> dict[str, str]:
     return {d.to_dict()["review_id"]: d.to_dict()["vote_type"] for d in docs}
 
 
-def set_vote(review_id: str, user_id: str, product_id: str, vote_type: str) -> None:
-    """Create or overwrite a vote and atomically update the review counts."""
+def set_vote(review_id: str, user_id: str, product_id: str, vote_type: str) -> tuple[int, int]:
+    """Create or overwrite a vote and atomically update the review counts.
+    Returns (likes_delta, dislikes_delta) so callers avoid a re-fetch."""
     db = _db()
     vote_ref = db.collection(REVIEW_VOTES_COLLECTION).document(f"{review_id}_{user_id}")
     review_ref = db.collection(REVIEWS_COLLECTION).document(review_id)
@@ -106,29 +107,42 @@ def set_vote(review_id: str, user_id: str, product_id: str, vote_type: str) -> N
     existing = vote_ref.get()
     old_type = existing.to_dict().get("vote_type") if existing.exists else None
 
-    # Build the count delta for the review document
+    likes_delta = 0
+    dislikes_delta = 0
+
     count_update: dict = {}
     if old_type and old_type != vote_type:
         # Switching vote: decrement old, increment new
         count_update[old_type + "s"] = firestore_module.Increment(-1)
         count_update[vote_type + "s"] = firestore_module.Increment(1)
+        if vote_type == "like":
+            likes_delta, dislikes_delta = 1, -1
+        else:
+            likes_delta, dislikes_delta = -1, 1
     elif not old_type:
         # New vote
         count_update[vote_type + "s"] = firestore_module.Increment(1)
-    # If old_type == vote_type the caller should have called remove_vote instead
+        if vote_type == "like":
+            likes_delta = 1
+        else:
+            dislikes_delta = 1
 
     vote_ref.set({"review_id": review_id, "user_id": user_id, "product_id": product_id, "vote_type": vote_type})
     if count_update:
         review_ref.update(count_update)
 
+    return likes_delta, dislikes_delta
 
-def remove_vote(review_id: str, user_id: str, vote_type: str) -> None:
-    """Delete a vote and decrement the corresponding count on the review."""
+
+def remove_vote(review_id: str, user_id: str, vote_type: str) -> tuple[int, int]:
+    """Delete a vote and decrement the corresponding count on the review.
+    Returns (likes_delta, dislikes_delta) so callers avoid a re-fetch."""
     db = _db()
     db.collection(REVIEW_VOTES_COLLECTION).document(f"{review_id}_{user_id}").delete()
     db.collection(REVIEWS_COLLECTION).document(review_id).update(
         {vote_type + "s": firestore_module.Increment(-1)}
     )
+    return (-1, 0) if vote_type == "like" else (0, -1)
 
 
 def get_all_reviews(
@@ -138,14 +152,24 @@ def get_all_reviews(
 ) -> list[dict]:
     """Fetch all reviews with optional status filter, ordered by created_at desc, paginated."""
     db = _db()
-    query = db.collection(REVIEWS_COLLECTION).order_by("created_at", direction="DESCENDING")
 
     if status:
-        query = query.where(filter=FieldFilter("status", "==", status))
+        # Simple single-field query — uses the auto-index on `status`, no composite index needed.
+        # Sort in Python to avoid requiring a composite index while it may still be building.
+        docs = (
+            db.collection(REVIEWS_COLLECTION)
+            .where(filter=FieldFilter("status", "==", status))
+            .limit(limit)
+            .stream()
+        )
+        results = [d.to_dict() for d in docs]
+        results.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        return results
 
+    # No status filter — plain order_by is fine with the auto-index on created_at.
+    query = db.collection(REVIEWS_COLLECTION).order_by("created_at", direction="DESCENDING")
     if start_after:
         query = query.start_after({"created_at": start_after})
-
     query = query.limit(limit)
     return [d.to_dict() for d in query.stream()]
 

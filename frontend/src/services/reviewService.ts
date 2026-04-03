@@ -60,8 +60,9 @@ export const reviewService = {
     )
   },
 
-  async getAllReviews(token: string): Promise<Review[]> {
-    return apiService.get<Review[]>('/reviews/all', {
+  async getAllReviews(token: string, status?: 'pending' | 'approved' | 'rejected'): Promise<Review[]> {
+    const url = status ? `/reviews/all?status=${status}` : '/reviews/all'
+    return apiService.get<Review[]>(url, {
       headers: { Authorization: `Bearer ${token}` },
     })
   },

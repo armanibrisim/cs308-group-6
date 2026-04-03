@@ -111,19 +111,21 @@ def handle_vote(review_id: str, vote_type: str, user_id: str) -> VoteResponse:
 
     current_vote = review_repository.get_user_vote(review_id, user_id)
 
+    likes = review.get("likes", 0)
+    dislikes = review.get("dislikes", 0)
+
     if current_vote == vote_type:
         # Toggle off — un-vote
-        review_repository.remove_vote(review_id, user_id, vote_type)
+        likes_delta, dislikes_delta = review_repository.remove_vote(review_id, user_id, vote_type)
         new_user_vote = None
     else:
         # New vote or switch vote
-        review_repository.set_vote(review_id, user_id, review["product_id"], vote_type)
+        likes_delta, dislikes_delta = review_repository.set_vote(review_id, user_id, review["product_id"], vote_type)
         new_user_vote = vote_type
 
-    updated = review_repository.get_review_by_id(review_id)
     return VoteResponse(
-        likes=updated.get("likes", 0),
-        dislikes=updated.get("dislikes", 0),
+        likes=likes + likes_delta,
+        dislikes=dislikes + dislikes_delta,
         user_vote=new_user_vote,
     )
 

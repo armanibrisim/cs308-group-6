@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, MouseEvent, useEffect } from 'react'
+import { useState, useRef, MouseEvent, useEffect, useMemo, useReducer, memo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { productService } from '../../../../services/productService'
 import { cartService } from '../../../../services/cartService'
@@ -9,6 +9,15 @@ import { useAuth } from '../../../../context/AuthContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
 const NEON = '#39ff14'
+
+type VoteData = { likes: number; dislikes: number; voted: 'like' | 'dislike' | null }
+type VotesAction =
+  | { type: 'SET'; id: string; data: VoteData }
+  | { type: 'RESET'; map: Map<string, VoteData> }
+function votesReducer(state: Map<string, VoteData>, action: VotesAction): Map<string, VoteData> {
+  if (action.type === 'SET') return new Map(state).set(action.id, action.data)
+  return action.map
+}
 
 const tabs = [
   { id: 'desc', label: 'PRODUCT DESCRIPTION' },
@@ -80,33 +89,69 @@ export default function ProductDetailPage() {
   const [reviewSuccess, setReviewSuccess] = useState(false)
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState('')
-  const [reviewVotes, setReviewVotes] = useState<{[id: string]: {likes: number; dislikes: number; voted: 'like'|'dislike'|null}}>({})
+  const [reviewVotes, dispatchVotes] = useReducer(votesReducer, new Map<string, VoteData>())
   const [reviewSort, setReviewSort] = useState<'default'|'most_liked'|'most_disliked'>('default')
+
+  // ── Memoized derived values ──
+  const ratingStats = useMemo(() => {
+    const backendAvg = product?.average_rating ?? product?.rating ?? null
+    const backendCount = product?.review_count ?? 0
+    const totalCount = backendCount + localReviews.length
+    const localAvg = localReviews.length > 0
+      ? localReviews.reduce((s, r) => s + r.rating, 0) / localReviews.length
+      : null
+    const avg = localAvg != null && backendAvg != null
+      ? (backendAvg * backendCount + localAvg * localReviews.length) / totalCount
+      : localAvg ?? backendAvg
+    return { avg, totalCount, backendCount }
+  }, [product, localReviews])
+
+  const allReviews = useMemo(
+    () => [...(product?.reviews || []), ...localReviews],
+    [product, localReviews]
+  )
+
+  const starCounts = useMemo(() => {
+    const counts: Record<number, number> = { 0: allReviews.length }
+    for (const r of allReviews) {
+      const s = (r as any).rating
+      counts[s] = (counts[s] || 0) + 1
+    }
+    return counts
+  }, [allReviews])
+
+  const filteredReviews = useMemo(() => {
+    const base = reviewFilter === 0 ? allReviews : allReviews.filter((r: any) => r.rating === reviewFilter)
+    return [...base].sort((a: any, b: any) => {
+      const av = reviewVotes.get(a.id || '') ?? { likes: a.likes ?? 0, dislikes: a.dislikes ?? 0 }
+      const bv = reviewVotes.get(b.id || '') ?? { likes: b.likes ?? 0, dislikes: b.dislikes ?? 0 }
+      if (reviewSort === 'most_liked') return bv.likes - av.likes
+      if (reviewSort === 'most_disliked') return bv.dislikes - av.dislikes
+      return 0
+    })
+  }, [allReviews, reviewFilter, reviewSort, reviewVotes])
 
   const handleVote = (reviewId: string, type: 'like'|'dislike') => {
     if (!user?.token) { router.push('/login'); return }
 
     // Optimistic update
-    const prev = reviewVotes[reviewId] || { likes: 0, dislikes: 0, voted: null }
+    const prev = reviewVotes.get(reviewId) || { likes: 0, dislikes: 0, voted: null }
     const toggling = prev.voted === type
     const switching = prev.voted && prev.voted !== type
-    const optimistic = {
+    const optimistic: VoteData = {
       likes: prev.likes
         + (type === 'like' ? (toggling ? -1 : 1) : (switching && prev.voted === 'like' ? -1 : 0)),
       dislikes: prev.dislikes
         + (type === 'dislike' ? (toggling ? -1 : 1) : (switching && prev.voted === 'dislike' ? -1 : 0)),
       voted: (toggling ? null : type) as 'like'|'dislike'|null,
     }
-    setReviewVotes(s => ({ ...s, [reviewId]: optimistic }))
+    dispatchVotes({ type: 'SET', id: reviewId, data: optimistic })
 
     // Sync with backend in background — revert on failure
     reviewService.voteReview(reviewId, type, user.token).then((result) => {
-      setReviewVotes(s => ({
-        ...s,
-        [reviewId]: { likes: result.likes, dislikes: result.dislikes, voted: result.user_vote as 'like'|'dislike'|null },
-      }))
+      dispatchVotes({ type: 'SET', id: reviewId, data: { likes: result.likes, dislikes: result.dislikes, voted: result.user_vote as 'like'|'dislike'|null } })
     }).catch(() => {
-      setReviewVotes(s => ({ ...s, [reviewId]: prev }))
+      dispatchVotes({ type: 'SET', id: reviewId, data: prev })
     })
   }
 
@@ -140,70 +185,53 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!id) return
-    productService
-      .getProduct(id)
-      .then((data) => {
-        setProduct(data)
-        const images: string[] = (data as any).all_images || []
-        if (images.length > 0) {
-          setThumbnails(images)
-          setMainImage(images[0])
-        } else {
-          const single = (data as any).image_url
-          if (single) {
-            setThumbnails([single])
-            setMainImage(single)
+    setLoading(true)
+
+    // Fire all independent requests in parallel
+    const productP    = productService.getProduct(id).catch(() => null)
+    const reviewsP    = reviewService.getApprovedReviews(id).catch(() => [] as Review[])
+    const myReviewP   = user?.token ? reviewService.getMyReview(id, user.token).catch(() => null) : Promise.resolve(null)
+    const myVotesP    = user?.token ? reviewService.getMyVotes(id, user.token).catch(() => ({})) : Promise.resolve({})
+
+    Promise.all([productP, reviewsP, myReviewP, myVotesP])
+      .then(([data, reviews, ownReview, votes]) => {
+        // ── Product ──
+        if (data) {
+          setProduct(data)
+          const images: string[] = (data as any).all_images || []
+          if (images.length > 0) {
+            setThumbnails(images)
+            setMainImage(images[0])
+          } else {
+            const single = (data as any).image_url
+            if (single) { setThumbnails([single]); setMainImage(single) }
+          }
+          // Related products depend on category — start as soon as product resolves
+          const catId = (data as any).category_id || (data as any).categoryId
+          if (catId) {
+            productService
+              .getProducts({ categoryId: catId, limit: 8 })
+              .then((res) => setRelatedProducts(res.products.filter((p: any) => p.id !== data.id)))
+              .catch(() => {})
           }
         }
-        const catId = (data as any).category_id || (data as any).categoryId
-        if (catId) {
-          productService
-            .getProducts({ categoryId: catId, limit: 8 })
-            .then((res) => setRelatedProducts(res.products.filter((p: any) => p.id !== data.id)))
-            .catch(() => {})
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [id])
 
-  useEffect(() => {
-    if (!id) return
-    const loadReviews = async () => {
-      const reviews = await reviewService.getApprovedReviews(id).catch(() => [] as Review[])
+        // ── Reviews + votes merged in one pass ──
+        const alreadyIncluded = ownReview && reviews.some((r) => r.id === ownReview!.id)
+        const merged = ownReview && !alreadyIncluded ? [ownReview, ...reviews] : reviews
+        setLocalReviews(merged)
 
-      // If logged in, also fetch the user's own review so pending ones stay visible after refresh
-      let ownReview: Review | null = null
-      if (user?.token) {
-        ownReview = await reviewService.getMyReview(id, user.token).catch(() => null)
-      }
-
-      // Prepend own review only if it's not already in the approved list
-      const alreadyIncluded = ownReview && reviews.some((r) => r.id === ownReview!.id)
-      const merged = ownReview && !alreadyIncluded ? [ownReview, ...reviews] : reviews
-
-      setLocalReviews(merged)
-
-      const counts: typeof reviewVotes = {}
-      merged.forEach((r) => {
-        counts[r.id] = { likes: r.likes ?? 0, dislikes: r.dislikes ?? 0, voted: null }
-      })
-      setReviewVotes(counts)
-    }
-    loadReviews()
-  }, [id, user?.token])
-
-  useEffect(() => {
-    if (!id || !user?.token) return
-    reviewService.getMyVotes(id, user.token).then((votes) => {
-      setReviewVotes((prev) => {
-        const updated = { ...prev }
-        Object.entries(votes).forEach(([reviewId, voteType]) => {
-          updated[reviewId] = { ...(updated[reviewId] || { likes: 0, dislikes: 0 }), voted: voteType as 'like' | 'dislike' }
+        const voteMap = new Map<string, VoteData>()
+        merged.forEach((r) => {
+          voteMap.set(r.id, { likes: r.likes ?? 0, dislikes: r.dislikes ?? 0, voted: null })
         })
-        return updated
+        // Apply user votes in the same pass — no second setState needed
+        Object.entries(votes).forEach(([reviewId, voteType]) => {
+          voteMap.set(reviewId, { ...(voteMap.get(reviewId) || { likes: 0, dislikes: 0 }), voted: voteType as 'like' | 'dislike' })
+        })
+        dispatchVotes({ type: 'RESET', map: voteMap })
       })
-    }).catch(() => {})
+      .finally(() => setLoading(false))
   }, [id, user?.token])
 
   const switchImage = (src: string) => {
@@ -383,13 +411,7 @@ export default function ProductDetailPage() {
 
               {/* Rating */}
               {(() => {
-                const backendAvg = product?.average_rating ?? product?.rating ?? null
-                const backendCount = product?.review_count ?? 0
-                const totalCount = backendCount + localReviews.length
-                const localAvg = localReviews.length > 0 ? localReviews.reduce((s, r) => s + r.rating, 0) / localReviews.length : null
-                const avg = localAvg != null && backendAvg != null
-                  ? (backendAvg * backendCount + localAvg * localReviews.length) / totalCount
-                  : localAvg ?? backendAvg
+                const { avg, totalCount } = ratingStats
                 const hasRating = avg != null && avg > 0
                 return (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -715,8 +737,7 @@ export default function ProductDetailPage() {
                 {/* Star Filter Tabs */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' as const }}>
                   {([0, 5, 4, 3, 2, 1] as const).map((f) => {
-                    const allReviews = [...(product?.reviews || []), ...localReviews]
-                    const cnt = f === 0 ? allReviews.length : allReviews.filter((r: any) => r.rating === f).length
+                    const cnt = starCounts[f] ?? 0
                     const isActive = reviewFilter === f
                     return (
                       <button key={f} onClick={() => setReviewFilter(f)}
@@ -739,39 +760,25 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Review Cards */}
-                {(() => {
-                  const allReviews = [...(product?.reviews || []), ...localReviews]
-                  let filtered = reviewFilter === 0 ? allReviews : allReviews.filter((r: any) => r.rating === reviewFilter)
-                  filtered = [...filtered].sort((a: any, b: any) => {
-                    const aid = a.id || ''
-                    const bid = b.id || ''
-                    // Prefer reviewVotes (updated after voting), fall back to review's own counts
-                    const av = reviewVotes[aid] ?? { likes: a.likes ?? 0, dislikes: a.dislikes ?? 0 }
-                    const bv = reviewVotes[bid] ?? { likes: b.likes ?? 0, dislikes: b.dislikes ?? 0 }
-                    if (reviewSort === 'most_liked') return bv.likes - av.likes
-                    if (reviewSort === 'most_disliked') return bv.dislikes - av.dislikes
-                    return 0
-                  })
-                  return filtered.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
-                      {filtered.map((review: any, idx: number) => {
-                        const rid = review.id || review.user_id || String(idx)
-                        const votes = reviewVotes[rid] || { likes: 0, dislikes: 0, voted: null }
-                        return (
-                          <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} rejected={review.status === 'rejected'} />
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
-                      <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
-                        {reviewFilter === 0 ? 'NO REVIEWS YET' : `NO ${reviewFilter}★ REVIEWS`}
-                      </p>
-                      {reviewFilter === 0 && <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>}
-                    </div>
-                  )
-                })()}
+                {filteredReviews.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                    {filteredReviews.map((review: any, idx: number) => {
+                      const rid = review.id || review.user_id || String(idx)
+                      const votes = reviewVotes.get(rid) || { likes: 0, dislikes: 0, voted: null }
+                      return (
+                        <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} rejected={review.status === 'rejected'} />
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
+                    <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
+                      {reviewFilter === 0 ? 'NO REVIEWS YET' : `NO ${reviewFilter}★ REVIEWS`}
+                    </p>
+                    {reviewFilter === 0 && <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>}
+                  </div>
+                )}
               </div>
             )}
 
@@ -933,7 +940,7 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending, rejected }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean; rejected?: boolean }) {
+const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending, rejected }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean; rejected?: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -991,9 +998,9 @@ function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pendin
       )}
     </div>
   )
-}
+})
 
-function RelatedCard({ product, onClick }: { product: any; onClick: () => void }) {
+const RelatedCard = memo(function RelatedCard({ product, onClick }: { product: any; onClick: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
@@ -1056,4 +1063,4 @@ function RelatedCard({ product, onClick }: { product: any; onClick: () => void }
       </div>
     </div>
   )
-}
+})

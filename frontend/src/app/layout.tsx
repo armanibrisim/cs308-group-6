@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { AuthProvider } from '../context/AuthContext'
+import { CategoryProvider } from '../context/CategoryContext'
 import { Navbar } from '../components/layout/Navbar'
 import './globals.css'
 
@@ -24,8 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
-          <Navbar />
-          <div style={{ paddingTop: '8rem' }}>{children}</div>
+          <CategoryProvider>
+            <Navbar />
+            <div style={{ paddingTop: '8rem' }}>{children}</div>
+          </CategoryProvider>
         </AuthProvider>
       </body>
     </html>
