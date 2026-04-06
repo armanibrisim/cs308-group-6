@@ -59,5 +59,6 @@ def _to_response(delivery: dict, product: Optional[dict]) -> DeliveryResponse:
         total_price=delivery["total_price"],
         delivery_address=delivery["delivery_address"],
         is_completed=delivery["is_completed"],
+        order_id=delivery.get("order_id"),
         created_at=delivery["created_at"],
     )
