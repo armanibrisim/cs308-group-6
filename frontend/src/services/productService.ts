@@ -1,6 +1,23 @@
 import { apiService } from './api'
 import { Product, ProductCategory } from '../types/product'
 
+// ── Simple TTL cache ─────────────────────────────────────────────────────────
+const CACHE_TTL = 60_000 // 1 minute
+
+interface CacheEntry<T> { data: T; expires: number }
+const _cache = new Map<string, CacheEntry<unknown>>()
+
+function getCached<T>(key: string): T | null {
+  const entry = _cache.get(key)
+  if (!entry || Date.now() > entry.expires) { _cache.delete(key); return null }
+  return entry.data as T
+}
+
+function setCached<T>(key: string, data: T): void {
+  _cache.set(key, { data, expires: Date.now() + CACHE_TTL })
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const productService = {
   // Get all products with optional filters
   async getProducts(params?: {
@@ -23,14 +40,22 @@ export const productService = {
       })
     }
 
-    return apiService.get<{ products: Product[]; total: number }>(
-      `/products?${queryParams.toString()}`
-    )
+    const url = `/products?${queryParams.toString()}`
+    const cached = getCached<{ products: Product[]; total: number }>(url)
+    if (cached) return cached
+    const data = await apiService.get<{ products: Product[]; total: number }>(url)
+    setCached(url, data)
+    return data
   },
 
   // Get a single product by ID
   async getProduct(id: string): Promise<Product> {
-    return apiService.get<Product>(`/products/${id}`)
+    const key = `/products/${id}`
+    const cached = getCached<Product>(key)
+    if (cached) return cached
+    const data = await apiService.get<Product>(key)
+    setCached(key, data)
+    return data
   },
 
   // Get all product categories

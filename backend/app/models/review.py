@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class ReviewCreate(BaseModel):
     product_id: str
     rating: int = Field(ge=1, le=5)
-    comment: str = Field(min_length=1, max_length=600)
+    comment: str = Field(default='', max_length=600)  # optional — empty = rating-only review
 
 
 class ReviewResponse(BaseModel):
@@ -37,5 +37,6 @@ class VoteResponse(BaseModel):
 
 
 class ProductRatingSummary(BaseModel):
-    average_rating: Optional[float] = None
-    review_count: int = 0
+    rating_count: int = 0        # number of approved ratings
+    rating_sum: int = 0          # sum of all approved ratings
+    avg_rating: Optional[float] = None  # rating_sum / rating_count

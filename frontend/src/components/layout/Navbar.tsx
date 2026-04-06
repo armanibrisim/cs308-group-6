@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { MouseEvent, useEffect, useRef, useState } from 'react';
+import { MouseEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { productService } from '../../services/productService';
+import { useCategories } from '../../context/CategoryContext';
 
 // Slug → Material Symbol icon mapping (fallback: inventory_2)
 const ICON_MAP: Record<string, string> = {
@@ -92,27 +92,8 @@ export function Navbar() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [categories, setCategories] = useState<NavCategory[]>([]);
-
-  // Derive categories from products on mount
-  useEffect(() => {
-    productService.getProducts({ limit: 500, page: 1 }).then(res => {
-      const counts: Record<string, number> = {};
-      for (const p of res.products) {
-        const cat = (p as any).category_id || p.categoryId;
-        if (cat) counts[cat] = (counts[cat] || 0) + 1;
-      }
-      const derived: NavCategory[] = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([id, count]) => ({
-          id,
-          name: id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          count,
-          icon: getCategoryIcon(id),
-        }));
-      setCategories(derived);
-    }).catch(() => {});
-  }, []);
+  const { categories: rawCategories } = useCategories();
+  const categories: NavCategory[] = rawCategories.map(c => ({ ...c, icon: getCategoryIcon(c.id) }));
 
   const openDropdown = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);

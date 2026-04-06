@@ -20,7 +20,7 @@ router = APIRouter(prefix="/reviews", tags=["reviews"])
 @router.post("", response_model=ReviewResponse, status_code=201)
 async def create_review(
     payload: ReviewCreate,
-    current_user: dict = Depends(require_role("customer")),
+    current_user: dict = Depends(get_current_user),
 ):
     return submit_review(payload, current_user["user_id"])
 

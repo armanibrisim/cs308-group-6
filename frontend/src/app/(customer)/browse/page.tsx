@@ -1,18 +1,21 @@
 'use client'
 
-import { useEffect, useRef, useState, MouseEvent } from 'react'
+import { useEffect, useRef, useState, MouseEvent, memo, useReducer } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { productService } from '../../../services/productService'
 import { SideNav } from '../../../components/layout/SideNav'
+import { useCategories } from '../../../context/CategoryContext'
 
 const NEON = '#39ff14'
 
 const SORT_OPTIONS = [
-  { label: 'NEWEST',        sortBy: 'newest',  sortOrder: 'desc' },
-  { label: 'PRICE: LOW→HIGH', sortBy: 'price', sortOrder: 'asc'  },
-  { label: 'PRICE: HIGH→LOW', sortBy: 'price', sortOrder: 'desc' },
-  { label: 'NAME: A→Z',    sortBy: 'name',    sortOrder: 'asc'  },
-  { label: 'NAME: Z→A',    sortBy: 'name',    sortOrder: 'desc' },
+  { label: 'NEWEST',            sortBy: 'newest',     sortOrder: 'desc' },
+  { label: 'MOST POPULAR',      sortBy: 'popularity', sortOrder: 'desc' },
+  { label: 'TOP RATED',         sortBy: 'avg_rating', sortOrder: 'desc' },
+  { label: 'PRICE: LOW→HIGH',   sortBy: 'price',      sortOrder: 'asc'  },
+  { label: 'PRICE: HIGH→LOW',   sortBy: 'price',      sortOrder: 'desc' },
+  { label: 'NAME: A→Z',         sortBy: 'name',       sortOrder: 'asc'  },
+  { label: 'NAME: Z→A',         sortBy: 'name',       sortOrder: 'desc' },
 ]
 
 const PAGE_SIZE = 20
@@ -37,7 +40,7 @@ function GlowBox({ children, className = '', style, onClick }: {
 }
 
 // ── Product card ──────────────────────────────────────────────────────────────
-function ProductCard({ product, onClick }: { product: any; onClick: () => void }) {
+const ProductCard = memo(function ProductCard({ product, onClick }: { product: any; onClick: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -105,6 +108,19 @@ function ProductCard({ product, onClick }: { product: any; onClick: () => void }
       </div>
     </div>
   )
+})
+
+// ── Products reducer ──────────────────────────────────────────────────────────
+type ProductsAction =
+  | { type: 'SET'; products: any[]; total: number }
+  | { type: 'APPEND'; products: any[] }
+
+function productsReducer(
+  state: { items: any[]; total: number },
+  action: ProductsAction
+) {
+  if (action.type === 'SET') return { items: action.products, total: action.total }
+  return { items: [...state.items, ...action.products], total: state.total }
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -113,8 +129,7 @@ export default function BrowsePage() {
   const searchParams = useSearchParams()
 
   // State
-  const [products, setProducts] = useState<any[]>([])
-  const [total, setTotal]     = useState(0)
+  const [{ items: products, total }, dispatchProducts] = useReducer(productsReducer, { items: [], total: 0 })
   const [page, setPage]       = useState(1)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -128,32 +143,13 @@ export default function BrowsePage() {
     const url = id ? `/browse?category_id=${encodeURIComponent(id)}` : '/browse'
     router.replace(url, { scroll: false })
   }
-  // { id, name, count } derived from all products
-  const [categories, setCategories] = useState<{ id: string; name: string; count: number }[]>([])
+  const { categories } = useCategories()
   const [sortIdx, setSortIdx]         = useState(0)
   const [sortOpen, setSortOpen]       = useState(false)
   const sortCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [catOpen, setCatOpen]         = useState(false)
   const catCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Derive categories + counts from ALL products (fetched once, no filters)
-  useEffect(() => {
-    productService.getProducts({ limit: 500, page: 1 }).then(res => {
-      const counts: Record<string, number> = {}
-      for (const p of res.products) {
-        const cat = (p as any).category_id || p.categoryId
-        if (cat) counts[cat] = (counts[cat] || 0) + 1
-      }
-      const derived = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([id, count]) => ({
-          id,
-          name: id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          count,
-        }))
-      setCategories(derived)
-    }).catch(() => {})
-  }, [])
 
   // Sync filters from URL (e.g. navbar search or category link)
   useEffect(() => {
@@ -176,8 +172,7 @@ export default function BrowsePage() {
       page: 1,
       limit: PAGE_SIZE,
     }).then(res => {
-      setProducts(res.products)
-      setTotal(res.total)
+      dispatchProducts({ type: 'SET', products: res.products, total: res.total })
     }).catch(() => {}).finally(() => setLoading(false))
   }, [search, categoryId, sortIdx])
 
@@ -193,7 +188,7 @@ export default function BrowsePage() {
       page: nextPage,
       limit: PAGE_SIZE,
     }).then(res => {
-      setProducts(prev => [...prev, ...res.products])
+      dispatchProducts({ type: 'APPEND', products: res.products })
       setPage(nextPage)
     }).catch(() => {}).finally(() => setLoadingMore(false))
   }

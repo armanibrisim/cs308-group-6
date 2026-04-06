@@ -50,15 +50,16 @@ export default function ProductManagerDashboard() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<FilterType>('ALL')
+  const [filter, setFilter] = useState<FilterType>('PENDING')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const fetchReviews = useCallback(async () => {
+  const fetchReviews = useCallback(async (currentFilter: FilterType) => {
     if (!token) return
     setLoading(true)
     setError(null)
     try {
-      const data = await reviewService.getAllReviews(token)
+      const statusParam = currentFilter === 'ALL' ? undefined : currentFilter.toLowerCase() as 'pending' | 'approved' | 'rejected'
+      const data = await reviewService.getAllReviews(token, statusParam)
       setReviews(data)
     } catch {
       setError('Failed to load reviews. Make sure the backend is running.')
@@ -68,8 +69,8 @@ export default function ProductManagerDashboard() {
   }, [token])
 
   useEffect(() => {
-    if (activeTab === 'COMMENTS') fetchReviews()
-  }, [activeTab, fetchReviews])
+    if (activeTab === 'COMMENTS') fetchReviews(filter)
+  }, [activeTab, filter, fetchReviews])
 
   const handleStatusChange = useCallback(
     async (id: string, status: 'approved' | 'rejected') => {
@@ -81,10 +82,10 @@ export default function ProductManagerDashboard() {
         await reviewService.updateReviewStatus(id, status, token)
       } catch {
         // Revert on failure
-        fetchReviews()
+        fetchReviews(filter)
       }
     },
-    [token, fetchReviews]
+    [token, fetchReviews, filter]
   )
 
   const filteredReviews = useMemo(() => {
@@ -263,7 +264,7 @@ export default function ProductManagerDashboard() {
 
                 {/* Refresh tile */}
                 <button
-                  onClick={fetchReviews}
+                  onClick={() => fetchReviews(filter)}
                   className="bg-[#111] border border-dashed border-zinc-800 p-6 flex flex-col items-center justify-center text-center opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-4xl mb-4 text-[#00FF41]">refresh</span>

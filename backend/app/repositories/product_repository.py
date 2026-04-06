@@ -114,7 +114,7 @@ def list_products(
 ) -> tuple[list[dict], int]:
     """Return (products, total_count) applying optional filters.
 
-    sort_field: 'price' | 'name' | 'newest'
+    sort_field: 'price' | 'name' | 'newest' | 'popularity' | 'avg_rating'
     sort_order: 'asc' | 'desc'
     """
     # Use cached full product list when no category filter (avoids full collection reads)
@@ -152,6 +152,17 @@ def list_products(
         products.sort(key=lambda p: p.get("name", "").lower(), reverse=reverse)
     elif sort_field == "newest":
         products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
+    elif sort_field == "popularity":
+        # Sort by purchase_count descending by default; reverse flips to ascending
+        products.sort(key=lambda p: p.get("purchase_count", 0), reverse=not reverse)
+    elif sort_field == "avg_rating":
+        # avg_rating = rating_sum / rating_count — both stored on the product document.
+        # No extra Firestore query needed: the product list is already in memory.
+        def _avg(p: dict) -> float:
+            count = p.get("rating_count") or 0
+            total = p.get("rating_sum") or 0
+            return total / count if count > 0 else 0.0
+        products.sort(key=_avg, reverse=not reverse)
 
     total = len(products)
 
@@ -234,6 +245,31 @@ def remove_discount(product_id: str) -> None:
         "price": original_price,
         "discount_percent": None,
     })
+
+
+def increment_purchase_count(product_id: str, quantity: int = 1) -> None:
+    """Atomically increment purchase_count by the purchased quantity."""
+    db = _db()
+    ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
+    ref.update({"purchase_count": firestore_module.Increment(quantity)})
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
+def update_product_rating_counters(product_id: str, rating: int) -> None:
+    """Atomically add one approved review's rating to rating_sum and rating_count.
+
+    Keeps avg_rating computable as rating_sum / rating_count without fetching
+    any review documents — the product document already has everything needed.
+    """
+    db = _db()
+    ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
+    ref.update({
+        "rating_count": firestore_module.Increment(1),
+        "rating_sum": firestore_module.Increment(rating),
+    })
+    _invalidate_product(product_id)
+    _invalidate_products()
 
 
 def decrement_stock(product_id: str, quantity: int) -> None:
