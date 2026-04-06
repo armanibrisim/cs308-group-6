@@ -9,6 +9,7 @@ class DeliveryCreate(BaseModel):
     quantity: int = Field(ge=1)
     total_price: float = Field(ge=0)
     delivery_address: str
+    order_id: Optional[str] = None  # links delivery to the originating order
 
 
 class DeliveryResponse(BaseModel):
@@ -20,4 +21,5 @@ class DeliveryResponse(BaseModel):
     total_price: float
     delivery_address: str
     is_completed: bool
+    order_id: Optional[str] = None
     created_at: str
