@@ -10,6 +10,8 @@ export interface Review {
   comment: string
   status: string
   created_at: string
+  likes: number
+  dislikes: number
 }
 
 export const reviewService = {
@@ -20,7 +22,7 @@ export const reviewService = {
   async submitReview(
     productId: string,
     rating: number,
-    comment: string,
+    comment: string = '',
     token: string
   ): Promise<Review> {
     return apiService.post<Review>(

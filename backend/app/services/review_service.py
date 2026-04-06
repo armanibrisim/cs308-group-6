@@ -45,6 +45,13 @@ def submit_review(payload: ReviewCreate, user_id: str) -> ReviewResponse:
     }
     review_id = review_repository.create_review(data)
 
+    # Rating-only reviews (no comment) are auto-approved — no manager action needed.
+    # We update the product rating counters immediately in that case.
+    has_comment = bool(payload.comment.strip())
+    if not has_comment:
+        review_repository.update_review_status(review_id, "approved")
+        update_product_rating_counters(payload.product_id, payload.rating)
+
     # Re-fetch so the response includes fields written by the repo (status, created_at, likes, dislikes)
     saved = review_repository.get_review_by_id(review_id)
     return ReviewResponse(**saved)

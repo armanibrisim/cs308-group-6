@@ -87,6 +87,7 @@ export default function ProductDetailPage() {
   const [hoverStar, setHoverStar] = useState(0)
   const [localReviews, setLocalReviews] = useState<Review[]>([])
   const [reviewSuccess, setReviewSuccess] = useState(false)
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState('')
   const [reviewVotes, dispatchVotes] = useReducer(votesReducer, new Map<string, VoteData>())
@@ -161,7 +162,7 @@ export default function ProductDetailPage() {
   }
 
   const submitReview = async () => {
-    if (!newReview.comment.trim() || !user?.token) return
+    if (!user?.token) return
     setReviewSubmitting(true)
     setReviewError('')
     try {
@@ -170,7 +171,11 @@ export default function ProductDetailPage() {
       setNewReview({ rating: 5, comment: '' })
       setShowReviewForm(false)
       setReviewSuccess(true)
-      setTimeout(() => setReviewSuccess(false), 3000)
+      // Auto-approved (no comment) or pending (has comment)
+      setReviewSuccessMsg(submitted.status === 'approved'
+        ? 'RATING SUBMITTED!'
+        : 'REVIEW SUBMITTED — PENDING APPROVAL')
+      setTimeout(() => setReviewSuccess(false), 4000)
     } catch (err: any) {
       const msg = err?.message || ''
       if (msg.includes('409')) {
@@ -679,7 +684,7 @@ export default function ProductDetailPage() {
                 {reviewSuccess && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: 'rgba(57,255,20,0.08)', border: `1px solid ${NEON}40`, borderRadius: '0.5rem' }}>
                     <span className="material-symbols-outlined" style={{ color: NEON, fontSize: '1.25rem' }}>check_circle</span>
-                    <span style={{ color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem', letterSpacing: '0.15em' }}>REVIEW SUBMITTED SUCCESSFULLY</span>
+                    <span style={{ color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem', letterSpacing: '0.15em' }}>{reviewSuccessMsg}</span>
                   </div>
                 )}
 
@@ -711,7 +716,7 @@ export default function ProductDetailPage() {
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
                       <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>
-                        YOUR COMMENT <span style={{ color: newReview.comment.length > 580 ? 'red' : 'rgba(255,255,255,0.3)' }}>({newReview.comment.length}/600)</span>
+                        YOUR COMMENT <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 400 }}>(OPTIONAL)</span> <span style={{ color: newReview.comment.length > 580 ? 'red' : 'rgba(255,255,255,0.3)' }}>({newReview.comment.length}/600)</span>
                       </label>
                       <textarea
                         value={newReview.comment}
@@ -726,8 +731,8 @@ export default function ProductDetailPage() {
                     )}
                     <button
                       onClick={submitReview}
-                      disabled={!newReview.comment.trim() || reviewSubmitting}
-                      style={{ padding: '0.75rem 2rem', background: newReview.comment.trim() && !reviewSubmitting ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: newReview.comment.trim() && !reviewSubmitting ? 'pointer' : 'not-allowed' }}
+                      disabled={reviewSubmitting}
+                      style={{ padding: '0.75rem 2rem', background: !reviewSubmitting ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: !reviewSubmitting ? 'pointer' : 'not-allowed' }}
                     >
                       {reviewSubmitting ? 'SUBMITTING...' : 'SUBMIT REVIEW'}
                     </button>

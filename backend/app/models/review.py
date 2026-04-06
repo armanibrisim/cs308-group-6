@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class ReviewCreate(BaseModel):
     product_id: str
     rating: int = Field(ge=1, le=5)
-    comment: str = Field(min_length=1, max_length=600)
+    comment: str = Field(default='', max_length=600)  # optional — empty = rating-only review
 
 
 class ReviewResponse(BaseModel):
