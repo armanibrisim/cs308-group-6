@@ -37,5 +37,6 @@ class VoteResponse(BaseModel):
 
 
 class ProductRatingSummary(BaseModel):
-    average_rating: Optional[float] = None
-    review_count: int = 0
+    rating_count: int = 0        # number of approved ratings
+    rating_sum: int = 0          # sum of all approved ratings
+    avg_rating: Optional[float] = None  # rating_sum / rating_count

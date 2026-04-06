@@ -9,11 +9,13 @@ import { useCategories } from '../../../context/CategoryContext'
 const NEON = '#39ff14'
 
 const SORT_OPTIONS = [
-  { label: 'NEWEST',        sortBy: 'newest',  sortOrder: 'desc' },
-  { label: 'PRICE: LOW→HIGH', sortBy: 'price', sortOrder: 'asc'  },
-  { label: 'PRICE: HIGH→LOW', sortBy: 'price', sortOrder: 'desc' },
-  { label: 'NAME: A→Z',    sortBy: 'name',    sortOrder: 'asc'  },
-  { label: 'NAME: Z→A',    sortBy: 'name',    sortOrder: 'desc' },
+  { label: 'NEWEST',            sortBy: 'newest',     sortOrder: 'desc' },
+  { label: 'MOST POPULAR',      sortBy: 'popularity', sortOrder: 'desc' },
+  { label: 'TOP RATED',         sortBy: 'avg_rating', sortOrder: 'desc' },
+  { label: 'PRICE: LOW→HIGH',   sortBy: 'price',      sortOrder: 'asc'  },
+  { label: 'PRICE: HIGH→LOW',   sortBy: 'price',      sortOrder: 'desc' },
+  { label: 'NAME: A→Z',         sortBy: 'name',       sortOrder: 'asc'  },
+  { label: 'NAME: Z→A',         sortBy: 'name',       sortOrder: 'desc' },
 ]
 
 const PAGE_SIZE = 20

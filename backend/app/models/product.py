@@ -44,6 +44,10 @@ class ProductResponse(BaseModel):
     category_id: str
     image_url: Optional[str] = None
     all_images: Optional[list[str]] = None
+    purchase_count: Optional[int] = None
+    rating_count: Optional[int] = None      # number of approved ratings
+    rating_sum: Optional[int] = None        # sum of all approved ratings
+    avg_rating: Optional[float] = None      # pre-computed: rating_sum / rating_count
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 

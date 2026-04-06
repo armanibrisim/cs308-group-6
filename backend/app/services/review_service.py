@@ -5,7 +5,7 @@ from app.repositories import review_repository
 from app.repositories.product_repository import (
     get_product_by_id,
     get_product_names_by_ids,
-    update_product,
+    update_product_rating_counters,
 )
 from app.repositories.user_repository import get_user_by_id
 
@@ -44,8 +44,10 @@ def submit_review(payload: ReviewCreate, user_id: str) -> ReviewResponse:
         "comment": payload.comment,
     }
     review_id = review_repository.create_review(data)
-    data["id"] = review_id
-    return ReviewResponse(**data)
+
+    # Re-fetch so the response includes fields written by the repo (status, created_at, likes, dislikes)
+    saved = review_repository.get_review_by_id(review_id)
+    return ReviewResponse(**saved)
 
 
 def fetch_approved_reviews(product_id: str) -> list[ReviewResponse]:
@@ -74,8 +76,9 @@ def approve_review(review_id: str) -> ReviewResponse:
     review_repository.update_review_status(review_id, "approved")
     review["status"] = "approved"
 
-    # Recalculate and persist average_rating + review_count on the product
-    _sync_product_rating(review["product_id"])
+    # Atomically increment rating_count and rating_sum on the product document.
+    # avg_rating = rating_sum / rating_count — no extra reviews query needed.
+    update_product_rating_counters(review["product_id"], review["rating"])
 
     return ReviewResponse(**review)
 
@@ -148,11 +151,3 @@ def get_my_votes(user_id: str, product_id: str) -> dict[str, str]:
     return review_repository.get_user_votes_for_product(user_id, product_id)
 
 
-# ── Internal helpers ───────────────────────────────────────────────────────────
-
-def _sync_product_rating(product_id: str) -> None:
-    """Recompute average_rating and review_count from approved reviews and write to product."""
-    ratings = review_repository.get_approved_ratings_for_product(product_id)
-    count = len(ratings)
-    avg = round(sum(ratings) / count, 2) if count > 0 else None
-    update_product(product_id, {"average_rating": avg, "review_count": count})

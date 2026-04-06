@@ -24,7 +24,7 @@ from app.repositories.product_repository import (
     update_product,
 )
 
-VALID_SORT_FIELDS = {"price", "name", "newest"}
+VALID_SORT_FIELDS = {"price", "name", "newest", "popularity", "avg_rating"}
 VALID_SORT_ORDERS = {"asc", "desc"}
 
 # Legacy combined sort_by values kept for backward compatibility
@@ -79,6 +79,10 @@ def _resolve_category_id(category_slug: str) -> Optional[str]:
 
 
 def _to_product_response(data: dict) -> ProductResponse:
+    rating_count = data.get("rating_count") or 0
+    rating_sum = data.get("rating_sum") or 0
+    avg_rating = round(rating_sum / rating_count, 2) if rating_count > 0 else None
+
     return ProductResponse(
         id=data["id"],
         name=data["name"],
@@ -95,6 +99,10 @@ def _to_product_response(data: dict) -> ProductResponse:
         category_id=data["category_id"],
         image_url=data.get("image_url"),
         all_images=data.get("all_images"),
+        purchase_count=data.get("purchase_count"),
+        rating_count=rating_count or None,
+        rating_sum=rating_sum or None,
+        avg_rating=avg_rating,
         created_at=data.get("created_at"),
         updated_at=data.get("updated_at"),
     )
