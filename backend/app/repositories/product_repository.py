@@ -153,8 +153,8 @@ def list_products(
     elif sort_field == "newest":
         products.sort(key=lambda p: p.get("created_at", ""), reverse=True)
     elif sort_field == "popularity":
-        # Sort by purchase_count descending by default; reverse flips to ascending
-        products.sort(key=lambda p: p.get("purchase_count", 0), reverse=not reverse)
+        # Sort by purchase_count descending for sort_order="desc"
+        products.sort(key=lambda p: p.get("purchase_count", 0), reverse=reverse)
     elif sort_field == "avg_rating":
         # avg_rating = rating_sum / rating_count — both stored on the product document.
         # No extra Firestore query needed: the product list is already in memory.
@@ -162,7 +162,7 @@ def list_products(
             count = p.get("rating_count") or 0
             total = p.get("rating_sum") or 0
             return total / count if count > 0 else 0.0
-        products.sort(key=_avg, reverse=not reverse)
+        products.sort(key=_avg, reverse=reverse)
 
     total = len(products)
 
