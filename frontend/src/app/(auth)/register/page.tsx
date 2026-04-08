@@ -11,7 +11,6 @@ import { authService } from '../../../services/authService'
 const slides = [
   { url: '/4.webp', slogan: 'Seamless Power' },
   { url: '/3.jpg', slogan: 'Elegant Design' },
-  { url: '/2.webp', slogan: 'Infinite Visuals' },
   { url: '/1.webp', slogan: 'Beyond Imagination' },
 ]
 
