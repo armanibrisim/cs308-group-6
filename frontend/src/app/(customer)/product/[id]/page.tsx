@@ -190,6 +190,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!id) return
+    window.scrollTo({ top: 0, behavior: 'instant' })
     setLoading(true)
 
     // Fire all independent requests in parallel
