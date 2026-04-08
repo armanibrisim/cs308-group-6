@@ -33,7 +33,6 @@ function clearGuestCart(): void {
 
 const slides = [
   { url: '/1.webp', slogan: 'Beyond Imagination' },
-  { url: '/2.webp', slogan: 'Infinite Visuals' },
   { url: '/3.jpg', slogan: 'Elegant Design' },
   { url: '/4.webp', slogan: 'Seamless Power' },
 ]
