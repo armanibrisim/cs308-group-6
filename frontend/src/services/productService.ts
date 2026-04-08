@@ -24,7 +24,7 @@ export const productService = {
     category?: string
     categoryId?: string
     search?: string
-    sortBy?: 'price' | 'popularity' | 'name' | 'newest'
+    sortBy?: 'price' | 'popularity' | 'name' | 'newest' | 'avg_rating'
     sortOrder?: 'asc' | 'desc'
     page?: number
     limit?: number
