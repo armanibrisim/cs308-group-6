@@ -91,6 +91,35 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: a
         <h3 style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {product.name}
         </h3>
+        {/* Rating average */}
+        {(() => {
+          const avg: number | null = product.average_rating ?? product.avg_rating ?? null
+          const count: number = product.review_count ?? 0
+          const hasRating = avg != null && avg > 0
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span
+                  key={s}
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: '0.875rem',
+                    color: hasRating ? NEON : 'rgba(255,255,255,0.15)',
+                    fontVariationSettings: hasRating && s <= Math.round(avg!) ? "'FILL' 1" : "'FILL' 0",
+                  }}
+                >star</span>
+              ))}
+              <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, color: hasRating ? NEON : 'rgba(255,255,255,0.2)', marginLeft: '0.125rem' }}>
+                {hasRating ? avg!.toFixed(1) : 'N/A'}
+              </span>
+              {count > 0 && (
+                <span style={{ fontSize: '0.625rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>
+                  ({count})
+                </span>
+              )}
+            </div>
+          )
+        })()}
         <div style={{ marginTop: 'auto', paddingTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: '#fff' }}>
             ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
