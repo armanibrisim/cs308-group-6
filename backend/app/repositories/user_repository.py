@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from firebase_admin import firestore
 
@@ -8,10 +10,13 @@ from app.firebase.client import get_firebase_app
 from app.utils.security import hash_password
 
 
-def get_user_by_email(email: str) -> tuple[str, dict] | None:
+def _db():
     get_firebase_app()
-    db = firestore.client()
+    return firestore.client()
 
+
+def get_user_by_email(email: str) -> tuple[str, dict] | None:
+    db = _db()
     results = (
         db.collection("users")
         .where("email", "==", email)
@@ -20,13 +25,11 @@ def get_user_by_email(email: str) -> tuple[str, dict] | None:
     )
     for doc in results:
         return doc.id, doc.to_dict()
-
     return None
 
 
 def get_user_by_id(user_id: str) -> dict | None:
-    get_firebase_app()
-    db = firestore.client()
+    db = _db()
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
         return None
@@ -34,9 +37,7 @@ def get_user_by_id(user_id: str) -> dict | None:
 
 
 def create_user(email: str, password: str, first_name: str, last_name: str) -> str:
-    get_firebase_app()
-    db = firestore.client()
-
+    db = _db()
     doc_id = email
     db.collection("users").document(doc_id).set({
         "email": email,
@@ -44,7 +45,76 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> s
         "first_name": first_name,
         "last_name": last_name,
         "role": "customer",
+        "addresses": [],
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-
     return doc_id
+
+
+# ── Address helpers ───────────────────────────────────────────────────────────
+
+def get_addresses(user_id: str) -> list[dict]:
+    user = get_user_by_id(user_id)
+    if not user:
+        return []
+    return user.get("addresses", [])
+
+
+def add_address(user_id: str, label: str, full_address: str, is_default: bool) -> dict:
+    db = _db()
+    ref = db.collection("users").document(user_id)
+
+    existing = get_addresses(user_id)
+
+    # If this is the first address or explicitly set as default, clear other defaults
+    if is_default or len(existing) == 0:
+        is_default = True
+        for addr in existing:
+            addr["is_default"] = False
+
+    new_addr = {
+        "id": str(uuid.uuid4()),
+        "label": label,
+        "full_address": full_address,
+        "is_default": is_default,
+    }
+    existing.append(new_addr)
+    ref.update({"addresses": existing})
+    return new_addr
+
+
+def delete_address(user_id: str, address_id: str) -> bool:
+    """Delete address by id. Returns True if found and deleted."""
+    db = _db()
+    ref = db.collection("users").document(user_id)
+    existing = get_addresses(user_id)
+
+    new_list = [a for a in existing if a["id"] != address_id]
+    if len(new_list) == len(existing):
+        return False  # not found
+
+    # If deleted address was the default, promote the first remaining one
+    was_default = any(a["id"] == address_id and a.get("is_default") for a in existing)
+    if was_default and new_list:
+        new_list[0]["is_default"] = True
+
+    ref.update({"addresses": new_list})
+    return True
+
+
+def set_default_address(user_id: str, address_id: str) -> bool:
+    """Mark one address as default, clearing others. Returns True if found."""
+    db = _db()
+    ref = db.collection("users").document(user_id)
+    existing = get_addresses(user_id)
+
+    found = False
+    for addr in existing:
+        addr["is_default"] = addr["id"] == address_id
+        if addr["is_default"]:
+            found = True
+
+    if not found:
+        return False
+    ref.update({"addresses": existing})
+    return True

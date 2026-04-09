@@ -11,6 +11,7 @@ import {
   CheckoutPayload,
   CheckoutResult,
 } from '../../../services/checkoutService'
+import { Address, addressService } from '../../../services/addressService'
 import { CartItem } from '../../../types/cart'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -293,7 +294,11 @@ export default function CheckoutPage() {
   const [cartLoading, setCartLoading] = useState(true)
   const [cartError, setCartError] = useState<string | null>(null)
 
-  // Delivery form fields
+  // Saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
+  // Delivery form fields (used when entering manually)
   const [fullName, setFullName] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
@@ -341,6 +346,16 @@ export default function CheckoutPage() {
     }
   }, [user])
 
+  // Load saved addresses
+  useEffect(() => {
+    if (!user?.token) return
+    addressService.getAddresses(user.token).then(data => {
+      setSavedAddresses(data)
+      const def = data.find(a => a.is_default)
+      if (def) setSelectedAddressId(def.id)
+    }).catch(() => {/* ignore — user may have no addresses */})
+  }, [user?.token])
+
   useEffect(() => {
     loadCart()
     window.scrollTo({ top: 0 })
@@ -368,12 +383,24 @@ export default function CheckoutPage() {
     setExpiry(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits)
   }
 
+  // Resolve final delivery address string
+  function resolveDeliveryAddress(): string | null {
+    if (selectedAddressId) {
+      const saved = savedAddresses.find(a => a.id === selectedAddressId)
+      if (saved) return saved.full_address
+    }
+    // Fall back to manual fields
+    if (!address.trim() || !city.trim() || !zip.trim()) return null
+    return [address.trim(), city.trim(), zip.trim(), phone.trim()].filter(Boolean).join(', ')
+  }
+
   // Place order handler
   async function handlePlaceOrder() {
     setCheckoutError(null)
 
-    if (!fullName.trim() || !address.trim() || !city.trim() || !zip.trim()) {
-      setCheckoutError('Please fill in all required delivery address fields.')
+    const deliveryAddress = resolveDeliveryAddress()
+    if (!deliveryAddress) {
+      setCheckoutError('Please select a saved address or fill in the delivery address fields.')
       return
     }
     const rawCard = cardNumber.replace(/\s/g, '')
@@ -394,12 +421,8 @@ export default function CheckoutPage() {
       return
     }
 
-    const deliveryAddress = [address.trim(), city.trim(), zip.trim(), phone.trim()]
-      .filter(Boolean)
-      .join(', ')
-
     const payload: CheckoutPayload = {
-      delivery_address: deliveryAddress,
+      delivery_address: deliveryAddress!,
       card_last4: rawCard.slice(-4),
       card_holder_name: cardHolder.trim(),
     }
@@ -532,65 +555,83 @@ export default function CheckoutPage() {
             {/* Section 01: Delivery Address */}
             <div>
               <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#c4c7c7', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#c6c6c7', flexShrink: 0 }}>
-                  01
-                </span>
+                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#c6c6c7', flexShrink: 0 }}>01</span>
                 Delivery Address
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={LABEL_STYLE}>Full Name</label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    placeholder="JOHN DOE"
-                    style={INPUT_STYLE}
-                  />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={LABEL_STYLE}>Address</label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    placeholder="123 MAIN STREET, APT 4B"
-                    style={INPUT_STYLE}
-                  />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>City</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={e => setCity(e.target.value)}
-                    placeholder="ISTANBUL"
-                    style={INPUT_STYLE}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={LABEL_STYLE}>ZIP</label>
-                    <input
-                      type="text"
-                      value={zip}
-                      onChange={e => setZip(e.target.value)}
-                      placeholder="34000"
-                      style={INPUT_STYLE}
-                    />
+
+              {/* Saved address cards */}
+              {savedAddresses.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <p style={{ ...LABEL_STYLE, marginBottom: '1rem' }}>Saved addresses</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {savedAddresses.map(addr => {
+                      const active = selectedAddressId === addr.id
+                      return (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => setSelectedAddressId(active ? null : addr.id)}
+                          style={{
+                            textAlign: 'left', background: active ? 'rgba(47,248,1,0.07)' : '#201f1f',
+                            border: `1px solid ${active ? '#2ff801' : '#353534'}`,
+                            padding: '1rem 1.25rem', cursor: 'pointer',
+                            transition: 'border-color 0.2s, background 0.2s',
+                            boxShadow: active ? '0 0 8px rgba(47,248,1,0.15)' : 'none',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                            <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${active ? '#2ff801' : '#555'}`, background: active ? '#2ff801' : 'transparent', flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: active ? '#2ff801' : '#fff' }}>
+                              {addr.label}
+                              {addr.is_default && <span style={{ marginLeft: '0.5rem', fontSize: '9px', color: '#2ff801', opacity: 0.7 }}>DEFAULT</span>}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#c4c7c7', marginLeft: '1.65rem', lineHeight: 1.5 }}>
+                            {addr.full_address}
+                          </p>
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div>
-                    <label style={LABEL_STYLE}>Phone</label>
-                    <input
-                      type="text"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      placeholder="+90 555 0192"
-                      style={INPUT_STYLE}
-                    />
+
+                  {/* Divider */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
+                    <div style={{ flex: 1, height: '1px', background: '#353534' }} />
+                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#555', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                      or enter a new address
+                    </span>
+                    <div style={{ flex: 1, height: '1px', background: '#353534' }} />
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Manual address fields — hidden when a saved address is selected */}
+              {!selectedAddressId && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={LABEL_STYLE}>Full Name</label>
+                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="JOHN DOE" style={INPUT_STYLE} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={LABEL_STYLE}>Address</label>
+                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="123 MAIN STREET, APT 4B" style={INPUT_STYLE} />
+                  </div>
+                  <div>
+                    <label style={LABEL_STYLE}>City</label>
+                    <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="ISTANBUL" style={INPUT_STYLE} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={LABEL_STYLE}>ZIP</label>
+                      <input type="text" value={zip} onChange={e => setZip(e.target.value)} placeholder="34000" style={INPUT_STYLE} />
+                    </div>
+                    <div>
+                      <label style={LABEL_STYLE}>Phone</label>
+                      <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+90 555 0192" style={INPUT_STYLE} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Section 02: Card Information */}
