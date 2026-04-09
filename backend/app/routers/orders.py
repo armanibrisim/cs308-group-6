@@ -23,7 +23,7 @@ async def list_my_orders(current_user: dict = Depends(get_current_user)):
 @router.get("/all", response_model=list[OrderResponse])
 async def list_all_orders(
     status: Optional[str] = Query(default=None, pattern="^(processing|in-transit|delivered)$"),
-    _: dict = Depends(require_role("product_manager")),
+    _: dict = Depends(require_role("product_manager", "sales_manager")),
 ):
     """Product manager: list all orders with optional status filter."""
     return fetch_all_orders(status)

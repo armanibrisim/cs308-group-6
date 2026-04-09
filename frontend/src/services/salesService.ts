@@ -82,6 +82,31 @@ export interface AnalyticsResponse {
   chart_data: ChartDataPoint[]
 }
 
+export interface OrderItem {
+  product_id: string
+  product_name: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+}
+
+export interface Order {
+  id: string
+  customer_id: string
+  customer_email: string
+  customer_name: string
+  delivery_address: string
+  items: OrderItem[]
+  subtotal: number
+  tax: number
+  shipping: number
+  total_amount: number
+  status: 'processing' | 'in-transit' | 'delivered'
+  invoice_id?: string
+  created_at: string
+  updated_at: string
+}
+
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export const salesService = {
@@ -110,5 +135,16 @@ export const salesService = {
     if (endDate) params.set('end_date', endDate)
     const qs = params.toString() ? `?${params.toString()}` : ''
     return request(`/sales/analytics${qs}`, token)
+  },
+
+  getOrders(token: string, status?: string): Promise<Order[]> {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    const qs = params.toString() ? `?${params.toString()}` : ''
+    return request(`/orders/all${qs}`, token)
+  },
+
+  getProducts(token: string, page = 1, limit = 100): Promise<{ products: DiscountProduct[]; total: number }> {
+    return request(`/products?page=${page}&limit=${limit}`, token)
   },
 }
