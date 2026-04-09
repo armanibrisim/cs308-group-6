@@ -239,12 +239,26 @@ export function Navbar() {
           <Link href="/cart" className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex">
             <span className="material-symbols-outlined text-2xl">shopping_cart</span>
           </Link>
-          <button
-            onClick={() => { user ? (logout(), router.push('/login')) : router.push('/login'); }}
-            className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 bg-transparent border-none cursor-pointer"
+          <Link
+            href={user ? '/profile' : '/login'}
+            className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex"
+            aria-label={user ? 'Open your profile' : 'Sign in'}
           >
-            <span className="material-symbols-outlined text-2xl">{user ? 'logout' : 'person'}</span>
-          </button>
+            <span className="material-symbols-outlined text-2xl">person</span>
+          </Link>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                router.push('/login');
+              }}
+              className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 bg-transparent border-none cursor-pointer inline-flex"
+              aria-label="Sign out"
+            >
+              <span className="material-symbols-outlined text-2xl">logout</span>
+            </button>
+          ) : null}
         </div>
 
       </div>
