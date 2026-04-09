@@ -63,13 +63,21 @@ export function CategoryBar() {
   const searchParams = useSearchParams()
   const category = searchParams.get('category')
   const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const triggerBarRef = useRef<HTMLDivElement>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
-      const el = containerRef.current
-      if (!el) return
-      if (e.target instanceof Node && !el.contains(e.target)) setIsOpen(false)
+      const target = e.target
+      if (!(target instanceof Node)) return
+
+      const triggerEl = triggerBarRef.current
+      const drawerEl = drawerRef.current
+
+      const clickedInsideTrigger = triggerEl?.contains(target) ?? false
+      const clickedInsideDrawer = drawerEl?.contains(target) ?? false
+
+      if (!clickedInsideTrigger && !clickedInsideDrawer) setIsOpen(false)
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -101,7 +109,7 @@ export function CategoryBar() {
       }}
     >
       <div
-        ref={containerRef}
+        ref={triggerBarRef}
         className="hide-scrollbar"
         style={{
           maxWidth: '1440px',
@@ -184,7 +192,7 @@ export function CategoryBar() {
           }}
         >
           <div
-            ref={containerRef}
+            ref={drawerRef}
             style={{
               position: 'fixed',
               top: 0,
