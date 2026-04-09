@@ -7,6 +7,7 @@ export const ROUTES = {
   // Customer routes
   BROWSE: '/browse',
   CART: '/cart',
+  CHECKOUT: '/checkout',
   ORDERS: '/orders',
   PRODUCT_DETAIL: (id: string) => `/product/${id}`,
   
