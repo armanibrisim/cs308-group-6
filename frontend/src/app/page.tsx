@@ -146,7 +146,7 @@ function ProductCard({ product, onClick }: { product: Product; onClick: () => vo
         <p style={{ fontSize: '0.6rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase' }}>
           {(product.category_id || 'PRODUCT').replace(/-/g, ' ')}
         </p>
-        <h3 style={{ fontSize: '0.95rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        <h3 style={{ fontSize: '0.95rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: 'calc(0.95rem * 1.3 * 2)' }}>
           {product.name}
         </h3>
         {/* Rating */}
@@ -213,43 +213,74 @@ function SectionHeader({ label, title, cta, onCta }: { label: string; title: str
 // ── Skeleton card ──────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="grounded-box" style={{ borderRadius: '1.5rem', overflow: 'hidden' }}>
-      <div style={{ aspectRatio: '4/3', background: 'rgba(255,255,255,0.04)' }} />
-      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-        <div style={{ height: '8px', width: '40%', borderRadius: '4px', background: 'rgba(255,255,255,0.07)' }} />
-        <div style={{ height: '14px', width: '80%', borderRadius: '4px', background: 'rgba(255,255,255,0.1)' }} />
-        <div style={{ height: '10px', width: '55%', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ height: '20px', width: '35%', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', marginTop: '0.5rem' }} />
+    <div className="grounded-box" style={{ borderRadius: '1.5rem', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Image — matches ProductCard aspectRatio 4/3 */}
+      <div style={{ aspectRatio: '4/3', background: 'rgba(255,255,255,0.04)', flexShrink: 0 }} />
+      {/* Info — matches ProductCard padding + gap + rows */}
+      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+        {/* category label */}
+        <div style={{ height: '9px', width: '38%', borderRadius: '4px', background: 'rgba(57,255,20,0.12)' }} />
+        {/* name — 2 lines */}
+        <div style={{ height: '14px', width: '90%', borderRadius: '4px', background: 'rgba(255,255,255,0.1)' }} />
+        <div style={{ height: '14px', width: '65%', borderRadius: '4px', background: 'rgba(255,255,255,0.07)' }} />
+        {/* rating row */}
+        <div style={{ height: '10px', width: '50%', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }} />
+        {/* price + arrow — pushed to bottom */}
+        <div style={{ marginTop: 'auto', paddingTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ height: '18px', width: '32%', borderRadius: '4px', background: 'rgba(255,255,255,0.09)' }} />
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Campaign data ──────────────────────────────────────────────────────────────
-const CAMPAIGNS = [
-  { id: 'deals',   icon: 'local_offer',    label: 'WEEKLY DROPS',    title: 'Fresh Deals',         desc: 'New discounts on top hardware every week. Updated every Monday.',    accent: NEON,       cta: 'Explore Deals'  },
-  { id: 'gaming',  icon: 'sports_esports', label: 'SETUP BUILDER',   title: 'Gaming Picks',        desc: 'Curated bundles for high-FPS competitive and immersive gaming.',     accent: '#60a5fa',  cta: 'Build Setup'    },
-  { id: 'student', icon: 'school',         label: 'STUDENT LIFE',    title: 'Study Essentials',    desc: 'Portable and affordable picks built for campus and remote work.',    accent: '#f59e0b',  cta: 'View Picks'     },
+// ── Category cards (static — matches real Firestore category_id values) ───────
+const CATEGORIES = [
+  {
+    id: 'smartphones',
+    icon: 'smartphone',
+    label: 'MOBILE',
+    title: 'Smartphones',
+    desc: 'Latest smartphones with cutting-edge cameras and top-tier performance.',
+    accent: '#60a5fa',
+  },
+  {
+    id: 'laptops',
+    icon: 'laptop',
+    label: 'COMPUTING',
+    title: 'Laptops',
+    desc: 'High-performance laptops for work, gaming, study, and creation.',
+    accent: NEON,
+  },
+  {
+    id: 'mobile-accessories',
+    icon: 'cable',
+    label: 'ACCESSORIES',
+    title: 'Mobile Accessories',
+    desc: 'Essential cables, cases, chargers, and accessories for your devices.',
+    accent: '#f59e0b',
+  },
 ]
 
 const TRUST = [
-  { icon: 'local_shipping', label: 'Free Shipping',   sub: 'On orders over $50' },
-  { icon: 'lock',           label: 'Secure Checkout', sub: '256-bit SSL encryption' },
-  { icon: 'undo',           label: 'Easy Returns',    sub: '30-day hassle-free' },
-  { icon: 'support_agent',  label: '24/7 Support',    sub: 'Real humans, always' },
+  { icon: 'local_shipping', label: 'Free Shipping', sub: 'On orders over $5000' },
+  { icon: 'lock', label: 'Secure Checkout', sub: '256-bit SSL encryption' },
+  { icon: 'undo', label: 'Easy Returns', sub: '30-day hassle-free' },
+  { icon: 'support_agent', label: '24/7 Support', sub: 'Real humans, always' },
 ]
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const router = useRouter()
 
-  const [heroProducts, setHeroProducts]       = useState<Product[]>([])
+  const [heroProducts, setHeroProducts] = useState<Product[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [topRatedProducts, setTopRatedProducts] = useState<Product[]>([])
-  const [loading, setLoading]                 = useState(true)
-  const [activeSlide, setActiveSlide]         = useState(0)
-  const [slideDir, setSlideDir]               = useState<1 | -1>(1)
-  const [animating, setAnimating]             = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [activeSlide, setActiveSlide] = useState(0)
+  const [slideDir, setSlideDir] = useState<1 | -1>(1)
+  const [animating, setAnimating] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -269,7 +300,7 @@ export default function HomePage() {
     if (heroProducts.length < 2) return
     intervalRef.current = setInterval(() => goSlide(1), 5000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heroProducts.length, activeSlide])
 
   const goSlide = (dir: 1 | -1) => {
@@ -291,7 +322,7 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1', position: 'relative', overflow: 'hidden' }}>
       {/* Background orbs */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '5%',  width: '55vw', height: '55vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(57,255,20,0.055) 0%, transparent 65%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', top: '-10%', left: '5%', width: '55vw', height: '55vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(57,255,20,0.055) 0%, transparent 65%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', bottom: '-5%', right: '0%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 65%)', filter: 'blur(40px)' }} />
       </div>
 
@@ -355,7 +386,7 @@ export default function HomePage() {
                   )}
                 </div>
 
-                <h1 className="font-wide" style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3rem)', lineHeight: 1.05, textTransform: 'uppercase', color: '#fff', margin: 0 }}>
+                <h1 className="font-wide" style={{ fontSize: 'clamp(1.1rem, 2vw, 1.75rem)', lineHeight: 1.2, textTransform: 'uppercase', color: '#fff', margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                   {hero.name}
                 </h1>
 
@@ -470,21 +501,21 @@ export default function HomePage() {
         <section>
           <SectionHeader label="COLLECTIONS" title="Shop by Category" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
-            {CAMPAIGNS.map((card) => (
-              <GlowCard key={card.id} onClick={() => router.push('/browse')}>
+            {CATEGORIES.map((cat) => (
+              <GlowCard key={cat.id} onClick={() => router.push(`/browse?category_id=${encodeURIComponent(cat.id)}`)}>
                 {/* Accent header */}
-                <div style={{ padding: '2rem 1.75rem 1.5rem', background: `linear-gradient(135deg, ${card.accent}12 0%, transparent 60%)`, borderBottom: `1px solid ${card.accent}18`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ width: '3rem', height: '3rem', borderRadius: '1rem', background: `${card.accent}18`, border: `1px solid ${card.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', color: card.accent, fontVariationSettings: "'FILL' 1" }}>{card.icon}</span>
+                <div style={{ padding: '2rem 1.75rem 1.5rem', background: `linear-gradient(135deg, ${cat.accent}12 0%, transparent 60%)`, borderBottom: `1px solid ${cat.accent}18`, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ width: '3rem', height: '3rem', borderRadius: '1rem', background: `${cat.accent}18`, border: `1px solid ${cat.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', color: cat.accent, fontVariationSettings: "'FILL' 1" }}>{cat.icon}</span>
                   </div>
-                  <span style={{ fontSize: '0.55rem', letterSpacing: '0.3em', fontWeight: 800, color: card.accent, fontFamily: 'Space Grotesk, sans-serif' }}>{card.label}</span>
+                  <span style={{ fontSize: '0.55rem', letterSpacing: '0.3em', fontWeight: 800, color: cat.accent, fontFamily: 'Space Grotesk, sans-serif' }}>{cat.label}</span>
                 </div>
                 {/* Body */}
                 <div style={{ padding: '1.25rem 1.75rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', margin: 0 }}>{card.title}</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: 0 }}>{card.desc}</p>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: card.accent, fontSize: '0.72rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.08em' }}>
-                    {card.cta}
+                  <h3 style={{ fontSize: '1.1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', margin: 0 }}>{cat.title}</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: 0 }}>{cat.desc}</p>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: cat.accent, fontSize: '0.72rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.08em' }}>
+                    Shop {cat.title}
                     <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>arrow_forward</span>
                   </div>
                 </div>
@@ -500,8 +531,8 @@ export default function HomePage() {
             {loading || featuredProducts.length === 0
               ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
               : featuredProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} onClick={() => router.push(`/product/${p.id}`)} />
-                ))}
+                <ProductCard key={p.id} product={p} onClick={() => router.push(`/product/${p.id}`)} />
+              ))}
           </div>
         </section>
 
@@ -511,13 +542,13 @@ export default function HomePage() {
           <div className="hide-scrollbar" style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
             {loading || topRatedProducts.length === 0
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} style={{ minWidth: '240px', flexShrink: 0 }}><SkeletonCard /></div>
-                ))
+                <div key={i} style={{ minWidth: '240px', maxWidth: '240px', flexShrink: 0 }}><SkeletonCard /></div>
+              ))
               : topRatedProducts.map((p) => (
-                  <div key={p.id} style={{ minWidth: '240px', maxWidth: '240px', flexShrink: 0 }}>
-                    <ProductCard product={p} onClick={() => router.push(`/product/${p.id}`)} />
-                  </div>
-                ))}
+                <div key={p.id} style={{ minWidth: '240px', maxWidth: '240px', flexShrink: 0 }}>
+                  <ProductCard product={p} onClick={() => router.push(`/product/${p.id}`)} />
+                </div>
+              ))}
           </div>
         </section>
 
