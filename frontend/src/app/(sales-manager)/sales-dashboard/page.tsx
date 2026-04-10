@@ -10,7 +10,8 @@ const MODULES = [
   {
     href: '/sales-dashboard/invoices',
     title: 'Invoices & Analytics',
-    description: 'View revenue, cost, profit summaries and browse all invoices. Filter by date range and export to CSV.',
+    description:
+      'View revenue, cost, profit summaries and browse all invoices. Filter by date range and export to CSV.',
     icon: 'receipt_long',
     accent: 'text-emerald-300',
     border: 'hover:border-emerald-500/40',
@@ -26,16 +27,17 @@ const MODULES = [
   {
     href: '/sales-dashboard/discounts',
     title: 'Product Discounts',
-    description: 'Apply or remove discount percentages on products. Wishlist owners are automatically notified.',
+    description:
+      'Apply or remove discount percentages on products. Wishlist owners are automatically notified.',
     icon: 'sell',
     accent: 'text-primary',
     border: 'hover:border-primary/40',
   },
-]
+] as const
 
-export default function SalesDashboardPage() {
-  const { user, isLoading } = useAuth()
+export default function SalesManagerDashboard() {
   const router = useRouter()
+  const { user, isLoading } = useAuth()
 
   useEffect(() => {
     if (isLoading) return
@@ -43,43 +45,47 @@ export default function SalesDashboardPage() {
     else if (user.role !== 'sales_manager') router.replace('/browse')
   }, [user, isLoading, router])
 
-  if (isLoading || !user || user.role !== 'sales_manager') return null
+  if (isLoading) {
+    return (
+      <main className="min-h-screen px-8 py-10 text-white/60 font-sans">Loading…</main>
+    )
+  }
+  if (!user || user.role !== 'sales_manager') return null
 
   return (
-    <main className="min-h-screen px-8 py-10 text-white">
-      <div className="mx-auto w-full max-w-[1100px] space-y-8">
-
-        {/* ── Header ── */}
-        <section className="glass-panel rounded-3xl border border-white/10 p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-            Sales Manager
+    <main className="min-h-screen px-8 py-10 text-white font-sans">
+      <div className="mx-auto w-full max-w-[1200px] space-y-8">
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Sales Manager</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Choose a module to manage pricing, orders, and invoices.
           </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-2 text-sm text-white/55">
-            Welcome back, {user.first_name || user.email}. Select a module to get started.
-          </p>
-        </section>
+        </header>
 
-        {/* ── Module cards ── */}
-        <section className="grid gap-5 sm:grid-cols-3">
-          {MODULES.map(({ href, title, description, icon, accent, border }) => (
+        <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {MODULES.map((module) => (
             <Link
-              key={href}
-              href={href}
-              className={`glass-panel group flex flex-col gap-4 rounded-3xl border border-white/10 p-7 transition duration-200 ${border} hover:bg-white/[0.03]`}
+              key={module.href}
+              href={module.href}
+              className={`group glass-panel flex flex-col rounded-3xl border border-white/10 p-7 transition hover:border-white/20 ${module.border}`}
             >
-              <span className={`material-symbols-outlined text-4xl ${accent}`}>{icon}</span>
-              <div>
-                <h2 className="text-lg font-semibold text-white">{title}</h2>
-                <p className="mt-1 text-sm leading-relaxed text-white/50">{description}</p>
-              </div>
-              <span className={`mt-auto text-xs font-semibold uppercase tracking-widest ${accent} opacity-60 group-hover:opacity-100 transition`}>
+              <span
+                className={`material-symbols-outlined text-3xl ${module.accent}`}
+                style={{ fontVariationSettings: "'FILL' 0" }}
+              >
+                {module.icon}
+              </span>
+              <h2 className="mt-4 text-lg font-semibold text-white">{module.title}</h2>
+              <p className="mt-2 flex-1 text-sm text-white/55 leading-relaxed">{module.description}</p>
+              <span
+                className={`mt-4 text-xs font-semibold uppercase tracking-widest ${module.accent} opacity-60 group-hover:opacity-100 transition`}
+              >
                 Open →
               </span>
             </Link>
           ))}
         </section>
-
       </div>
     </main>
   )

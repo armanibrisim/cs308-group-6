@@ -75,7 +75,7 @@ async def get_product(product_id: str):
 @router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     body: ProductCreate,
-    current_user: dict = Depends(require_role("product_manager")),
+    current_user: dict = Depends(require_role("product_manager", "sales_manager")),
 ):
     return add_product(body)
 

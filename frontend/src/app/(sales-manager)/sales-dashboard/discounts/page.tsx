@@ -2,9 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../../../../context/AuthContext'
+import {
+  type CategoryOption,
+  type ProductCreatePayload,
+  productService,
+} from '../../../../services/productService'
 import {
   DiscountProduct,
   salesService,
@@ -14,6 +19,35 @@ import {
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const fieldCls =
+  'w-full rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2 text-sm text-white outline-none transition focus:border-primary/40 placeholder:text-white/30'
+
+type ProductCreateFormState = {
+  name: string
+  model: string
+  serial_number: string
+  description: string
+  stock_quantity: string
+  price: string
+  warranty: string
+  distributor: string
+  category_id: string
+  image_url: string
+}
+
+const EMPTY_PRODUCT_FORM: ProductCreateFormState = {
+  name: '',
+  model: '',
+  serial_number: '',
+  description: '',
+  stock_quantity: '0',
+  price: '',
+  warranty: '',
+  distributor: '',
+  category_id: '',
+  image_url: '',
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -39,6 +73,14 @@ export default function SalesManagerDiscountsPage() {
 
   // feedback banner
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // create product
+  const [showCreateProduct, setShowCreateProduct] = useState(false)
+  const [createForm, setCreateForm] = useState<ProductCreateFormState>(EMPTY_PRODUCT_FORM)
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
+  const [categorySource, setCategorySource] = useState<'categories' | 'products_fallback' | null>(null)
+  const [categoryLoadState, setCategoryLoadState] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading')
+  const [creatingProduct, setCreatingProduct] = useState(false)
 
   // ── auth guard ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -71,6 +113,25 @@ export default function SalesManagerDiscountsPage() {
   useEffect(() => {
     if (!isLoading && user?.role === 'sales_manager') loadProducts()
   }, [isLoading, user, loadProducts])
+
+  useEffect(() => {
+    if (isLoading || user?.role !== 'sales_manager') return
+    setCategoryLoadState('loading')
+    setCategorySource(null)
+    productService
+      .getCategoryOptionsWithFallback()
+      .then(({ options, source }) => {
+        setCategoryOptions(options)
+        setCategorySource(source)
+        setCategoryLoadState(options.length === 0 ? 'empty' : 'ready')
+      })
+      .catch(() => {
+        setCategoryOptions([])
+        setCategorySource(null)
+        setCategoryLoadState('error')
+        setBanner({ type: 'error', message: 'Failed to load categories for the create form.' })
+      })
+  }, [isLoading, user?.role])
 
   // ── filtered list ────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -140,6 +201,88 @@ export default function SalesManagerDiscountsPage() {
   }
 
   // ── remove discount ───────────────────────────────────────────────────────────
+  async function handleCreateProduct(e: FormEvent) {
+    e.preventDefault()
+    if (!user?.token) return
+
+    const price = parseFloat(createForm.price)
+    const stock = parseInt(createForm.stock_quantity, 10)
+    if (!createForm.name.trim()) {
+      setBanner({ type: 'error', message: 'Product name is required.' })
+      return
+    }
+    if (!createForm.model.trim()) {
+      setBanner({ type: 'error', message: 'Model is required.' })
+      return
+    }
+    if (!createForm.serial_number.trim()) {
+      setBanner({ type: 'error', message: 'Serial number is required.' })
+      return
+    }
+    if (!createForm.description.trim()) {
+      setBanner({ type: 'error', message: 'Description is required.' })
+      return
+    }
+    if (!createForm.warranty.trim()) {
+      setBanner({ type: 'error', message: 'Warranty is required.' })
+      return
+    }
+    if (!createForm.distributor.trim()) {
+      setBanner({ type: 'error', message: 'Distributor is required.' })
+      return
+    }
+    if (!createForm.category_id.trim()) {
+      setBanner({
+        type: 'error',
+        message:
+          categoryOptions.length === 0
+            ? 'No categories available — add categories or products with category_id.'
+            : 'Please select a category from the list.',
+      })
+      return
+    }
+    if (Number.isNaN(price) || price <= 0) {
+      setBanner({ type: 'error', message: 'Price must be greater than 0.' })
+      return
+    }
+    if (Number.isNaN(stock) || stock < 0) {
+      setBanner({ type: 'error', message: 'Stock must be 0 or more.' })
+      return
+    }
+
+    const payload: ProductCreatePayload = {
+      name: createForm.name.trim(),
+      model: createForm.model.trim(),
+      serial_number: createForm.serial_number.trim(),
+      description: createForm.description.trim(),
+      stock_quantity: stock,
+      price,
+      warranty: createForm.warranty.trim(),
+      distributor: createForm.distributor.trim(),
+      category_id: createForm.category_id.trim(),
+      image_url: createForm.image_url.trim() || undefined,
+    }
+
+    setCreatingProduct(true)
+    try {
+      const created = await productService.createProduct(user.token, payload)
+      await loadProducts()
+      setCreateForm({ ...EMPTY_PRODUCT_FORM })
+      setSelected((prev) => new Set(prev).add(created.id))
+      setBanner({
+        type: 'success',
+        message: `Product "${created.name}" created — it is selected below so you can apply a discount.`,
+      })
+    } catch (err: unknown) {
+      setBanner({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to create product.',
+      })
+    } finally {
+      setCreatingProduct(false)
+    }
+  }
+
   async function handleRemoveDiscount(product: DiscountProduct) {
     if (!user?.token) return
     if (!window.confirm(`Remove discount from "${product.name}"?`)) return
@@ -184,6 +327,187 @@ export default function SalesManagerDiscountsPage() {
               ← Back to Dashboard
             </Link>
           </div>
+        </section>
+
+        {/* ── Add new product ── */}
+        <section className="glass-panel rounded-3xl border border-white/10 p-7">
+          <button
+            type="button"
+            onClick={() => setShowCreateProduct((s) => !s)}
+            className="flex w-full items-center justify-between gap-4 text-left"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-white">Add new product</h2>
+              <p className="mt-1 text-sm text-white/55">
+                Create a catalog item (price &gt; 0, required fields). It appears in the table below.
+              </p>
+            </div>
+            <span className="shrink-0 text-sm font-semibold text-primary">
+              {showCreateProduct ? '▲ Hide' : '▼ Show'}
+            </span>
+          </button>
+
+          {showCreateProduct && (
+            <form onSubmit={handleCreateProduct} className="mt-6 space-y-4 border-t border-white/10 pt-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs text-white/45">Name</label>
+                  <input
+                    required
+                    className={fieldCls}
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Product name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Model</label>
+                  <input
+                    required
+                    className={fieldCls}
+                    value={createForm.model}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, model: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Serial number</label>
+                  <input
+                    required
+                    className={fieldCls}
+                    value={createForm.serial_number}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, serial_number: e.target.value }))}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs text-white/45">Description</label>
+                  <textarea
+                    required
+                    rows={3}
+                    className={`${fieldCls} min-h-[72px] resize-y`}
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Price (₺)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0.01}
+                    required
+                    className={fieldCls}
+                    value={createForm.price}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, price: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Stock quantity</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    className={fieldCls}
+                    value={createForm.stock_quantity}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, stock_quantity: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Warranty</label>
+                  <input
+                    required
+                    className={fieldCls}
+                    value={createForm.warranty}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, warranty: e.target.value }))}
+                    placeholder="e.g. 2 years"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-white/45">Distributor</label>
+                  <input
+                    required
+                    className={fieldCls}
+                    value={createForm.distributor}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, distributor: e.target.value }))}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs text-white/45">Category</label>
+                  <select
+                    required={categoryOptions.length > 0}
+                    className={`${fieldCls} bg-[#141414] text-white`}
+                    style={{ colorScheme: 'dark' }}
+                    value={createForm.category_id}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, category_id: e.target.value }))}
+                    disabled={categoryLoadState === 'loading' || categoryOptions.length === 0}
+                    aria-busy={categoryLoadState === 'loading'}
+                    aria-invalid={categoryLoadState === 'empty' || categoryLoadState === 'error'}
+                  >
+                    <option value="" disabled>
+                      {categoryLoadState === 'loading'
+                        ? 'Loading categories…'
+                        : categoryLoadState === 'error'
+                          ? 'Could not load categories'
+                          : categoryOptions.length === 0
+                            ? 'No categories available'
+                            : 'Select a category'}
+                    </option>
+                    {categoryOptions.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-[#141414] text-white">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  {categoryLoadState === 'loading' && (
+                    <p className="mt-1.5 text-xs text-white/40">Loading category list…</p>
+                  )}
+                  {categoryLoadState === 'error' && (
+                    <p className="mt-1.5 text-xs text-rose-300/90">
+                      Could not load categories. Check that the API is running and refresh the page.
+                    </p>
+                  )}
+                  {categoryLoadState === 'empty' && (
+                    <p className="mt-1.5 text-xs text-amber-300/95">
+                      No categories available. Seed the <code className="text-amber-200/90">categories</code>{' '}
+                      collection or add products with a <code className="text-amber-200/90">category_id</code>.
+                    </p>
+                  )}
+                  {categorySource === 'products_fallback' && categoryOptions.length > 0 && (
+                    <p className="mt-1.5 text-xs text-white/40">
+                      Categories inferred from existing products (API category list was empty).
+                    </p>
+                  )}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs text-white/45">Image URL (optional)</label>
+                  <input
+                    type="text"
+                    className={fieldCls}
+                    value={createForm.image_url}
+                    onChange={(e) => setCreateForm((f) => ({ ...f, image_url: e.target.value }))}
+                    placeholder="https://…"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={
+                    creatingProduct || categoryLoadState === 'loading' || categoryOptions.length === 0
+                  }
+                  className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {creatingProduct ? 'Creating…' : 'Create product'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateForm({ ...EMPTY_PRODUCT_FORM })}
+                  className="rounded-xl border border-white/20 px-5 py-2.5 text-sm text-white/70 transition hover:border-white/40"
+                >
+                  Reset form
+                </button>
+              </div>
+            </form>
+          )}
         </section>
 
         {/* ── Banner ── */}
