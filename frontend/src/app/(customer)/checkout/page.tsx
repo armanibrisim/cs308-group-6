@@ -299,11 +299,10 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
 
   // Delivery form fields (used when entering manually)
-  const [fullName, setFullName] = useState('')
   const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
-  const [zip, setZip] = useState('')
-  const [phone, setPhone] = useState('')
+  const [saveNewAddress, setSaveNewAddress] = useState(false)
+  const [newAddressLabel, setNewAddressLabel] = useState('')
+  const [showManualForm, setShowManualForm] = useState(false)
 
   // Card form fields
   const [cardNumber, setCardNumber] = useState('')
@@ -389,9 +388,12 @@ export default function CheckoutPage() {
       const saved = savedAddresses.find(a => a.id === selectedAddressId)
       if (saved) return saved.full_address
     }
-    // Fall back to manual fields
-    if (!address.trim() || !city.trim() || !zip.trim()) return null
-    return [address.trim(), city.trim(), zip.trim(), phone.trim()].filter(Boolean).join(', ')
+    // Manual form
+    if (savedAddresses.length === 0 || showManualForm) {
+      if (!address.trim()) return null
+      return address.trim()
+    }
+    return null
   }
 
   // Place order handler
@@ -425,6 +427,22 @@ export default function CheckoutPage() {
       delivery_address: deliveryAddress!,
       card_last4: rawCard.slice(-4),
       card_holder_name: cardHolder.trim(),
+    }
+
+    // Save new address to account if requested
+    if (!selectedAddressId && saveNewAddress && user?.token) {
+      const label = newAddressLabel.trim() || 'Saved Address'
+      const fullAddr = address.trim()
+      try {
+        const saved = await addressService.addAddress(user.token, {
+          label,
+          full_address: fullAddr,
+          is_default: savedAddresses.length === 0,
+        })
+        setSavedAddresses(prev => [...prev, saved])
+      } catch {
+        // Non-fatal — proceed with checkout even if save fails
+      }
     }
 
     setProcessing(true)
@@ -570,7 +588,7 @@ export default function CheckoutPage() {
                         <button
                           key={addr.id}
                           type="button"
-                          onClick={() => setSelectedAddressId(active ? null : addr.id)}
+                          onClick={() => { setSelectedAddressId(active ? null : addr.id); setShowManualForm(false) }}
                           style={{
                             textAlign: 'left', background: active ? 'rgba(47,248,1,0.07)' : '#201f1f',
                             border: `1px solid ${active ? '#2ff801' : '#353534'}`,
@@ -597,39 +615,78 @@ export default function CheckoutPage() {
                   {/* Divider */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
                     <div style={{ flex: 1, height: '1px', background: '#353534' }} />
-                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#555', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-                      or enter a new address
-                    </span>
+                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#555', textTransform: 'uppercase', letterSpacing: '0.2em' }}>or</span>
                     <div style={{ flex: 1, height: '1px', background: '#353534' }} />
                   </div>
+
+                  {/* Toggle button */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowManualForm(v => !v); setSelectedAddressId(null) }}
+                    style={{
+                      width: '100%',
+                      background: showManualForm ? 'transparent' : 'rgba(47,248,1,0.08)',
+                      border: `1px solid ${showManualForm ? '#353534' : '#2ff801'}`,
+                      color: showManualForm ? '#888' : '#2ff801',
+                      padding: '0.85rem 1.5rem',
+                      fontFamily: 'monospace',
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.15em',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      transition: 'background 0.2s, border-color 0.2s, color 0.2s',
+                    }}
+                    onMouseEnter={e => { if (!showManualForm) e.currentTarget.style.background = 'rgba(47,248,1,0.14)' }}
+                    onMouseLeave={e => { if (!showManualForm) e.currentTarget.style.background = 'rgba(47,248,1,0.08)' }}
+                  >
+                    {showManualForm
+                      ? '× Cancel new address'
+                      : '+ Enter a new address'}
+                  </button>
                 </div>
               )}
 
-              {/* Manual address fields — hidden when a saved address is selected */}
-              {!selectedAddressId && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={LABEL_STYLE}>Full Name</label>
-                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="JOHN DOE" style={INPUT_STYLE} />
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={LABEL_STYLE}>Address</label>
-                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="123 MAIN STREET, APT 4B" style={INPUT_STYLE} />
+              {/* Manual address fields */}
+              {(savedAddresses.length === 0 || showManualForm) && !selectedAddressId && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div>
+                    <label style={LABEL_STYLE}>Label (e.g. Home, Work)</label>
+                    <input
+                      type="text"
+                      value={newAddressLabel}
+                      onChange={e => setNewAddressLabel(e.target.value)}
+                      placeholder="HOME"
+                      maxLength={50}
+                      style={INPUT_STYLE}
+                    />
                   </div>
                   <div>
-                    <label style={LABEL_STYLE}>City</label>
-                    <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="ISTANBUL" style={INPUT_STYLE} />
+                    <label style={LABEL_STYLE}>Full Address</label>
+                    <textarea
+                      value={address}
+                      onChange={e => setAddress(e.target.value)}
+                      placeholder="STREET, CITY, POSTAL CODE, COUNTRY"
+                      maxLength={300}
+                      rows={3}
+                      style={{ ...INPUT_STYLE, resize: 'none' }}
+                    />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={LABEL_STYLE}>ZIP</label>
-                      <input type="text" value={zip} onChange={e => setZip(e.target.value)} placeholder="34000" style={INPUT_STYLE} />
-                    </div>
-                    <div>
-                      <label style={LABEL_STYLE}>Phone</label>
-                      <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+90 555 0192" style={INPUT_STYLE} />
-                    </div>
-                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={saveNewAddress}
+                      onChange={e => setSaveNewAddress(e.target.checked)}
+                      style={{ accentColor: '#2ff801', width: '14px', height: '14px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#c4c7c7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Save this address to my account
+                    </span>
+                  </label>
                 </div>
               )}
             </div>
