@@ -144,6 +144,13 @@ export const salesService = {
     return request(`/orders/all${qs}`, token)
   },
 
+  updateOrderStatus(token: string, orderId: string, newStatus: Order['status']): Promise<Order> {
+    return request(`/orders/${orderId}/status`, token, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus }),
+    })
+  },
+
   getProducts(token: string, page = 1, limit = 100): Promise<{ products: DiscountProduct[]; total: number }> {
     return request(`/products?page=${page}&limit=${limit}`, token)
   },

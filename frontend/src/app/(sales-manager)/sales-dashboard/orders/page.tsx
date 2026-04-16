@@ -45,6 +45,10 @@ export default function SalesManagerOrdersPage() {
   // expanded row
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  // status update
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [updateError, setUpdateError] = useState<string | null>(null)
+
   // ── auth guard ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return
@@ -70,6 +74,24 @@ export default function SalesManagerOrdersPage() {
   useEffect(() => {
     if (!isLoading && user?.role === 'sales_manager') loadOrders()
   }, [isLoading, user, loadOrders])
+
+  // ── status update ─────────────────────────────────────────────────────────────
+  const handleStatusChange = useCallback(
+    async (orderId: string, newStatus: OrderStatus) => {
+      if (!user?.token) return
+      setUpdatingId(orderId)
+      setUpdateError(null)
+      try {
+        const updated = await salesService.updateOrderStatus(user.token, orderId, newStatus)
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: updated.status } : o)))
+      } catch (err: unknown) {
+        setUpdateError(err instanceof Error ? err.message : 'Failed to update status')
+      } finally {
+        setUpdatingId(null)
+      }
+    },
+    [user?.token],
+  )
 
   // ── filtered list ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -113,7 +135,7 @@ export default function SalesManagerOrdersPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Sales Module</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">All Orders</h1>
               <p className="mt-2 text-sm text-white/60">
-                Read-only view of all customer orders. Use the Deliveries module to update order statuses.
+                View and manage all customer orders. Change order statuses directly from this page.
               </p>
             </div>
             <Link
@@ -172,6 +194,14 @@ export default function SalesManagerOrdersPage() {
               {loading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
+          {updateError && (
+            <p className="mt-3 text-xs text-rose-400">
+              ⚠ {updateError}{' '}
+              <button onClick={() => setUpdateError(null)} className="underline hover:text-white">
+                Dismiss
+              </button>
+            </p>
+          )}
         </section>
 
         {/* ── Table ── */}
@@ -224,11 +254,31 @@ export default function SalesManagerOrdersPage() {
                           <td className="px-3 py-3 font-semibold text-white">₺{fmt(order.total_amount)}</td>
                           <td className="px-3 py-3 text-white/65">{fmtDate(order.created_at)}</td>
                           <td className="px-3 py-3">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${STATUS_BADGE[order.status]}`}
-                            >
-                              {order.status}
-                            </span>
+                            {updatingId === order.id ? (
+                              <span className="text-xs text-white/40">Saving…</span>
+                            ) : (
+                              <select
+                                value={order.status}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  e.stopPropagation()
+                                  handleStatusChange(order.id, e.target.value as OrderStatus)
+                                }}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition
+                                  ${STATUS_BADGE[order.status]}
+                                  bg-transparent hover:opacity-80`}
+                              >
+                                {(['processing', 'in-transit', 'delivered'] as OrderStatus[]).map((s) => (
+                                  <option
+                                    key={s}
+                                    value={s}
+                                    className="bg-[#1a1a2e] text-white capitalize"
+                                  >
+                                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-3 py-3 text-xs text-white/40">
                             {order.invoice_id ?? '—'}
