@@ -9,6 +9,7 @@ from app.services.order_service import (
     fetch_my_orders,
     fetch_order,
     update_order_status,
+    update_order_status_free,
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -42,7 +43,13 @@ async def get_order(
 async def set_order_status(
     order_id: str,
     payload: OrderStatusUpdate,
-    _: dict = Depends(require_role("product_manager")),
+    current_user: dict = Depends(require_role("product_manager", "sales_manager")),
 ):
-    """Product manager: advance order status (processing → in-transit → delivered)."""
+    """Product/sales manager: update order status.
+
+    - product_manager: enforced linear transitions (processing → in-transit → delivered)
+    - sales_manager: free transitions to any valid status
+    """
+    if current_user.get("role") == "sales_manager":
+        return update_order_status_free(order_id, payload)
     return update_order_status(order_id, payload)
