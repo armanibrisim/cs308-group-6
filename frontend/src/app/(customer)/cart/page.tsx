@@ -219,7 +219,7 @@ export default function CartPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1' }}>
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)' }}>
 
 
       <SideNav />
@@ -230,11 +230,14 @@ export default function CartPage() {
 
           {/* ── Cart items ── */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              <h1 className="font-wide" style={{ fontSize: '3.5rem', fontWeight: 900, lineHeight: 1, textTransform: 'uppercase' }}>
-                Your Cart
-              </h1>
-              <span style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.3em', color: '#a1a1a1', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+            <div style={{ paddingTop: '3rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', color: 'var(--c-neon)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.4rem' }}>SHOPPING</p>
+                <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--c-text)' }}>
+                  Your Cart
+                </h1>
+              </div>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, letterSpacing: '0.15em', color: 'rgba(var(--c-text-rgb), 0.35)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
                 {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
               </span>
             </div>
@@ -243,13 +246,13 @@ export default function CartPage() {
             {!user && (
               <div style={{
                 padding: '1rem 1.5rem', borderRadius: '1rem',
-                background: 'rgba(47,248,1,0.05)', border: '1px solid rgba(47,248,1,0.15)',
-                fontSize: '11px', color: '#a1a1a1', letterSpacing: '0.05em',
+                background: 'rgba(var(--c-neon-rgb), 0.05)', border: '1px solid rgba(var(--c-neon-rgb), 0.15)',
+                fontSize: '11px', color: 'rgba(var(--c-text-rgb), 0.5)', letterSpacing: '0.05em',
               }}>
                 You are browsing as a guest.{' '}
                 <button
                   onClick={() => router.push('/login')}
-                  style={{ color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                  style={{ color: 'var(--c-neon)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
                 >
                   Sign in
                 </button>
@@ -282,7 +285,7 @@ export default function CartPage() {
                     <p className="font-wide" style={{ textTransform: 'uppercase', letterSpacing: '0.4em', fontSize: '0.85rem' }}>Inventory Empty</p>
                     <button
                       onClick={() => router.push('/browse')}
-                      style={{ marginTop: '2rem', color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
+                      style={{ marginTop: '2rem', color: 'var(--c-neon)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
                     >
                       Browse Products
                     </button>
@@ -296,7 +299,7 @@ export default function CartPage() {
                           <div style={{
                             width: '96px', height: '96px', borderRadius: '1rem',
                             overflow: 'hidden', flexShrink: 0,
-                            border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(var(--c-text-rgb), 0.05)', background: 'rgba(var(--c-text-rgb), 0.03)',
                           }}>
                             {item.image ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -315,7 +318,7 @@ export default function CartPage() {
 
                           {/* Info */}
                           <div style={{ flex: 1, textAlign: 'left' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>{item.name}</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--c-text)', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>{item.name}</h3>
                             {item.maxStock !== undefined && item.maxStock < 5 && item.maxStock > 0 && (
                               <p style={{ fontSize: '9px', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.5rem' }}>
                                 Only {item.maxStock} left
@@ -323,9 +326,9 @@ export default function CartPage() {
                             )}
                             <button
                               onClick={() => remove(item.id)}
-                              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.2)' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4em', color: 'rgba(var(--c-text-rgb), 0.2)' }}
                               onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.2)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(var(--c-text-rgb), 0.2)')}
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
                               Remove
@@ -334,23 +337,23 @@ export default function CartPage() {
 
                           {/* Qty + Price */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', borderRadius: '0.75rem', padding: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--c-panel)', borderRadius: '0.75rem', padding: '6px', border: '1px solid var(--c-panel-border)' }}>
                               <button className="qty-btn" onClick={() => decrement(item.id)}
-                                style={{ width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+                                style={{ width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer', color: 'rgba(var(--c-text-rgb), 0.4)' }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>remove</span>
                               </button>
-                              <span style={{ width: '2.5rem', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', color: '#fff' }}>{item.quantity}</span>
+                              <span style={{ width: '2.5rem', textAlign: 'center', fontWeight: 900, fontSize: '0.75rem', color: 'var(--c-text)' }}>{item.quantity}</span>
                               <button className="qty-btn" onClick={() => increment(item.id)}
                                 disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
                                 style={{
                                   width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0.5rem', cursor: 'pointer',
-                                  color: item.maxStock !== undefined && item.quantity >= item.maxStock ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)',
+                                  color: item.maxStock !== undefined && item.quantity >= item.maxStock ? 'rgba(var(--c-text-rgb), 0.1)' : 'rgba(var(--c-text-rgb), 0.4)',
                                 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>add</span>
                               </button>
                             </div>
 
-                            <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '1.5rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                            <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '1.5rem', fontWeight: 800, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>
                               {fmt(item.price * item.quantity)}
                             </div>
                           </div>
@@ -368,51 +371,51 @@ export default function CartPage() {
             <div style={{ position: 'sticky', top: '7rem' }}>
               <GlowCard className="rounded-[40px]">
                 <div className="glass-panel" style={{ borderRadius: '40px', padding: '3rem' }}>
-                  <h2 className="font-wide" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <h2 className="font-wide" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem', color: 'rgba(var(--c-text-rgb), 0.9)' }}>
                     Order Summary
                   </h2>
 
                   {/* Free shipping progress */}
-                  <div style={{ marginBottom: '2.5rem', padding: '1.5rem', borderRadius: '1.25rem', background: shipping === 0 ? 'rgba(47,248,1,0.06)' : 'rgba(255,255,255,0.03)', border: `1px solid ${shipping === 0 ? 'rgba(47,248,1,0.2)' : 'rgba(255,255,255,0.06)'}` }}>
+                  <div style={{ marginBottom: '2.5rem', padding: '1.5rem', borderRadius: '1.25rem', background: shipping === 0 ? 'rgba(var(--c-neon-rgb), 0.06)' : 'rgba(var(--c-text-rgb), 0.03)', border: `1px solid ${shipping === 0 ? 'rgba(var(--c-neon-rgb), 0.2)' : 'rgba(var(--c-text-rgb), 0.06)'}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', color: shipping === 0 ? '#2ff801' : 'rgba(255,255,255,0.7)' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', color: shipping === 0 ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.7)' }}>
                         {shipping === 0 ? '✓ Free Shipping Unlocked!' : 'Free Shipping Progress'}
                       </span>
                       {shipping > 0 && (
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#2ff801' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--c-neon)' }}>
                           {fmt(FREE_SHIPPING_THRESHOLD - subtotal)} away
                         </span>
                       )}
                     </div>
-                    <div style={{ height: '6px', borderRadius: '9999px', background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '9999px', background: '#2ff801', boxShadow: '0 0 12px rgba(47,248,1,0.6)', width: `${progress}%`, transition: 'width 0.5s ease' }} />
+                    <div style={{ height: '6px', borderRadius: '9999px', background: 'rgba(var(--c-text-rgb), 0.07)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: '9999px', background: 'var(--c-neon)', boxShadow: '0 0 12px rgba(var(--c-neon-rgb), 0.6)', width: `${progress}%`, transition: 'width 0.5s ease' }} />
                     </div>
                     {shipping > 0 && (
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '0.75rem' }}>
-                        Add <strong style={{ color: '#fff' }}>{fmt(FREE_SHIPPING_THRESHOLD - subtotal)}</strong> more to your cart for free shipping
+                      <p style={{ fontSize: '12px', color: 'rgba(var(--c-text-rgb), 0.4)', marginTop: '0.75rem' }}>
+                        Add <strong style={{ color: 'var(--c-text)' }}>{fmt(FREE_SHIPPING_THRESHOLD - subtotal)}</strong> more to your cart for free shipping
                       </p>
                     )}
                   </div>
 
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2.5rem', marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                  <div style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)', paddingTop: '2.5rem', marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     {[
-                      { label: 'Subtotal', value: fmt(subtotal), color: '#fff' },
-                      { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping), color: '#2ff801' },
-                      { label: 'Tax (Est.)', value: fmt(tax), color: '#fff' },
+                      { label: 'Subtotal', value: fmt(subtotal), color: 'var(--c-text)' },
+                      { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping), color: 'var(--c-neon)' },
+                      { label: 'Tax (Est.)', value: fmt(tax), color: 'var(--c-text)' },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)' }}>{label}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.5)' }}>{label}</span>
                         <span style={{ fontSize: '12px', fontWeight: 700, color }}>{value}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2.5rem', marginBottom: '3rem' }}>
+                  <div style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.1)', paddingTop: '2.5rem', marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <span className="font-wide" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', paddingTop: '0.75rem' }}>Total</span>
+                      <span className="font-wide" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.3)', paddingTop: '0.75rem' }}>Total</span>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#2ff801', letterSpacing: '-0.02em' }}>{fmt(total)}</div>
-                        <p style={{ fontSize: '9px', color: '#a1a1a1', textTransform: 'uppercase', marginTop: '0.5rem', letterSpacing: '0.2em', fontWeight: 700 }}>Incl. VAT where applicable</p>
+                        <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--c-neon)', letterSpacing: '-0.02em' }}>{fmt(total)}</div>
+                        <p style={{ fontSize: '9px', color: 'rgba(var(--c-text-rgb), 0.5)', textTransform: 'uppercase', marginTop: '0.5rem', letterSpacing: '0.2em', fontWeight: 700 }}>Incl. VAT where applicable</p>
                       </div>
                     </div>
                   </div>
@@ -426,16 +429,16 @@ export default function CartPage() {
                         placeholder="PROMO CODE"
                         style={{
                           width: '100%', boxSizing: 'border-box',
-                          background: '#121212', border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'var(--c-panel)', border: '1px solid rgba(var(--c-text-rgb), 0.1)',
                           borderRadius: '1rem', padding: '1.25rem 6rem 1.25rem 1.5rem',
                           fontSize: '11px', fontWeight: 900, letterSpacing: '0.2em',
-                          color: '#fff', outline: 'none', textTransform: 'uppercase',
+                          color: 'var(--c-text)', outline: 'none', textTransform: 'uppercase',
                         }}
                       />
                       <button style={{
                         position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: '10px', fontWeight: 900, color: '#2ff801', textTransform: 'uppercase',
+                        fontSize: '10px', fontWeight: 900, color: 'var(--c-neon)', textTransform: 'uppercase',
                       }}>Apply</button>
                     </div>
 
@@ -446,11 +449,11 @@ export default function CartPage() {
                       disabled={items.length === 0}
                       style={{
                         width: '100%', padding: '1.5rem', borderRadius: '1rem',
-                        background: items.length === 0 ? 'rgba(47,248,1,0.3)' : '#2ff801',
+                        background: items.length === 0 ? 'rgba(var(--c-neon-rgb), 0.3)' : '#2ff801',
                         color: '#000', border: 'none', cursor: items.length === 0 ? 'not-allowed' : 'pointer',
                         fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '12px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-                        boxShadow: '0 0 20px rgba(47,248,1,0.2)',
+                        boxShadow: '0 0 20px rgba(var(--c-neon-rgb), 0.2)',
                         transition: 'filter 0.2s, transform 0.1s',
                       }}
                       onMouseEnter={e => { if (items.length > 0) e.currentTarget.style.filter = 'brightness(1.1)' }}
@@ -467,7 +470,7 @@ export default function CartPage() {
                       onClick={() => router.push('/browse')}
                       style={{
                         width: '100%', padding: '1rem', background: 'none', border: 'none', cursor: 'pointer',
-                        color: '#a1a1a1', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em',
+                        color: 'rgba(var(--c-text-rgb), 0.5)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em',
                         transition: 'color 0.2s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.color = '#fff')}

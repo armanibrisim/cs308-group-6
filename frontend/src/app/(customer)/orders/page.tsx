@@ -17,10 +17,12 @@ function fmtDate(iso: string): string {
   return iso.slice(0, 10)
 }
 
+const MUTED = 'rgba(var(--c-text-rgb), 0.45)'
+
 const STATUS_CONFIG: Record<Order['status'], { label: string; color: string; step: number }> = {
-  processing:  { label: 'Processing',  color: '#f59e0b', step: 1 },
-  'in-transit':{ label: 'In Transit',  color: '#60a5fa', step: 2 },
-  delivered:   { label: 'Delivered',   color: '#2ff801', step: 3 },
+  processing:  { label: 'Processing',  color: '#d97706', step: 1 },
+  'in-transit':{ label: 'In Transit',  color: '#3b82f6', step: 2 },
+  delivered:   { label: 'Delivered',   color: '#16a34a', step: 3 },
 }
 
 // ── Status Stepper ─────────────────────────────────────────────────────────────
@@ -40,26 +42,26 @@ function StatusStepper({ status }: { status: Order['status'] }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <div style={{
                 width: '28px', height: '28px', borderRadius: '50%',
-                background: done ? cfg.color : '#2a2a2a',
-                border: `2px solid ${done ? cfg.color : '#444'}`,
+                background: done ? cfg.color : 'rgba(var(--c-text-rgb), 0.08)',
+                border: `2px solid ${done ? cfg.color : 'rgba(var(--c-text-rgb), 0.20)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: active ? `0 0 12px ${cfg.color}80` : 'none',
                 transition: 'all 0.3s',
               }}>
                 {done && (
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: step === 'processing' ? '#000' : '#000', fontVariationSettings: '"wght" 700' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#000', fontVariationSettings: '"wght" 700' }}>
                     {step === 'delivered' ? 'check' : step === 'in-transit' ? 'local_shipping' : 'inventory_2'}
                   </span>
                 )}
               </div>
-              <span style={{ fontSize: '8px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em', color: done ? cfg.color : '#555', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '8px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em', color: done ? cfg.color : MUTED, whiteSpace: 'nowrap' }}>
                 {cfg.label}
               </span>
             </div>
             {i < steps.length - 1 && (
               <div style={{
                 flex: 1, height: '2px', margin: '0 4px', marginBottom: '1.2rem',
-                background: STATUS_CONFIG[steps[i + 1]].step <= currentStep ? STATUS_CONFIG[steps[i + 1]].color : '#2a2a2a',
+                background: STATUS_CONFIG[steps[i + 1]].step <= currentStep ? STATUS_CONFIG[steps[i + 1]].color : 'rgba(var(--c-text-rgb), 0.10)',
                 transition: 'background 0.3s',
               }} />
             )}
@@ -77,9 +79,8 @@ function OrderCard({ order }: { order: Order }) {
   const cfg = STATUS_CONFIG[order.status]
 
   return (
-    <div style={{
-      background: '#1c1b1b',
-      border: '1px solid #353534',
+    <div className="grounded-box" style={{
+      borderRadius: '1.25rem',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -90,22 +91,22 @@ function OrderCard({ order }: { order: Order }) {
         {/* Header row */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
           <div>
-            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8e9192', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
               Order
             </div>
-            <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 700 }}>
+            <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--c-text)' }}>
               #{order.id.slice(-8).toUpperCase()}
             </div>
-            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8e9192', marginTop: '4px' }}>
+            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, marginTop: '4px' }}>
               {fmtDate(order.created_at)}
             </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8e9192', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>
               Total
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>
               {fmt(order.total_amount)}
             </div>
           </div>
@@ -118,15 +119,15 @@ function OrderCard({ order }: { order: Order }) {
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {order.items.slice(0, 3).map((item, i) => (
             <div key={i} style={{
-              fontSize: '10px', fontFamily: 'monospace', padding: '4px 10px',
-              background: '#2a2a2a', color: '#c4c7c7',
-              textTransform: 'uppercase', letterSpacing: '0.05em',
+              fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, padding: '4px 10px', borderRadius: '0.375rem',
+              background: 'rgba(var(--c-text-rgb), 0.06)', color: 'rgba(var(--c-text-rgb), 0.5)', border: '1px solid rgba(var(--c-text-rgb), 0.08)',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
             }}>
               {item.product_name} ×{item.quantity}
             </div>
           ))}
           {order.items.length > 3 && (
-            <div style={{ fontSize: '10px', fontFamily: 'monospace', padding: '4px 10px', background: '#2a2a2a', color: '#8e9192' }}>
+            <div style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, padding: '4px 10px', borderRadius: '0.375rem', background: 'rgba(var(--c-text-rgb), 0.04)', color: 'rgba(var(--c-text-rgb), 0.3)', border: '1px solid rgba(var(--c-text-rgb), 0.06)' }}>
               +{order.items.length - 3} more
             </div>
           )}
@@ -138,23 +139,23 @@ function OrderCard({ order }: { order: Order }) {
           style={{
             marginTop: '1.5rem', background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase',
-            letterSpacing: '0.2em', color: '#8e9192', display: 'flex', alignItems: 'center', gap: '4px',
+            letterSpacing: '0.2em', color: MUTED, display: 'flex', alignItems: 'center', gap: '4px',
             transition: 'color 0.2s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#8e9192')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--c-text)')}
+          onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
         >
           {expanded ? 'Hide Details ▲' : 'View Details ▼'}
         </button>
 
         {/* Expanded detail */}
         {expanded && (
-          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #353534' }}>
-            <table style={{ width: '100%', fontFamily: 'monospace', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--c-panel-border)' }}>
+            <table style={{ width: '100%', fontFamily: 'Inter, sans-serif', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #353534' }}>
+                <tr style={{ borderBottom: '1px solid var(--c-panel-border)' }}>
                   {['Product', 'Qty', 'Unit Price', 'Subtotal'].map(h => (
-                    <th key={h} style={{ padding: '0.5rem 0', textAlign: h === 'Product' ? 'left' : 'right', fontSize: '9px', textTransform: 'uppercase', color: '#8e9192', fontWeight: 500 }}>
+                    <th key={h} style={{ padding: '0.5rem 0', textAlign: h === 'Product' ? 'left' : 'right', fontSize: '9px', textTransform: 'uppercase', color: MUTED, fontWeight: 500 }}>
                       {h}
                     </th>
                   ))}
@@ -162,36 +163,36 @@ function OrderCard({ order }: { order: Order }) {
               </thead>
               <tbody>
                 {order.items.map((item, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(53,53,52,0.5)' }}>
-                    <td style={{ padding: '0.75rem 0', fontSize: '11px' }}>{item.product_name}</td>
-                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: '#c4c7c7' }}>{item.quantity}</td>
-                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: '#c4c7c7' }}>{fmt(item.unit_price)}</td>
-                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px' }}>{fmt(item.subtotal)}</td>
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+                    <td style={{ padding: '0.75rem 0', fontSize: '11px', color: 'var(--c-text)' }}>{item.product_name}</td>
+                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: 'rgba(var(--c-text-rgb), 0.6)' }}>{item.quantity}</td>
+                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: 'rgba(var(--c-text-rgb), 0.6)' }}>{fmt(item.unit_price)}</td>
+                    <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: 'var(--c-text)' }}>{fmt(item.subtotal)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8e9192', lineHeight: 2 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, lineHeight: 2 }}>
                 <span style={{ textTransform: 'uppercase' }}>Delivery Address</span><br />
-                <span style={{ color: '#c4c7c7' }}>{order.delivery_address}</span>
+                <span style={{ color: 'rgba(var(--c-text-rgb), 0.7)' }}>{order.delivery_address}</span>
               </div>
               <div style={{ fontSize: '10px', fontFamily: 'monospace', textAlign: 'right', lineHeight: 2 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3rem' }}>
-                  <span style={{ color: '#8e9192' }}>Subtotal</span>
-                  <span>{fmt(order.subtotal)}</span>
+                  <span style={{ color: MUTED }}>Subtotal</span>
+                  <span style={{ color: 'var(--c-text)' }}>{fmt(order.subtotal)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3rem' }}>
-                  <span style={{ color: '#8e9192' }}>Tax</span>
-                  <span>{fmt(order.tax)}</span>
+                  <span style={{ color: MUTED }}>Tax</span>
+                  <span style={{ color: 'var(--c-text)' }}>{fmt(order.tax)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3rem' }}>
-                  <span style={{ color: '#8e9192' }}>Shipping</span>
-                  <span>{order.shipping === 0 ? 'FREE' : fmt(order.shipping)}</span>
+                  <span style={{ color: MUTED }}>Shipping</span>
+                  <span style={{ color: 'var(--c-text)' }}>{order.shipping === 0 ? 'FREE' : fmt(order.shipping)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3rem', borderTop: '1px solid #353534', paddingTop: '0.5rem', marginTop: '0.5rem', fontWeight: 700 }}>
-                  <span>Total</span>
-                  <span style={{ color: '#2ff801' }}>{fmt(order.total_amount)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '3rem', borderTop: '1px solid var(--c-panel-border)', paddingTop: '0.5rem', marginTop: '0.5rem', fontWeight: 700 }}>
+                  <span style={{ color: 'var(--c-text)' }}>Total</span>
+                  <span style={{ color: 'var(--c-neon)' }}>{fmt(order.total_amount)}</span>
                 </div>
               </div>
             </div>
@@ -235,22 +236,25 @@ export default function OrdersPage() {
   }, [authLoading, user, loadOrders])
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1' }}>
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)' }}>
       <SideNav />
 
       <main style={{ paddingTop: '0', paddingBottom: '5rem', paddingLeft: '9rem', paddingRight: '4rem' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '3rem', paddingTop: '3rem' }}>
-          <h1 className="font-wide" style={{ fontSize: '3.5rem', fontWeight: 900, lineHeight: 1, textTransform: 'uppercase' }}>
-            My Orders
-          </h1>
+          <div>
+            <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', color: 'var(--c-neon)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.4rem' }}>ACCOUNT</p>
+            <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--c-text)' }}>
+              My Orders
+            </h1>
+          </div>
           <button
             onClick={loadOrders}
             disabled={loading}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.3em', color: '#8e9192', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.5rem' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#8e9192')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.2em', color: MUTED, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.4rem' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--c-text)')}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
             Refresh
@@ -280,7 +284,7 @@ export default function OrdersPage() {
             </p>
             <button
               onClick={() => router.push('/browse')}
-              style={{ marginTop: '2rem', color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
+              style={{ marginTop: '2rem', color: 'var(--c-neon)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5em' }}
             >
               Start Shopping
             </button>

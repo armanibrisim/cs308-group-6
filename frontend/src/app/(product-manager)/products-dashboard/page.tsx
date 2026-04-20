@@ -13,8 +13,8 @@ function StarRating({ rating }: { rating: number }) {
       {Array.from({ length: 5 }).map((_, i) => (
         <span
           key={i}
-          className={`material-symbols-outlined text-xs ${i < rating ? 'text-[#00FF41]' : 'text-zinc-700'}`}
-          style={{ fontVariationSettings: "'FILL' 1" }}
+          className={`material-symbols-outlined text-xs ${i < rating ? 'text-[#39ff14]' : ''}`}
+          style={{ fontVariationSettings: i < rating ? "'FILL' 1" : "'FILL' 0", color: i < rating ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.30)' }}
         >
           star
         </span>
@@ -27,13 +27,13 @@ function PlaceholderView({ title }: { title: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
       <h1
-        className="text-6xl font-black tracking-tight text-[#00FF41] mb-4 uppercase"
-        style={{ textShadow: '0 0 8px #00FF41' }}
+        className="text-6xl font-black tracking-tight text-[#39ff14] mb-4 uppercase"
+        style={{ textShadow: '0 0 8px var(--c-neon)' }}
       >
         {title}
       </h1>
       <div className="flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-[#00FF41] animate-pulse" />
+        <div className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
         <p className="text-xs text-zinc-500 font-mono tracking-widest uppercase">
           COMING SOON — AVAILABLE AFTER PROGRESS DEMO
         </p>
@@ -101,28 +101,28 @@ export default function ProductManagerDashboard() {
   const pendingCount = reviews.filter(r => r.status.toUpperCase() === 'PENDING').length
 
   return (
-    <div className="min-h-screen font-mono" style={{ background: '#0a0a0a', color: '#e5e2e1' }}>
+    <div className="atmospheric-bg min-h-screen" style={{ color: 'var(--c-text)' }}>
       {/* Progress bar just below the global Navbar */}
       <div className="fixed top-[80px] left-0 right-0 h-[2px] bg-zinc-900 z-40">
         <div
           className="h-full w-[65%]"
           style={{
-            background: 'linear-gradient(to right, #2ae500, #d7ffc5)',
-            boxShadow: '0 0 10px #00FF41',
+            background: 'linear-gradient(to right, var(--c-neon), rgba(var(--c-neon-rgb), 0.4))',
+            boxShadow: '0 0 10px var(--c-neon)',
           }}
         />
       </div>
 
       <div className="max-w-7xl mx-auto px-12 py-10">
         {/* Tab navigation */}
-        <nav className="flex gap-6 mb-12 border-b border-zinc-800/50 font-mono text-xs font-medium uppercase tracking-tighter">
+        <nav className="flex gap-6 mb-12 border-b border-white/[0.07] text-xs font-medium uppercase tracking-wider" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
           {(['COMMENTS', 'PRODUCTS', 'STOCK', 'DELIVERIES'] as TabType[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-3 transition-all duration-300 ${
                 activeTab === tab
-                  ? 'text-[#00FF41] border-b-2 border-[#00FF41]'
+                  ? 'text-[#39ff14] border-b-2 border-[#39ff14]'
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
@@ -135,8 +135,9 @@ export default function ProductManagerDashboard() {
           <>
             {/* Header */}
             <section className="mb-12">
-              <h1 className="text-4xl font-black tracking-tight text-[#00FF41] mb-1">COMMENTS</h1>
-              <p className="text-xs text-zinc-500 font-mono tracking-widest">
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-[#39ff14] mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>PRODUCT MANAGER</p>
+              <h1 className="text-4xl font-bold tracking-tight text-white mb-1" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>Comments</h1>
+              <p className="text-xs text-zinc-500 tracking-widest" style={{ fontFamily: 'Inter, sans-serif' }}>
                 MODERATION QUEUE /{' '}
                 {user?.first_name
                   ? `${user.first_name.toUpperCase()}_PM`
@@ -145,13 +146,16 @@ export default function ProductManagerDashboard() {
             </section>
 
             {/* Search & Filters */}
-            <section className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 p-6 bg-[#181818] rounded-lg border border-zinc-800/20">
+            <section className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 p-6 rounded-xl border border-white/[0.07]" style={{ background: 'var(--c-panel)' }}>
               <div className="relative w-full md:w-1/2">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-zinc-500 text-sm">
                   search
                 </span>
                 <input
-                  className="w-full bg-[#2a2a2a] border border-zinc-800 text-xs py-3 pl-12 pr-4 focus:outline-none focus:border-[#00FF41] transition-colors font-mono placeholder:text-zinc-600 text-white"
+                  className="w-full border text-xs py-3 pl-12 pr-4 focus:outline-none transition-colors placeholder:text-zinc-600 text-white rounded-lg"
+                  style={{ background: 'rgba(var(--c-text-rgb), 0.04)', borderColor: 'rgba(var(--c-text-rgb), 0.1)', fontFamily: 'Inter, sans-serif' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--c-neon)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(var(--c-text-rgb), 0.1)')}
                   placeholder="SEARCH BY PRODUCT OR CUSTOMER..."
                   type="text"
                   value={searchQuery}
@@ -165,8 +169,8 @@ export default function ProductManagerDashboard() {
                     onClick={() => setFilter(f)}
                     className={`px-6 py-2 font-bold text-[10px] uppercase tracking-wider rounded border transition-all ${
                       filter === f
-                        ? 'bg-[#2ff801] text-black border-[#00FF41]'
-                        : 'bg-[#2a2a2a] text-zinc-400 border-transparent hover:border-zinc-700'
+                        ? 'bg-[#39ff14] text-black border-[#39ff14]'
+                        : 'text-zinc-400 border-white/10 hover:border-white/25 hover:text-white'
                     }`}
                   >
                     {f}
@@ -178,7 +182,7 @@ export default function ProductManagerDashboard() {
             {/* Loading state */}
             {loading && (
               <div className="flex justify-center py-20">
-                <div className="w-6 h-6 border-2 border-[#00FF41]/30 border-t-[#00FF41] rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-[#39ff14]/30 border-t-[#39ff14] rounded-full animate-spin" />
               </div>
             )}
 
@@ -197,9 +201,10 @@ export default function ProductManagerDashboard() {
                   return (
                     <div
                       key={review.id}
-                      className={`bg-[#1a1a1a] p-6 border-l-[3px] relative transition-all hover:bg-[#222] ${
+                      style={{ background: 'var(--c-panel)' }}
+                      className={`p-6 border-l-[3px] rounded-r-xl relative transition-all ${
                         status === 'APPROVED'
-                          ? 'border-[#00FF41]'
+                          ? 'border-[#39ff14]'
                           : status === 'REJECTED'
                           ? 'border-red-500 opacity-50 grayscale hover:grayscale-0 hover:opacity-100'
                           : 'border-yellow-500'
@@ -209,7 +214,7 @@ export default function ProductManagerDashboard() {
                         <div
                           className={`absolute top-4 right-4 text-[8px] px-2 py-0.5 font-bold border ${
                             status === 'APPROVED'
-                              ? 'bg-green-500/10 text-[#00FF41] border-[#00FF41]/20'
+                              ? 'bg-green-500/10 text-[#39ff14] border-[#39ff14]/20'
                               : 'bg-red-500/10 text-red-500 border-red-500/20'
                           }`}
                         >
@@ -219,7 +224,7 @@ export default function ProductManagerDashboard() {
 
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <div className="text-[10px] text-[#00FF41] font-bold uppercase tracking-widest mb-1">
+                          <div className="text-[10px] text-[#39ff14] font-bold uppercase tracking-widest mb-1">
                             {review.product_name ?? review.product_id}
                           </div>
                           <div className="text-[10px] text-zinc-500 uppercase">{review.username}</div>
@@ -251,7 +256,7 @@ export default function ProductManagerDashboard() {
                             </button>
                             <button
                               onClick={() => handleStatusChange(review.id, 'approved')}
-                              className="text-[9px] font-bold text-[#00FF41] px-3 py-1.5 border border-[#00FF41]/30 hover:bg-[#00FF41] hover:text-black transition-all"
+                              className="text-[9px] font-bold text-[#39ff14] px-3 py-1.5 border border-[#39ff14]/30 hover:bg-[#39ff14] hover:text-black transition-all"
                             >
                               APPROVE
                             </button>
@@ -265,10 +270,11 @@ export default function ProductManagerDashboard() {
                 {/* Refresh tile */}
                 <button
                   onClick={() => fetchReviews(filter)}
-                  className="bg-[#111] border border-dashed border-zinc-800 p-6 flex flex-col items-center justify-center text-center opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+                  style={{ background: 'rgba(var(--c-text-rgb), 0.02)' }}
+                  className="border border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-4xl mb-4 text-[#00FF41]">refresh</span>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#00FF41]">
+                  <span className="material-symbols-outlined text-4xl mb-4 text-[#39ff14]">refresh</span>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#39ff14]">
                     Refresh Queue
                   </div>
                   <div className="text-[8px] text-zinc-600 mt-2">CLICK TO RELOAD</div>
@@ -284,13 +290,13 @@ export default function ProductManagerDashboard() {
       {/* Status toast */}
       <div className="fixed bottom-8 right-8 z-50">
         <div
-          className="p-4 border border-[#00FF41]/20 rounded shadow-2xl flex items-center gap-4"
-          style={{ background: 'rgba(10,10,10,0.8)', backdropFilter: 'blur(20px)' }}
+          className="p-4 border border-[#39ff14]/20 rounded shadow-2xl flex items-center gap-4"
+          style={{ background: 'var(--c-panel)' }}
         >
-          <div className="w-2 h-2 rounded-full bg-[#00FF41] animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />
           <div className="text-[10px] font-mono">
             <span className="text-zinc-500">SYSTEM_STATUS:</span>
-            <span className="text-[#00FF41] font-bold ml-1">MONITORING_ACTIVE</span>
+            <span className="text-[#39ff14] font-bold ml-1">MONITORING_ACTIVE</span>
           </div>
           <div className="pl-4 border-l border-zinc-800 text-[10px] font-mono text-zinc-500 uppercase">
             {pendingCount} Pending Actions

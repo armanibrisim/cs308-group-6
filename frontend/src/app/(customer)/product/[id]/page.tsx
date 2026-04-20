@@ -8,7 +8,8 @@ import { reviewService, Review } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
-const NEON = '#39ff14'
+const NEON = 'var(--c-neon)'
+const NEON_RGB = 'var(--c-neon-rgb)'
 
 type VoteData = { likes: number; dislikes: number; voted: 'like' | 'dislike' | null }
 type VotesAction =
@@ -263,7 +264,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="atmospheric-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em' }}>
+      <div className="atmospheric-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em' }}>
         ENTITY NOT FOUND
       </div>
     )
@@ -273,18 +274,18 @@ export default function ProductDetailPage() {
   const inStock = stockQty > 0
 
   return (
-    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: '#e5e2e1', fontFamily: 'Inter, sans-serif' }}>
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)', fontFamily: 'Inter, sans-serif' }}>
       <SideNav />
-      <main style={{ position: 'relative', zIndex: 10, paddingBottom: '6rem', paddingLeft: '9rem', paddingRight: '2rem', maxWidth: '1920px', margin: '0 auto' }}>
+      <main style={{ position: 'relative', zIndex: 10, paddingTop: '2.5rem', paddingBottom: '8rem', paddingLeft: '10rem', paddingRight: '3rem', maxWidth: '1920px', margin: '0 auto' }}>
 
         {/* ── Product Grid ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4rem', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '5rem', alignItems: 'start' }}>
 
           {/* ── Left: Image Gallery ── */}
           <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
             {/* Main image */}
-            <GlowBox style={{ borderRadius: '1.5rem', aspectRatio: '16/10', overflow: 'hidden' }}>
+            <GlowBox className="product-img-box" style={{ borderRadius: '1.5rem', aspectRatio: '16/10', overflow: 'hidden' }}>
               <div
                 style={{ position: 'absolute', inset: 0 }}
                 onMouseEnter={() => setArrowsVisible(true)}
@@ -306,7 +307,7 @@ export default function ProductDetailPage() {
                   />
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.1)' }}>image_not_supported</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: 'rgba(var(--c-text-rgb), 0.1)' }}>image_not_supported</span>
                   </div>
                 )}
                 {/* Navigation Arrows — only render when there are multiple images */}
@@ -338,7 +339,7 @@ export default function ProductDetailPage() {
                       alignItems: 'center',
                       transition: 'background 0.2s, transform 0.2s',
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(57,255,20,0.2)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `rgba(var(--c-neon-rgb), 0.2)`; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)' }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.4)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '2.5rem' }}>chevron_left</span>
@@ -357,7 +358,7 @@ export default function ProductDetailPage() {
                       alignItems: 'center',
                       transition: 'background 0.2s, transform 0.2s',
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(57,255,20,0.2)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `rgba(var(--c-neon-rgb), 0.2)`; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)' }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.4)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '2.5rem' }}>chevron_right</span>
@@ -377,15 +378,15 @@ export default function ProductDetailPage() {
                     width: '8rem',
                     aspectRatio: '1',
                     borderRadius: '1rem',
-                    border: `2px solid ${src === mainImage ? NEON : 'rgba(255,255,255,0.05)'}`,
+                    border: `2px solid ${src === mainImage ? NEON : 'rgba(var(--c-text-rgb), 0.05)'}`,
                     overflow: 'hidden',
                     flexShrink: 0,
                     cursor: 'pointer',
-                    background: '#111',
+                    background: 'var(--c-product-img)',
                     transition: 'border-color 0.2s ease, filter 0.2s ease',
                   }}
                   onMouseEnter={(e) => { if (src !== mainImage) (e.currentTarget as HTMLDivElement).style.borderColor = `${NEON}80` }}
-                  onMouseLeave={(e) => { if (src !== mainImage) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)' }}
+                  onMouseLeave={(e) => { if (src !== mainImage) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.05)' }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt={`View ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
@@ -401,17 +402,17 @@ export default function ProductDetailPage() {
               {/* Badges */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' as const }}>
                 {(product?.category_id || product?.categoryId) && (
-                  <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: `${NEON}22`, color: NEON, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: `rgba(${NEON_RGB}, 0.13)`, color: NEON, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, fontFamily: 'Space Grotesk, sans-serif' }}>
                     {(product?.category_id || product?.categoryId).replace(/-/g, ' ')}
                   </span>
                 )}
-                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? 'rgba(57,255,20,0.1)' : 'rgba(255,255,255,0.05)', color: inStock ? NEON : 'rgba(255,255,255,0.4)', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const }}>
+                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? `rgba(var(--c-neon-rgb), 0.1)` : 'rgba(var(--c-text-rgb), 0.05)', color: inStock ? NEON : 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const }}>
                   {inStock ? `IN STOCK — ${stockQty} units` : 'OUT OF STOCK'}
                 </span>
               </div>
 
               {/* Title */}
-              <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1rem' }}>
+              <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1rem' }}>
                 {product?.name || 'UNKNOWN ENTITY'}
               </h1>
 
@@ -424,16 +425,19 @@ export default function ProductDetailPage() {
                     <button
                       onClick={scrollToComments}
                       title="View reviews"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: hasRating ? NEON : 'rgba(255,255,255,0.2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <span key={s} className="material-symbols-outlined" style={{ fontSize: '1.125rem', fontVariationSettings: hasRating && s <= Math.round(avg!) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
-                      ))}
-                      <span style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginLeft: '0.5rem', color: hasRating ? NEON : 'rgba(255,255,255,0.3)' }}>
+                      {[1, 2, 3, 4, 5].map((s) => {
+                        const filled = hasRating && s <= Math.round(avg!)
+                        return (
+                          <span key={s} className="material-symbols-outlined" style={{ fontSize: '1.125rem', fontVariationSettings: filled ? "'FILL' 1" : "'FILL' 0", color: filled ? NEON : 'rgba(var(--c-text-rgb), 0.35)' }}>star</span>
+                        )
+                      })}
+                      <span style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginLeft: '0.5rem', color: hasRating ? NEON : 'rgba(var(--c-text-rgb), 0.3)' }}>
                         {hasRating ? avg!.toFixed(1) : 'N/A'}
                       </span>
                     </button>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.2em', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.5rem' }}>
+                    <span style={{ color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.75rem', textTransform: 'uppercase' as const, letterSpacing: '0.2em', borderLeft: '1px solid rgba(var(--c-text-rgb), 0.1)', paddingLeft: '1.5rem' }}>
                       {totalCount > 0 ? `${totalCount} REVIEW${totalCount !== 1 ? 'S' : ''}` : 'NO RATINGS YET'}
                     </span>
                   </div>
@@ -443,10 +447,10 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div style={{ marginBottom: '3rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                  <span style={{ fontSize: '3.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, letterSpacing: '-0.03em', color: '#fff' }}>
+                  <span style={{ fontSize: '3.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, letterSpacing: '-0.03em', color: 'var(--c-text)' }}>
                     ${Math.floor(product?.price || 0).toLocaleString()}
                   </span>
-                  <span style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  <span style={{ fontSize: '1.5rem', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif' }}>
                     .{((product?.price || 0) % 1).toFixed(2).substring(2)}
                   </span>
                 </div>
@@ -454,24 +458,24 @@ export default function ProductDetailPage() {
 
               {/* Qty selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontFamily: 'Space Grotesk, sans-serif' }}>QTY</span>
-                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.4)', letterSpacing: '0.2em', fontFamily: 'Space Grotesk, sans-serif' }}>QTY</span>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(var(--c-text-rgb), 0.1)', borderRadius: '0.75rem', overflow: 'hidden' }}>
                   <button
                     className="qty-btn"
-                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty <= 1 ? 'not-allowed' : 'pointer', color: qty <= 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty <= 1 ? 'not-allowed' : 'pointer', color: qty <= 1 ? 'rgba(var(--c-text-rgb), 0.2)' : 'rgba(var(--c-text-rgb), 0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => setQty(q => Math.max(1, q - 1))}
                     disabled={qty <= 1}
                   >−</button>
-                  <span style={{ minWidth: '2.5rem', textAlign: 'center', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#fff' }}>{qty}</span>
+                  <span style={{ minWidth: '2.5rem', textAlign: 'center', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)' }}>{qty}</span>
                   <button
                     className="qty-btn"
-                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty >= stockQty ? 'not-allowed' : 'pointer', color: qty >= stockQty ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: '2.5rem', height: '2.5rem', border: 'none', cursor: qty >= stockQty ? 'not-allowed' : 'pointer', color: qty >= stockQty ? 'rgba(var(--c-text-rgb), 0.2)' : 'rgba(var(--c-text-rgb), 0.7)', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => setQty(q => Math.min(stockQty, q + 1))}
                     disabled={qty >= stockQty}
                   >+</button>
                 </div>
                 {stockQty > 0 && (
-                  <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>{stockQty} IN STOCK</span>
+                  <span style={{ fontSize: '0.6875rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.15em' }}>{stockQty} IN STOCK</span>
                 )}
               </div>
 
@@ -513,7 +517,7 @@ export default function ProductDetailPage() {
                 }}
                 style={{
                   width: '100%',
-                  background: cartStatus === 'success' ? '#22c55e' : cartStatus === 'error' ? '#ef4444' : inStock ? NEON : 'rgba(255,255,255,0.08)',
+                  background: cartStatus === 'success' ? '#22c55e' : cartStatus === 'error' ? '#ef4444' : inStock ? NEON : 'rgba(var(--c-text-rgb), 0.08)',
                   color: cartStatus === 'error' ? '#fff' : '#000',
                   fontFamily: 'Space Grotesk, sans-serif',
                   fontWeight: 700,
@@ -533,7 +537,7 @@ export default function ProductDetailPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (!inStock || cartStatus !== 'idle') return
-                  ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 40px rgba(57,255,20,0.35)'
+                  ;(e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 40px rgba(var(--c-neon-rgb), 0.35)`
                   ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.02)'
                 }}
                 onMouseLeave={(e) => {
@@ -553,7 +557,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Secondary actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
                 {[
                   { icon: 'favorite', label: 'SAVE' },
                   { icon: 'compare_arrows', label: 'COMPARE' },
@@ -566,11 +570,11 @@ export default function ProductDetailPage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      color: 'rgba(255,255,255,0.4)',
+                      color: 'rgba(var(--c-text-rgb), 0.4)',
                       background: 'none',
                       border: 'none',
-                      borderLeft: i === 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      borderRight: i === 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      borderLeft: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
+                      borderRight: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
                       cursor: 'pointer',
                       padding: '0.75rem 0.5rem',
                       transition: 'color 0.2s ease, transform 0.2s ease',
@@ -580,7 +584,7 @@ export default function ProductDetailPage() {
                       ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${NEON}`)
                     }}
                     onMouseLeave={(e) => {
-                      ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)'
+                      ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.4)'
                       ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', 'font-size: 1.5rem; transform: scale(1); transition: transform 0.2s')
                     }}
                   >
@@ -594,9 +598,9 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ── Tabs Section ── */}
-        <section style={{ marginTop: '8rem' }}>
+        <section style={{ marginTop: '5rem' }}>
           {/* Tab triggers */}
-          <div className="hide-scrollbar" style={{ display: 'flex', gap: '3rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem', overflowX: 'auto', paddingLeft: '1rem' }}>
+          <div className="hide-scrollbar" style={{ display: 'flex', gap: '3rem', borderBottom: '1px solid rgba(var(--c-text-rgb), 0.05)', marginBottom: '3rem', overflowX: 'auto', paddingLeft: '1rem' }}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -608,7 +612,7 @@ export default function ProductDetailPage() {
                   fontFamily: 'Space Grotesk, sans-serif',
                   letterSpacing: '0.3em',
                   textTransform: 'uppercase' as const,
-                  color: activeTab === tab.id ? NEON : 'rgba(255,255,255,0.4)',
+                  color: activeTab === tab.id ? NEON : 'rgba(var(--c-text-rgb), 0.4)',
                   background: 'none',
                   border: 'none',
                   borderBottom: `2px solid ${activeTab === tab.id ? NEON : 'transparent'}`,
@@ -617,8 +621,8 @@ export default function ProductDetailPage() {
                   transition: 'color 0.2s ease, border-color 0.2s ease',
                   flexShrink: 0,
                 }}
-                onMouseEnter={(e) => { if (activeTab !== tab.id) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)' }}
-                onMouseLeave={(e) => { if (activeTab !== tab.id) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.4)' }}
+                onMouseEnter={(e) => { if (activeTab !== tab.id) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.7)' }}
+                onMouseLeave={(e) => { if (activeTab !== tab.id) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.4)' }}
               >
                 {tab.label}
               </button>
@@ -626,17 +630,17 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Tab content */}
-          <GlowBox style={{ padding: '4rem', borderRadius: '1.5rem', minHeight: '400px' }}>
+          <GlowBox style={{ padding: '3rem', borderRadius: '1.5rem', minHeight: '400px' }}>
 
             {/* Description */}
             {activeTab === 'desc' && (
               <div style={{ maxWidth: '56rem' }}>
                 {product?.description ? (
-                  <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.85, fontWeight: 300, whiteSpace: 'pre-line' }}>
+                  <p style={{ fontSize: '1.125rem', color: 'rgba(var(--c-text-rgb), 0.7)', lineHeight: 1.85, fontWeight: 300, whiteSpace: 'pre-line' }}>
                     {product.description}
                   </p>
                 ) : (
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
+                  <p style={{ color: 'rgba(var(--c-text-rgb), 0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
                     NO DESCRIPTION AVAILABLE
                   </p>
                 )}
@@ -659,7 +663,7 @@ export default function ProductDetailPage() {
                 ].map((spec) => (
                   <div key={spec.label}>
                     <p style={{ fontSize: '0.75rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em', marginBottom: '0.5rem', fontWeight: 700 }}>{spec.label}</p>
-                    <p style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', color: '#fff', fontWeight: 300, wordBreak: 'break-all' as const }}>{spec.value}</p>
+                    <p style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-text)', fontWeight: 300, wordBreak: 'break-all' as const }}>{spec.value}</p>
                   </div>
                 ))}
               </div>
@@ -673,8 +677,8 @@ export default function ProductDetailPage() {
                   <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>USER REVIEWS</h3>
                   <button
                     onClick={() => { if (!user) { router.push('/login'); return; } setShowReviewForm(v => !v) }}
-                    style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `${NEON}1A` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `${NEON}1A`)}
+                    style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
                     onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
                   >
                     {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
@@ -683,7 +687,7 @@ export default function ProductDetailPage() {
 
                 {/* Success Message */}
                 {reviewSuccess && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: 'rgba(57,255,20,0.08)', border: `1px solid ${NEON}40`, borderRadius: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: `rgba(var(--c-neon-rgb), 0.08)`, border: `1px solid ${NEON}40`, borderRadius: '0.5rem' }}>
                     <span className="material-symbols-outlined" style={{ color: NEON, fontSize: '1.25rem' }}>check_circle</span>
                     <span style={{ color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem', letterSpacing: '0.15em' }}>{reviewSuccessMsg}</span>
                   </div>
@@ -691,10 +695,10 @@ export default function ProductDetailPage() {
 
                 {/* Write Review Form */}
                 {showReviewForm && (
-                  <div style={{ marginBottom: '2rem', padding: '1.5rem', background: `${NEON}08`, border: `1px solid ${NEON}22`, borderRadius: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'rgba(57,255,20,0.05)', border: '1px solid rgba(57,255,20,0.15)', borderRadius: '0.5rem' }}>
+                  <div style={{ marginBottom: '2rem', padding: '1.5rem', background: `rgba(${NEON_RGB}, 0.03)`, border: `1px solid ${NEON}22`, borderRadius: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: `rgba(var(--c-neon-rgb), 0.05)`, border: `1px solid rgba(var(--c-neon-rgb), 0.15)`, borderRadius: '0.5rem' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', color: NEON }}>account_circle</span>
-                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em' }}>POSTING AS</span>
+                      <span style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em' }}>POSTING AS</span>
                       <span style={{ fontSize: '0.75rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.1em' }}>
                         {(user?.first_name && user?.last_name)
                           ? `${user.first_name} ${user.last_name}`.toUpperCase()
@@ -702,29 +706,29 @@ export default function ProductDetailPage() {
                       </span>
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>RATING</label>
+                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>RATING</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         {[1, 2, 3, 4, 5].map((s) => (
                           <button key={s} onClick={() => setNewReview(r => ({ ...r, rating: s }))} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', color: NEON }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '1.75rem', fontVariationSettings: s <= (hoverStar || newReview.rating) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.75rem', color: s <= (hoverStar || newReview.rating) ? NEON : 'rgba(var(--c-text-rgb), 0.30)', fontVariationSettings: s <= (hoverStar || newReview.rating) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
                           </button>
                         ))}
-                        <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', fontFamily: 'Space Grotesk, sans-serif' }}>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: 'rgba(var(--c-text-rgb), 0.5)', fontFamily: 'Space Grotesk, sans-serif' }}>
                           {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][hoverStar || newReview.rating]}
                         </span>
                       </div>
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>
-                        YOUR COMMENT <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 400 }}>(OPTIONAL)</span> <span style={{ color: newReview.comment.length > 580 ? 'red' : 'rgba(255,255,255,0.3)' }}>({newReview.comment.length}/600)</span>
+                      <label style={{ display: 'block', fontSize: '0.7rem', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem' }}>
+                        YOUR COMMENT <span style={{ color: 'rgba(var(--c-text-rgb), 0.25)', fontWeight: 400 }}>(OPTIONAL)</span> <span style={{ color: newReview.comment.length > 580 ? 'red' : 'rgba(var(--c-text-rgb), 0.3)' }}>({newReview.comment.length}/600)</span>
                       </label>
                       <textarea
                         value={newReview.comment}
                         onChange={(e) => setNewReview(r => ({ ...r, comment: e.target.value.slice(0, 600) }))}
                         placeholder="Share your experience..."
                         rows={4}
-                        style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.875rem', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical' as const, boxSizing: 'border-box' as const }}
+                        style={{ width: '100%', background: 'rgba(var(--c-text-rgb), 0.04)', border: '1px solid rgba(var(--c-text-rgb), 0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', color: 'var(--c-text)', fontSize: '0.875rem', outline: 'none', fontFamily: 'Inter, sans-serif', resize: 'vertical' as const, boxSizing: 'border-box' as const }}
                       />
                     </div>
                     {reviewError && (
@@ -733,7 +737,7 @@ export default function ProductDetailPage() {
                     <button
                       onClick={submitReview}
                       disabled={reviewSubmitting}
-                      style={{ padding: '0.75rem 2rem', background: !reviewSubmitting ? NEON : 'rgba(255,255,255,0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: !reviewSubmitting ? 'pointer' : 'not-allowed' }}
+                      style={{ padding: '0.75rem 2rem', background: !reviewSubmitting ? NEON : 'rgba(var(--c-text-rgb), 0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: !reviewSubmitting ? 'pointer' : 'not-allowed' }}
                     >
                       {reviewSubmitting ? 'SUBMITTING...' : 'SUBMIT REVIEW'}
                     </button>
@@ -747,7 +751,7 @@ export default function ProductDetailPage() {
                     const isActive = reviewFilter === f
                     return (
                       <button key={f} onClick={() => setReviewFilter(f)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.9rem', borderRadius: '9999px', border: `1px solid ${isActive ? NEON : 'rgba(255,255,255,0.1)'}`, background: isActive ? `${NEON}18` : 'transparent', color: isActive ? NEON : 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.9rem', borderRadius: '9999px', border: `1px solid ${isActive ? NEON : 'rgba(var(--c-text-rgb), 0.1)'}`, background: isActive ? `rgba(${NEON_RGB}, 0.09)` : 'transparent', color: isActive ? NEON : 'rgba(var(--c-text-rgb), 0.45)', fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
                         {f === 0 ? <>ALL <span style={{ opacity: 0.6 }}>({cnt})</span></> : <>{f} <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: "'FILL' 1" }}>star</span> <span style={{ opacity: 0.6 }}>({cnt})</span></>}
                       </button>
                     )
@@ -758,7 +762,7 @@ export default function ProductDetailPage() {
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' as const }}>
                   {([['default', 'DEFAULT', ''], ['most_liked', 'MOST LIKED', 'thumb_up'], ['most_disliked', 'MOST DISLIKED', 'thumb_down']] as const).map(([val, label, icon]) => (
                     <button key={val} onClick={() => setReviewSort(val)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.85rem', borderRadius: '9999px', border: `1px solid ${reviewSort === val ? NEON : 'rgba(255,255,255,0.1)'}`, background: reviewSort === val ? `${NEON}18` : 'transparent', color: reviewSort === val ? NEON : 'rgba(255,255,255,0.45)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.85rem', borderRadius: '9999px', border: `1px solid ${reviewSort === val ? NEON : 'rgba(var(--c-text-rgb), 0.1)'}`, background: reviewSort === val ? `rgba(${NEON_RGB}, 0.09)` : 'transparent', color: reviewSort === val ? NEON : 'rgba(var(--c-text-rgb), 0.45)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer' }}>
                       {icon && <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>{icon}</span>}
                       {label}
                     </button>
@@ -778,11 +782,11 @@ export default function ProductDetailPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.1)' }}>rate_review</span>
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'rgba(var(--c-text-rgb), 0.1)' }}>rate_review</span>
+                    <p style={{ color: 'rgba(var(--c-text-rgb), 0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.875rem' }}>
                       {reviewFilter === 0 ? 'NO REVIEWS YET' : `NO ${reviewFilter}★ REVIEWS`}
                     </p>
-                    {reviewFilter === 0 && <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>}
+                    {reviewFilter === 0 && <p style={{ color: 'rgba(var(--c-text-rgb), 0.2)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>Be the first to review this product</p>}
                   </div>
                 )}
               </div>
@@ -795,18 +799,18 @@ export default function ProductDetailPage() {
                   WARRANTY &amp; RETURN POLICY
                 </h3>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: 0, listStyle: 'none' }}>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(var(--c-text-rgb), 0.7)', fontWeight: 300 }}>
                     <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>shield</span>
                     <span>
-                      <strong style={{ color: '#fff', fontFamily: 'Space Grotesk, sans-serif' }}>Warranty: </strong>
+                      <strong style={{ color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif' }}>Warranty: </strong>
                       {product?.warranty || 'No warranty information available.'}
                     </span>
                   </li>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(var(--c-text-rgb), 0.7)', fontWeight: 300 }}>
                     <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>verified</span>
                     <span>30-day return policy from date of purchase.</span>
                   </li>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', fontSize: '1.125rem', color: 'rgba(var(--c-text-rgb), 0.7)', fontWeight: 300 }}>
                     <span className="material-symbols-outlined" style={{ color: NEON, flexShrink: 0 }}>support_agent</span>
                     <span>Contact support for return authorisation and shipping details.</span>
                   </li>
@@ -817,63 +821,54 @@ export default function ProductDetailPage() {
         </section>
 
         {/* ── Related Products ── */}
-        <section style={{ marginTop: '8rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '3rem', color: '#e5e2e1' }}>
-            CO-ORDINATED SYSTEMS
-          </h2>
+        {relatedProducts.length > 0 && (
+        <section style={{ marginTop: '5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2rem' }}>
+            <div>
+              <p style={{ fontSize: '0.6rem', letterSpacing: '0.38em', fontWeight: 700, color: NEON, fontFamily: 'Space Grotesk, sans-serif', marginBottom: '0.4rem', opacity: 0.85 }}>FROM SAME CATEGORY</p>
+              <h2 style={{ fontSize: '1.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--c-text)', margin: 0 }}>
+                You May Also Like
+              </h2>
+            </div>
+            <button
+              onClick={() => router.push('/browse')}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: '1px solid rgba(var(--c-text-rgb), 0.12)', borderRadius: '9999px', color: 'rgba(var(--c-text-rgb), 0.55)', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.15em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, transition: 'border-color 0.2s, color 0.2s' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `rgba(${NEON_RGB}, 0.38)`; (e.currentTarget as HTMLButtonElement).style.color = NEON }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.12)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.55)' }}
+            >
+              Browse All
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>arrow_forward</span>
+            </button>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem' }}>
-            {relatedProducts.slice(0, 3).map((p) => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem' }}>
+            {relatedProducts.slice(0, showCatalogue ? 8 : 4).map((p) => (
               <RelatedCard key={p.id} product={p} onClick={() => router.push(`/product/${p.id}`)} />
             ))}
           </div>
 
-          {showCatalogue && relatedProducts.length > 3 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2.5rem', marginTop: '3rem' }}>
-              {relatedProducts.slice(3, 7).map((p) => (
-                <RelatedCard key={p.id} product={p} onClick={() => router.push(`/product/${p.id}`)} />
-              ))}
+          {!showCatalogue && relatedProducts.length > 4 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2.5rem' }}>
+              <button
+                onClick={() => setShowCatalogue(true)}
+                style={{ padding: '0.75rem 3rem', border: '1px solid rgba(var(--c-text-rgb), 0.1)', borderRadius: '9999px', fontSize: '0.72rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em', color: 'rgba(var(--c-text-rgb), 0.55)', background: 'none', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = `rgba(${NEON_RGB}, 0.38)`; (e.currentTarget as HTMLButtonElement).style.color = NEON }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.1)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.55)' }}
+              >
+                SHOW MORE
+              </button>
             </div>
           )}
-
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '5rem' }}>
-            <button
-              onClick={() => setShowCatalogue(true)}
-              style={{
-                padding: '1rem 4rem',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '9999px',
-                fontSize: '0.75rem',
-                fontFamily: 'Space Grotesk, sans-serif',
-                letterSpacing: '0.5em',
-                color: 'rgba(255,255,255,0.6)',
-                background: 'none',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, color 0.2s, transform 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.borderColor = NEON
-                ;(e.currentTarget as HTMLButtonElement).style.color = NEON
-                ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)'
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
-                ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)'
-                ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'
-              }}
-            >
-              BROWSE CATALOGUE
-            </button>
-          </div>
         </section>
+        )}
       </main>
 
       {/* ── Footer ── */}
-      <footer style={{ marginTop: '8rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '5rem', paddingBottom: '5rem', background: '#080808' }}>
+      <footer style={{ marginTop: '5rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.06)', paddingTop: '4rem', paddingBottom: '4rem', background: 'var(--c-panel)' }}>
         <div style={{ maxWidth: '1920px', margin: '0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.05em', color: '#9ca3af', fontFamily: 'Space Grotesk, sans-serif' }}>LUMEN</div>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', lineHeight: 1.75 }}>
+            <p style={{ color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.875rem', lineHeight: 1.75 }}>
               Pioneering the future of computational hardware. Engineered for the enthusiasts, the creators, and the visionaries.
             </p>
           </div>
@@ -882,13 +877,13 @@ export default function ProductDetailPage() {
             { title: 'Support', links: ['Technical Logs', 'Deployment Status', 'Firmware Updates', 'Global Network'] },
           ].map((col) => (
             <div key={col.title}>
-              <h5 style={{ color: '#fff', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>{col.title}</h5>
+              <h5 style={{ color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>{col.title}</h5>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: 0, listStyle: 'none' }}>
                 {col.links.map((link) => (
                   <li key={link}>
-                    <a href="#" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
+                    <a href="#" style={{ color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
                       onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = NEON)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,0.4)')}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = 'rgba(var(--c-text-rgb), 0.4)')}
                     >{link}</a>
                   </li>
                 ))}
@@ -896,14 +891,14 @@ export default function ProductDetailPage() {
             </div>
           ))}
           <div>
-            <h5 style={{ color: '#fff', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>Newsletter</h5>
+            <h5 style={{ color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>Newsletter</h5>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
                 placeholder="ACCESS_ID@MAIL.COM"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.75rem', flex: 1, color: '#fff', outline: 'none', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em' }}
+                style={{ background: 'rgba(var(--c-text-rgb), 0.02)', border: '1px solid rgba(var(--c-text-rgb), 0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.75rem', flex: 1, color: 'var(--c-text)', outline: 'none', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em' }}
                 onFocus={(e) => ((e.currentTarget as HTMLInputElement).style.borderColor = `${NEON}50`)}
-                onBlur={(e) => ((e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.1)')}
+                onBlur={(e) => ((e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.1)')}
               />
               <button
                 style={{ background: NEON, color: '#000', border: 'none', borderRadius: '0.5rem', padding: '0 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
@@ -935,13 +930,13 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
       ref={ref}
       onMouseMove={handleMouseMove}
       className="hover-glow"
-      style={{ padding: '1.5rem', borderRadius: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', transition: 'border-color 0.2s' }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(57,255,20,0.2)')}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)')}
+      style={{ padding: '1.5rem', borderRadius: '1rem', background: 'rgba(var(--c-text-rgb), 0.02)', border: '1px solid rgba(var(--c-text-rgb), 0.05)', transition: 'border-color 0.2s' }}
+      onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(var(--c-neon-rgb), 0.2)')}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.05)')}
     >
-      <span className="material-symbols-outlined" style={{ color: '#39ff14', marginBottom: '1rem', fontSize: '1.875rem', display: 'block' }}>{icon}</span>
+      <span className="material-symbols-outlined" style={{ color: 'var(--c-neon)', marginBottom: '1rem', fontSize: '1.875rem', display: 'block' }}>{icon}</span>
       <h4 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.5rem' }}>{title}</h4>
-      <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>{desc}</p>
+      <p style={{ fontSize: '0.875rem', color: 'rgba(var(--c-text-rgb), 0.5)' }}>{desc}</p>
     </div>
   )
 }
@@ -958,49 +953,64 @@ const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislike
     ref.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)
     ref.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
   }
+  const initials = user.slice(0, 2).toUpperCase()
+
   return (
     <div ref={ref} onMouseMove={rejected ? undefined : handleMouseMove} className={rejected ? undefined : 'hover-glow'}
-      onMouseEnter={() => rejected && setHovered(true)}
-      onMouseLeave={() => rejected && setHovered(false)}
-      style={{ padding: '2rem', background: rejected ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.02)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.05)', borderLeft: rejected ? '3px solid #ef4444' : '1px solid rgba(255,255,255,0.05)', opacity: rejected ? (hovered ? 1 : 0.5) : 1, filter: rejected ? (hovered ? 'none' : 'grayscale(1)') : 'none', transition: 'opacity 0.2s, filter 0.2s' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-        <div>
-          <p style={{ fontWeight: 700, color: rejected ? 'rgba(255,255,255,0.35)' : '#39ff14', fontFamily: 'Space Grotesk, sans-serif' }}>{user}</p>
-          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>VERIFIED USER</p>
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ padding: '1.75rem', background: rejected ? 'rgba(var(--c-text-rgb), 0.01)' : 'rgba(var(--c-text-rgb), 0.025)', borderRadius: '1rem', border: `1px solid ${rejected ? 'rgba(239,68,68,0.2)' : 'rgba(var(--c-text-rgb), 0.07)'}`, borderLeft: rejected ? '3px solid rgba(239,68,68,0.45)' : undefined, opacity: rejected ? (hovered ? 1 : 0.45) : 1, filter: rejected ? (hovered ? 'none' : 'grayscale(0.7)') : 'none', transition: 'opacity 0.2s, filter 0.2s', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', background: rejected ? 'rgba(var(--c-text-rgb), 0.05)' : `rgba(${NEON_RGB}, 0.08)`, border: `1px solid ${rejected ? 'rgba(var(--c-text-rgb), 0.08)' : `rgba(${NEON_RGB}, 0.16)`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: rejected ? 'rgba(var(--c-text-rgb), 0.25)' : NEON }}>{initials}</span>
+          </div>
+          <div>
+            <p style={{ fontSize: '0.85rem', fontWeight: 700, color: rejected ? 'rgba(var(--c-text-rgb), 0.3)' : '#e5e2e1', fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.2 }}>{user}</p>
+            <p style={{ fontSize: '0.6rem', color: 'rgba(var(--c-text-rgb), 0.28)', letterSpacing: '0.12em', fontFamily: 'Space Grotesk, sans-serif', marginTop: '0.1rem' }}>VERIFIED PURCHASE</p>
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-          {pending && (
-            <span style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#f59e0b', border: '1px solid #f59e0b55', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: '#f59e0b11' }}>PENDING</span>
-          )}
-          {rejected && (
-            <span style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: 'rgba(239,68,68,0.1)' }}>REJECTED</span>
-          )}
-          <div style={{ display: 'flex', color: rejected ? 'rgba(255,255,255,0.2)' : '#39ff14' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', flexShrink: 0 }}>
+          {pending && <span style={{ fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#f59e0b', border: '1px solid #f59e0b44', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: '#f59e0b0d' }}>PENDING</span>}
+          {rejected && <span style={{ fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.25rem', padding: '0.15rem 0.5rem', background: 'rgba(239,68,68,0.07)' }}>REJECTED</span>}
+          <div style={{ display: 'flex', gap: '0.1rem' }}>
             {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.875rem', fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+              <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: rejected ? 'rgba(var(--c-text-rgb), 0.18)' : NEON, fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
             ))}
           </div>
         </div>
       </div>
-      <p style={{ color: rejected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
-        {isLong && !expanded ? text.slice(0, TRUNCATE) + '...' : text}
-      </p>
-      {isLong && (
-        <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', color: rejected ? 'rgba(255,255,255,0.3)' : '#39ff14', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
-          {expanded ? 'SHOW LESS ▲' : 'READ MORE ▼'}
-        </button>
+
+      {/* Comment */}
+      {text ? (
+        <div>
+          <p style={{ fontSize: '0.875rem', color: rejected ? 'rgba(var(--c-text-rgb), 0.28)' : 'rgba(var(--c-text-rgb), 0.65)', lineHeight: 1.7, marginBottom: isLong ? '0.5rem' : 0 }}>
+            {isLong && !expanded ? text.slice(0, TRUNCATE) + '…' : text}
+          </p>
+          {isLong && (
+            <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', color: rejected ? 'rgba(var(--c-text-rgb), 0.25)' : NEON, fontSize: '0.68rem', cursor: 'pointer', padding: 0, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.12em', opacity: 0.8 }}>
+              {expanded ? 'SHOW LESS ↑' : 'READ MORE ↓'}
+            </button>
+          )}
+        </div>
+      ) : (
+        <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.2)', fontStyle: 'italic' }}>No comment left.</p>
       )}
+
+      {/* Votes */}
       {!rejected && (
-      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem' }}>
-        <button onClick={() => onVote('like')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: voted === 'like' ? 'rgba(57,255,20,0.08)' : 'none', border: `1px solid ${voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'like' ? '#39ff14' : 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', fontVariationSettings: voted === 'like' ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
-          {likes > 0 && <span>{likes}</span>}
-        </button>
-        <button onClick={() => onVote('dislike')} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: voted === 'dislike' ? 'rgba(255,68,68,0.08)' : 'none', border: `1px solid ${voted === 'dislike' ? '#ff4444' : 'rgba(255,255,255,0.1)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'dislike' ? '#ff4444' : 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em', cursor: 'pointer', transition: 'all 0.2s' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', fontVariationSettings: voted === 'dislike' ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
-          {dislikes > 0 && <span>{dislikes}</span>}
-        </button>
-      </div>
+        <div style={{ display: 'flex', gap: '0.6rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.06)', paddingTop: '0.85rem' }}>
+          <button onClick={() => onVote('like')} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: voted === 'like' ? `rgba(${NEON_RGB}, 0.05)` : 'none', border: `1px solid ${voted === 'like' ? `rgba(${NEON_RGB}, 0.33)` : 'rgba(var(--c-text-rgb), 0.08)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'like' ? NEON : 'rgba(var(--c-text-rgb), 0.3)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.08em', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', fontVariationSettings: voted === 'like' ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
+            {likes > 0 && <span>{likes}</span>}
+          </button>
+          <button onClick={() => onVote('dislike')} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: voted === 'dislike' ? 'rgba(255,68,68,0.07)' : 'none', border: `1px solid ${voted === 'dislike' ? 'rgba(255,68,68,0.45)' : 'rgba(var(--c-text-rgb), 0.08)'}`, borderRadius: '0.375rem', padding: '0.3rem 0.75rem', color: voted === 'dislike' ? '#ff5555' : 'rgba(var(--c-text-rgb), 0.3)', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.08em', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', fontVariationSettings: voted === 'dislike' ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+            {dislikes > 0 && <span>{dislikes}</span>}
+          </button>
+        </div>
       )}
     </div>
   )
@@ -1008,13 +1018,16 @@ const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislike
 
 const RelatedCard = memo(function RelatedCard({ product, onClick }: { product: any; onClick: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
+  const [hovered, setHovered] = useState(false)
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
     const rect = ref.current.getBoundingClientRect()
     ref.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)
     ref.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
   }
-  const [hovered, setHovered] = useState(false)
+  const imgSrc = product.all_images?.[0] || product.image_url || product.imageUrl
+  const cat = (product.category_id || product.categoryId || 'PRODUCT').replace(/-/g, ' ').toUpperCase()
+  const ratingAvg = product.rating_count > 0 ? (product.rating_sum / product.rating_count) : null
 
   return (
     <div
@@ -1024,46 +1037,52 @@ const RelatedCard = memo(function RelatedCard({ product, onClick }: { product: a
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
       className="hover-glow grounded-box"
-      style={{ borderRadius: '1.5rem', cursor: 'pointer', overflow: 'hidden' }}
+      style={{
+        borderRadius: '1.25rem',
+        cursor: 'pointer',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'transform 0.22s ease, box-shadow 0.22s ease',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: hovered ? `0 20px 40px rgba(0,0,0,0.45), 0 0 0 1px ${NEON}18` : '0 4px 20px rgba(0,0,0,0.3)',
+      }}
     >
-      <div style={{ aspectRatio: '16/10', position: 'relative', background: '#111' }}>
-        {(product.all_images?.[0] || product.image_url || product.imageUrl) ? (
+      {/* Image */}
+      <div style={{ aspectRatio: '4/3', position: 'relative', background: 'rgba(var(--c-text-rgb), 0.025)', overflow: 'hidden', flexShrink: 0 }}>
+        {imgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={product.all_images?.[0] || product.image_url || product.imageUrl}
+            src={imgSrc}
             alt={product.name}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', transition: 'transform 0.7s ease', transform: hovered ? 'scale(1.06)' : 'scale(1)' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: '0.5rem', transition: 'transform 0.6s ease', transform: hovered ? 'scale(1.07)' : 'scale(1)' }}
           />
         ) : (
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.08)' }}>image_not_supported</span>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', color: 'rgba(var(--c-text-rgb), 0.07)' }}>image_not_supported</span>
           </div>
         )}
       </div>
-      <div style={{ padding: '2rem' }}>
-        <p style={{ fontSize: '0.625rem', color: '#39ff14', fontWeight: 700, letterSpacing: '0.3em', marginBottom: '0.75rem', textTransform: 'uppercase' as const }}>RELATED PRODUCT</p>
-        <h3 style={{ fontSize: '1.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#e5e2e1', marginBottom: '1.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {/* Info */}
+      <div style={{ padding: '1rem 1.125rem 1.125rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
+        <p style={{ fontSize: '0.58rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.28em', opacity: 0.8 }}>{cat}</p>
+        <h3 style={{ fontSize: '0.9rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, color: 'var(--c-text)', lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: 'calc(0.9rem * 1.35 * 2)' }}>
           {product.name}
         </h3>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.125rem' }}>
+        {ratingAvg != null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {[1,2,3,4,5].map(s => (
+              <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.75rem', color: s <= Math.round(ratingAvg) ? NEON : 'rgba(var(--c-text-rgb), 0.30)', fontVariationSettings: s <= Math.round(ratingAvg) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+            ))}
+            <span style={{ fontSize: '0.68rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, marginLeft: '0.2rem' }}>{ratingAvg.toFixed(1)}</span>
+          </div>
+        )}
+        <div style={{ marginTop: 'auto', paddingTop: '0.6rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '1.05rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
             ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <div
-            style={{
-              width: '2.5rem',
-              height: '2.5rem',
-              borderRadius: '50%',
-              border: '1px solid rgba(57,255,20,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#39ff14',
-              background: hovered ? '#39ff14' : 'transparent',
-              transition: 'background 0.2s, color 0.2s',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ color: hovered ? '#000' : '#39ff14', transition: 'color 0.2s' }}>arrow_forward</span>
+          <div style={{ width: '1.85rem', height: '1.85rem', borderRadius: '50%', border: `1px solid ${hovered ? NEON : `${NEON}33`}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: hovered ? NEON : 'transparent', transition: 'all 0.2s ease' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', color: hovered ? '#000' : NEON, transition: 'color 0.2s' }}>arrow_forward</span>
           </div>
         </div>
       </div>
