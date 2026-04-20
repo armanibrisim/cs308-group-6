@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { MouseEvent, useRef, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useCategories } from '../../context/CategoryContext';
@@ -91,46 +91,79 @@ export function Navbar() {
   const router = useRouter();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [lightMode, setLightMode] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      setLightMode(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !lightMode;
+    setLightMode(next);
+    if (next) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'dark');
+    }
+  };
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { categories: rawCategories } = useCategories();
   const categories: NavCategory[] = rawCategories.map(c => ({ ...c, icon: getCategoryIcon(c.id) }));
 
-  const openDropdown = () => {
+  const openDropdown = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setDropdownOpen(true);
-  };
+  }, []);
 
-  const scheduleClose = () => {
+  const scheduleClose = useCallback(() => {
     closeTimer.current = setTimeout(() => setDropdownOpen(false), 400);
-  };
+  }, []);
 
-  const handleMouseMove = (e: MouseEvent<HTMLAnchorElement>) => {
+  const handleMouseMove = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
     e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-  };
+  }, []);
 
   // Number of columns: 4 if many categories, 3 if few
   const cols = categories.length <= 6 ? 3 : 4;
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/5 font-body">
+    <nav className="fixed top-0 w-full z-50 bg-surface/95 border-b border-white/5 font-body">
       <div className="flex items-center justify-between px-8 py-5 w-full max-w-[1920px] mx-auto">
 
         {/* ── Left: Logo + Nav links + Categories ── */}
         <div className="flex items-center gap-10 flex-1">
 
           {/* Brand Logo */}
-          <Link href="/" className="text-3xl font-bold tracking-tighter text-gray-400 font-headline shrink-0">
-            LUMEN
-          </Link>
+          <div className="flex flex-col items-start shrink-0">
+            <Link href="/" className="lumen-logo text-3xl font-bold tracking-tighter font-headline">
+              LUMEN
+            </Link>
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-1 mt-0.5 opacity-35 hover:opacity-80 transition-opacity"
+              style={{ fontSize: '7px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>
+                {lightMode ? 'dark_mode' : 'light_mode'}
+              </span>
+              {lightMode ? 'DARK' : 'LIGHT'}
+            </button>
+          </div>
 
           {/* Static nav links */}
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="font-headline tracking-widest uppercase text-white/60 hover:text-primary transition-colors duration-200 text-sm shrink-0"
+              className="font-headline tracking-widest uppercase text-white/85 hover:text-primary transition-colors duration-200 text-sm shrink-0"
             >
               {link.label}
             </Link>
@@ -142,7 +175,7 @@ export function Navbar() {
             onMouseEnter={openDropdown}
             onMouseLeave={scheduleClose}
           >
-            <button className="flex items-center gap-1.5 font-headline tracking-widest uppercase text-white/60 hover:text-primary transition-colors duration-200 text-sm py-2">
+            <button className="flex items-center gap-1.5 font-headline tracking-widest uppercase text-white/85 hover:text-primary transition-colors duration-200 text-sm py-2">
               CATEGORIES
               <span
                 className="material-symbols-outlined text-sm transition-transform duration-300"
@@ -236,12 +269,12 @@ export function Navbar() {
 
         {/* ── Right: Icons ── */}
         <div className="flex items-center gap-8">
-          <Link href="/cart" className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex">
+          <Link href="/cart" className="text-white/80 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex">
             <span className="material-symbols-outlined text-2xl">shopping_cart</span>
           </Link>
           <Link
             href={user ? '/profile' : '/login'}
-            className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex"
+            className="text-white/80 hover:text-primary transition-all duration-300 hover:scale-110 inline-flex"
             aria-label={user ? 'Open your profile' : 'Sign in'}
           >
             <span className="material-symbols-outlined text-2xl">person</span>
@@ -253,7 +286,7 @@ export function Navbar() {
                 logout();
                 router.push('/login');
               }}
-              className="text-white/60 hover:text-primary transition-all duration-300 hover:scale-110 bg-transparent border-none cursor-pointer inline-flex"
+              className="text-white/80 hover:text-primary transition-all duration-300 hover:scale-110 bg-transparent border-none cursor-pointer inline-flex"
               aria-label="Sign out"
             >
               <span className="material-symbols-outlined text-2xl">logout</span>

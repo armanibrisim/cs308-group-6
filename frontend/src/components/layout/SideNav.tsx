@@ -4,10 +4,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
-  { icon: 'home',         label: 'HOME',     path: '/',       authOnly: false },
-  { icon: 'inventory_2',  label: 'PRODUCTS', path: '/browse', authOnly: false },
-  { icon: 'shopping_bag', label: 'CART',     path: '/cart',   authOnly: false },
-  { icon: 'receipt_long', label: 'ORDERS',   path: '/orders', authOnly: true  },
+  { icon: 'home',           label: 'HOME',     path: '/',        authOnly: false },
+  { icon: 'inventory_2',    label: 'PRODUCTS', path: '/browse',  authOnly: false },
+  { icon: 'shopping_bag',   label: 'CART',     path: '/cart',    authOnly: false },
+  { icon: 'receipt_long',   label: 'ORDERS',   path: '/orders',  authOnly: false },
+  { icon: 'account_circle', label: 'PROFILE',  path: '/profile', authOnly: true  },
 ] as const
 
 export function SideNav() {
@@ -34,10 +35,10 @@ export function SideNav() {
       WebkitBackdropFilter: 'blur(40px)',
       border: '1px solid rgba(255,255,255,0.1)',
       borderRadius: '40px',
-      padding: '2.5rem 1rem',
+      padding: '1.8rem 1rem',
       display: 'flex',
       flexDirection: 'column',
-      gap: '2.5rem',
+      gap: '1.8rem',
       alignItems: 'center',
     }}>
       {visibleItems.map(({ icon, label, path }) => {
@@ -64,8 +65,8 @@ export function SideNav() {
               className="material-symbols-outlined"
               style={{
                 fontSize: '22px',
-                color: active ? '#2ff801' : '#a1a1a1',
-                filter: active ? 'drop-shadow(0 0 8px rgba(47,248,1,0.6))' : undefined,
+                color: active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.4)',
+                filter: active ? 'drop-shadow(0 0 8px rgba(var(--c-neon-rgb), 0.6))' : undefined,
                 transition: 'color 0.2s',
               }}
             >
@@ -76,7 +77,7 @@ export function SideNav() {
               fontWeight: 900,
               textTransform: 'uppercase',
               letterSpacing: '0.3em',
-              color: active ? '#2ff801' : '#a1a1a1',
+              color: active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.4)',
               transition: 'color 0.2s',
             }}>
               {label}

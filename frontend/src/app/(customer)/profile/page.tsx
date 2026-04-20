@@ -7,6 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { ROUTES } from '../../../constants/routes'
 import { Address, addressService } from '../../../services/addressService'
+import { SideNav } from '../../../components/layout/SideNav'
+
+const NEON = 'var(--c-neon)'
+const NEON_RGB = 'var(--c-neon-rgb)'
 
 type KnownRole = 'customer' | 'sales_manager' | 'product_manager'
 
@@ -15,18 +19,90 @@ function normalizeRole(role: string): KnownRole | 'other' {
   return 'other'
 }
 
-const ROLE_BADGE: Record<KnownRole | 'other', string> = {
-  customer: 'bg-sky-500/15 text-sky-300 border border-sky-500/35',
-  sales_manager: 'bg-primary/15 text-primary border border-primary/40',
-  product_manager: 'bg-violet-500/15 text-violet-300 border border-violet-500/35',
-  other: 'bg-white/10 text-white/70 border border-white/20',
+const ROLE_LABEL: Record<KnownRole | 'other', string> = {
+  customer: 'CUSTOMER',
+  sales_manager: 'SALES MANAGER',
+  product_manager: 'PRODUCT MANAGER',
+  other: 'USER',
 }
 
-const ROLE_LABEL: Record<KnownRole | 'other', string> = {
-  customer: 'Customer',
-  sales_manager: 'Sales manager',
-  product_manager: 'Product manager',
-  other: 'User',
+// ── Saved Card types ──────────────────────────────────────────────────────────
+interface SavedCard {
+  id: string
+  label: string
+  last4: string
+  cardType: 'visa' | 'mastercard' | 'amex' | 'other'
+  expiry: string
+  holderName: string
+  isDefault: boolean
+}
+
+function detectCardType(num: string): SavedCard['cardType'] {
+  const n = num.replace(/\D/g, '')
+  if (/^4/.test(n)) return 'visa'
+  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'mastercard'
+  if (/^3[47]/.test(n)) return 'amex'
+  return 'other'
+}
+
+const CARD_STORAGE_KEY = 'lumen_saved_cards'
+
+function loadCards(): SavedCard[] {
+  try { return JSON.parse(localStorage.getItem(CARD_STORAGE_KEY) || '[]') } catch { return [] }
+}
+function saveCards(cards: SavedCard[]) {
+  localStorage.setItem(CARD_STORAGE_KEY, JSON.stringify(cards))
+}
+
+function cardTypeIcon(type: SavedCard['cardType']) {
+  const map: Record<SavedCard['cardType'], string> = {
+    visa: 'VISA',
+    mastercard: 'MC',
+    amex: 'AMEX',
+    other: 'CARD',
+  }
+  return map[type]
+}
+
+// ── Input style helper ────────────────────────────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'rgba(var(--c-text-rgb), 0.04)',
+  border: '1px solid rgba(var(--c-text-rgb), 0.10)',
+  borderRadius: '0.5rem',
+  padding: '0.65rem 0.85rem',
+  color: 'var(--c-text)',
+  fontSize: '0.875rem',
+  outline: 'none',
+  fontFamily: 'Inter, sans-serif',
+  boxSizing: 'border-box',
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.65rem',
+  letterSpacing: '0.2em',
+  color: 'rgba(var(--c-text-rgb), 0.4)',
+  fontFamily: 'Space Grotesk, sans-serif',
+  marginBottom: '0.35rem',
+  fontWeight: 600,
+}
+
+const sectionStyle: React.CSSProperties = {
+  background: 'var(--c-panel)',
+  border: '1px solid var(--c-panel-border)',
+  borderRadius: '1.25rem',
+  padding: '2rem',
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: '0.65rem',
+  letterSpacing: '0.3em',
+  color: 'var(--c-neon)',
+  fontFamily: 'Space Grotesk, sans-serif',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  marginBottom: '1.25rem',
 }
 
 export default function ProfilePage() {
@@ -38,15 +114,22 @@ export default function ProfilePage() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addrLoading, setAddrLoading] = useState(false)
   const [addrError, setAddrError] = useState<string | null>(null)
-
-  // New address form
-  const [showForm, setShowForm] = useState(false)
+  const [showAddrForm, setShowAddrForm] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newFull, setNewFull] = useState('')
   const [newDefault, setNewDefault] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [savingAddr, setSavingAddr] = useState(false)
 
-  // Banner
+  // ── Cards ─────────────────────────────────────────────────────────────────
+  const [cards, setCards] = useState<SavedCard[]>([])
+  const [showCardForm, setShowCardForm] = useState(false)
+  const [cardLabel, setCardLabel] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardHolder, setCardHolder] = useState('')
+  const [cardDefault, setCardDefault] = useState(false)
+
+  // ── Banner ────────────────────────────────────────────────────────────────
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
   // ── Auth redirect ─────────────────────────────────────────────────────────
@@ -70,7 +153,10 @@ export default function ProfilePage() {
   }, [user?.token])
 
   useEffect(() => {
-    if (!isLoading && user) loadAddresses()
+    if (!isLoading && user) {
+      loadAddresses()
+      setCards(loadCards())
+    }
   }, [isLoading, user, loadAddresses])
 
   // ── Add address ───────────────────────────────────────────────────────────
@@ -81,7 +167,7 @@ export default function ProfilePage() {
       setBanner({ type: 'error', msg: 'Label and address are required.' })
       return
     }
-    setSaving(true)
+    setSavingAddr(true)
     try {
       await addressService.addAddress(user.token, {
         label: newLabel.trim(),
@@ -89,20 +175,16 @@ export default function ProfilePage() {
         is_default: newDefault || addresses.length === 0,
       })
       setBanner({ type: 'success', msg: 'Address saved.' })
-      setNewLabel('')
-      setNewFull('')
-      setNewDefault(false)
-      setShowForm(false)
+      setNewLabel(''); setNewFull(''); setNewDefault(false); setShowAddrForm(false)
       await loadAddresses()
     } catch (err) {
       setBanner({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to save address.' })
     } finally {
-      setSaving(false)
+      setSavingAddr(false)
     }
   }
 
-  // ── Delete address ────────────────────────────────────────────────────────
-  async function handleDelete(id: string) {
+  async function handleDeleteAddress(id: string) {
     if (!user?.token) return
     try {
       await addressService.deleteAddress(user.token, id)
@@ -113,8 +195,7 @@ export default function ProfilePage() {
     }
   }
 
-  // ── Set default ───────────────────────────────────────────────────────────
-  async function handleSetDefault(id: string) {
+  async function handleSetDefaultAddress(id: string) {
     if (!user?.token) return
     try {
       const updated = await addressService.setDefault(user.token, id)
@@ -124,6 +205,45 @@ export default function ProfilePage() {
     }
   }
 
+  // ── Add card ──────────────────────────────────────────────────────────────
+  function handleAddCard(e: React.FormEvent) {
+    e.preventDefault()
+    const digits = cardNumber.replace(/\D/g, '')
+    if (digits.length < 13) { setBanner({ type: 'error', msg: 'Enter a valid card number.' }); return }
+    if (!cardExpiry.match(/^\d{2}\/\d{2}$/)) { setBanner({ type: 'error', msg: 'Expiry must be MM/YY.' }); return }
+    if (!cardHolder.trim()) { setBanner({ type: 'error', msg: 'Cardholder name is required.' }); return }
+
+    const newCard: SavedCard = {
+      id: Date.now().toString(),
+      label: cardLabel.trim() || 'My Card',
+      last4: digits.slice(-4),
+      cardType: detectCardType(digits),
+      expiry: cardExpiry,
+      holderName: cardHolder.trim(),
+      isDefault: cardDefault || cards.length === 0,
+    }
+    const updated = cardDefault || cards.length === 0
+      ? cards.map(c => ({ ...c, isDefault: false })).concat(newCard)
+      : [...cards, newCard]
+    saveCards(updated)
+    setCards(updated)
+    setBanner({ type: 'success', msg: 'Card saved.' })
+    setCardLabel(''); setCardNumber(''); setCardExpiry(''); setCardHolder(''); setCardDefault(false); setShowCardForm(false)
+  }
+
+  function handleDeleteCard(id: string) {
+    const updated = cards.filter(c => c.id !== id)
+    saveCards(updated)
+    setCards(updated)
+    setBanner({ type: 'success', msg: 'Card removed.' })
+  }
+
+  function handleSetDefaultCard(id: string) {
+    const updated = cards.map(c => ({ ...c, isDefault: c.id === id }))
+    saveCards(updated)
+    setCards(updated)
+  }
+
   function handleLogout() {
     logout()
     router.replace(ROUTES.LOGIN)
@@ -131,198 +251,263 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#0d0d0d] px-6 py-16 text-white/60" aria-busy="true">
-        <div className="mx-auto max-w-3xl">
-          <div className="glass-panel animate-pulse rounded-3xl border border-white/10 p-8">
-            <div className="h-8 w-48 rounded-lg bg-white/10" />
-            <div className="mt-4 h-4 w-full max-w-md rounded bg-white/5" />
-          </div>
-        </div>
-      </main>
+      <div className="atmospheric-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NEON, fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.3em' }}>
+        LOADING...
+      </div>
     )
   }
 
   if (!user) return null
 
-  return (
-    <main className="min-h-screen bg-[#0d0d0d] px-6 py-10 text-[#e5e2e1]">
-      <div className="mx-auto max-w-3xl space-y-6">
+  const displayName = user.first_name && user.last_name
+    ? `${user.first_name} ${user.last_name}`
+    : user.first_name || user.email.split('@')[0]
 
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Account</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">My account</h1>
-        </header>
+  return (
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)', fontFamily: 'Inter, sans-serif' }}>
+      <SideNav />
+      <main style={{ position: 'relative', zIndex: 10, paddingBottom: '6rem', paddingLeft: '9rem', paddingRight: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ paddingTop: '3rem', marginBottom: '3rem' }}>
+          <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.5rem' }}>ACCOUNT</p>
+          <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>
+            {displayName.toUpperCase()}
+          </h1>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.35)', marginTop: '0.25rem', letterSpacing: '0.1em' }}>{user.email}</p>
+        </div>
 
         {/* Banner */}
         {banner && (
-          <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === 'success'
-              ? 'border-primary/30 bg-primary/10 text-primary'
-              : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-          }`}>
-            <span>{banner.msg}</span>
-            <button type="button" onClick={() => setBanner(null)} className="shrink-0 text-white/60 hover:text-white">×</button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.5rem', background: banner.type === 'success' ? `rgba(${NEON_RGB}, 0.08)` : 'rgba(239,68,68,0.08)', border: `1px solid ${banner.type === 'success' ? `rgba(${NEON_RGB}, 0.25)` : 'rgba(239,68,68,0.4)'}`, borderRadius: '0.75rem' }}>
+            <span style={{ color: banner.type === 'success' ? NEON : '#f87171', fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem', letterSpacing: '0.1em' }}>{banner.msg}</span>
+            <button onClick={() => setBanner(null)} style={{ color: 'rgba(var(--c-text-rgb), 0.4)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
           </div>
         )}
 
-        {/* Account summary */}
-        <section className="glass-panel rounded-3xl border border-white/10 p-6">
-          <h2 className="text-lg font-semibold text-white">Account summary</h2>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
-              <dt className="text-white/50">Email</dt>
-              <dd className="font-medium text-white">{user.email}</dd>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
-              <dt className="text-white/50">Name</dt>
-              <dd className="text-white">{user.first_name} {user.last_name}</dd>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <dt className="text-white/50">Role</dt>
-              <dd>
-                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${ROLE_BADGE[roleKey]}`}>
-                  {ROLE_LABEL[roleKey]}
-                </span>
-              </dd>
-            </div>
-          </dl>
-        </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-        {/* Quick actions */}
-        <section className="glass-panel rounded-3xl border border-white/10 p-6">
-          <h2 className="text-lg font-semibold text-white">Quick actions</h2>
-          <nav className="mt-4 flex flex-wrap gap-3">
-            <Link href={ROUTES.BROWSE} className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/90 transition hover:border-primary/40 hover:text-primary">Browse</Link>
-            <Link href={ROUTES.CART} className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/90 transition hover:border-primary/40 hover:text-primary">Cart</Link>
-            <Link href={ROUTES.ORDERS} className="rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-white/90 transition hover:border-primary/40 hover:text-primary">Orders</Link>
-            {roleKey === 'sales_manager' && (
-              <Link href={ROUTES.SALES_DASHBOARD} className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary transition hover:border-primary/50">Sales dashboard</Link>
-            )}
-            {roleKey === 'product_manager' && (
-              <Link href={ROUTES.PRODUCT_DASHBOARD} className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-300 transition hover:border-violet-400/50">Product dashboard</Link>
-            )}
-          </nav>
-        </section>
-
-        {/* Delivery addresses */}
-        <section className="glass-panel rounded-3xl border border-white/10 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Delivery addresses</h2>
-              <p className="mt-0.5 text-xs text-white/45">Saved to your account — auto-filled at checkout.</p>
+          {/* Account Info */}
+          <section style={sectionStyle}>
+            <p style={sectionTitleStyle}>Account Info</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                { label: 'EMAIL', value: user.email },
+                { label: 'NAME', value: `${user.first_name || ''} ${user.last_name || ''}`.trim() || '—' },
+                { label: 'ROLE', value: ROLE_LABEL[roleKey] },
+              ].map(row => (
+                <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--c-panel-border)' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', letterSpacing: '0.2em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600 }}>{row.label}</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--c-text)', fontWeight: 500 }}>{row.value}</span>
+                </div>
+              ))}
             </div>
+          </section>
+
+          {/* Quick Actions */}
+          <section style={sectionStyle}>
+            <p style={sectionTitleStyle}>Quick Actions</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              {[
+                { label: 'Browse', href: ROUTES.BROWSE },
+                { label: 'Cart', href: ROUTES.CART },
+                { label: 'Orders', href: ROUTES.ORDERS },
+                ...(roleKey === 'sales_manager' ? [{ label: 'Sales Dashboard', href: ROUTES.SALES_DASHBOARD }] : []),
+                ...(roleKey === 'product_manager' ? [{ label: 'Product Dashboard', href: ROUTES.PRODUCT_DASHBOARD }] : []),
+              ].map(action => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  style={{ padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: `1px solid rgba(${NEON_RGB}, 0.20)`, background: `rgba(${NEON_RGB}, 0.05)`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.15em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, textDecoration: 'none', transition: 'background 0.2s' }}
+                >
+                  {action.label.toUpperCase()}
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Delivery Addresses */}
+          <section style={sectionStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div>
+                <p style={sectionTitleStyle}>Delivery Addresses</p>
+                <p style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.05em', marginTop: '-0.75rem' }}>Auto-filled at checkout</p>
+              </div>
+              <button
+                onClick={() => setShowAddrForm(v => !v)}
+                style={{ padding: '0.5rem 1.25rem', border: `1px solid rgba(${NEON_RGB}, 0.30)`, color: NEON, fontSize: '0.7rem', letterSpacing: '0.2em', background: showAddrForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.4rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}
+              >
+                {showAddrForm ? 'CANCEL' : '+ ADD ADDRESS'}
+              </button>
+            </div>
+
+            {/* Add address form */}
+            {showAddrForm && (
+              <form onSubmit={handleAddAddress} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(var(--c-text-rgb), 0.03)', border: '1px solid rgba(var(--c-text-rgb), 0.08)', borderRadius: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={labelStyle}>LABEL (e.g. Home, Work)</label>
+                    <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Home" maxLength={50} style={inputStyle} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.25rem' }}>
+                    <input type="checkbox" checked={newDefault} onChange={e => setNewDefault(e.target.checked)} style={{ accentColor: NEON }} />
+                    <label style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.5)', fontFamily: 'Space Grotesk, sans-serif' }}>Set as default</label>
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>FULL ADDRESS</label>
+                  <textarea value={newFull} onChange={e => setNewFull(e.target.value)} rows={2} placeholder="Street, city, postal code, country" maxLength={300} style={{ ...inputStyle, resize: 'vertical' }} />
+                </div>
+                <button type="submit" disabled={savingAddr} style={{ alignSelf: 'flex-start', padding: '0.6rem 1.5rem', background: NEON, color: '#000', border: 'none', borderRadius: '0.4rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.2em', cursor: savingAddr ? 'not-allowed' : 'pointer', opacity: savingAddr ? 0.6 : 1 }}>
+                  {savingAddr ? 'SAVING...' : 'SAVE ADDRESS'}
+                </button>
+              </form>
+            )}
+
+            {/* Address list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {addrLoading ? (
+                <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.1em' }}>LOADING...</p>
+              ) : addrError ? (
+                <p style={{ fontSize: '0.8rem', color: '#f87171' }}>{addrError}</p>
+              ) : addresses.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.1em' }}>NO SAVED ADDRESSES YET</p>
+              ) : (
+                addresses.map(addr => (
+                  <div key={addr.id} style={{ padding: '1rem 1.25rem', borderRadius: '0.75rem', border: `1px solid ${addr.is_default ? `rgba(${NEON_RGB}, 0.20)` : 'var(--c-panel-border)'}`, background: addr.is_default ? `rgba(${NEON_RGB}, 0.05)` : 'rgba(var(--c-text-rgb), 0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif' }}>{addr.label}</span>
+                        {addr.is_default && <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: `1px solid rgba(${NEON_RGB}, 0.25)`, background: `rgba(${NEON_RGB}, 0.06)`, color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>DEFAULT</span>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        {!addr.is_default && (
+                          <button onClick={() => handleSetDefaultAddress(addr.id)} style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>SET DEFAULT</button>
+                        )}
+                        <button onClick={() => handleDeleteAddress(addr.id)} style={{ fontSize: '0.7rem', color: 'rgba(239,68,68,0.6)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>REMOVE</button>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.5)' }}>{addr.full_address}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Saved Cards */}
+          <section style={sectionStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div>
+                <p style={sectionTitleStyle}>Saved Cards</p>
+                <p style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.05em', marginTop: '-0.75rem' }}>For faster checkout</p>
+              </div>
+              <button
+                onClick={() => setShowCardForm(v => !v)}
+                style={{ padding: '0.5rem 1.25rem', border: `1px solid rgba(${NEON_RGB}, 0.30)`, color: NEON, fontSize: '0.7rem', letterSpacing: '0.2em', background: showCardForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.4rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}
+              >
+                {showCardForm ? 'CANCEL' : '+ ADD CARD'}
+              </button>
+            </div>
+
+            {/* Add card form */}
+            {showCardForm && (
+              <form onSubmit={handleAddCard} style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(var(--c-text-rgb), 0.03)', border: '1px solid rgba(var(--c-text-rgb), 0.08)', borderRadius: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={labelStyle}>CARD NICKNAME</label>
+                    <input value={cardLabel} onChange={e => setCardLabel(e.target.value)} placeholder="Personal Visa" maxLength={40} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>CARDHOLDER NAME</label>
+                    <input value={cardHolder} onChange={e => setCardHolder(e.target.value)} placeholder="John Doe" maxLength={60} style={inputStyle} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={labelStyle}>CARD NUMBER</label>
+                    <input
+                      value={cardNumber}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/\D/g, '').slice(0, 16)
+                        setCardNumber(raw.replace(/(.{4})/g, '$1 ').trim())
+                      }}
+                      placeholder="0000 0000 0000 0000"
+                      maxLength={19}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>EXPIRY (MM/YY)</label>
+                    <input
+                      value={cardExpiry}
+                      onChange={e => {
+                        let v = e.target.value.replace(/\D/g, '').slice(0, 4)
+                        if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2)
+                        setCardExpiry(v)
+                      }}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input type="checkbox" checked={cardDefault} onChange={e => setCardDefault(e.target.checked)} style={{ accentColor: NEON }} />
+                  <label style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.5)', fontFamily: 'Space Grotesk, sans-serif' }}>Set as default</label>
+                </div>
+                <button type="submit" style={{ alignSelf: 'flex-start', padding: '0.6rem 1.5rem', background: NEON, color: '#000', border: 'none', borderRadius: '0.4rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.2em', cursor: 'pointer' }}>
+                  SAVE CARD
+                </button>
+              </form>
+            )}
+
+            {/* Card list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {cards.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.1em' }}>NO SAVED CARDS YET</p>
+              ) : (
+                cards.map(card => (
+                  <div key={card.id} style={{ padding: '1rem 1.25rem', borderRadius: '0.75rem', border: `1px solid ${card.isDefault ? `rgba(${NEON_RGB}, 0.20)` : 'var(--c-panel-border)'}`, background: card.isDefault ? `rgba(${NEON_RGB}, 0.05)` : 'rgba(var(--c-text-rgb), 0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '3rem', height: '2rem', background: 'rgba(var(--c-text-rgb), 0.06)', border: '1px solid rgba(var(--c-text-rgb), 0.12)', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: NEON, letterSpacing: '0.05em', fontFamily: 'Space Grotesk, sans-serif' }}>{cardTypeIcon(card.cardType)}</span>
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif' }}>{card.label}</span>
+                          {card.isDefault && <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: `1px solid rgba(${NEON_RGB}, 0.25)`, background: `rgba(${NEON_RGB}, 0.06)`, color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>DEFAULT</span>}
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em' }}>
+                          •••• •••• •••• {card.last4} &nbsp;|&nbsp; {card.expiry}
+                        </p>
+                        <p style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.3)', marginTop: '0.1rem' }}>{card.holderName}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+                      {!card.isDefault && (
+                        <button onClick={() => handleSetDefaultCard(card.id)} style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>SET DEFAULT</button>
+                      )}
+                      <button onClick={() => handleDeleteCard(card.id)} style={{ fontSize: '0.7rem', color: 'rgba(239,68,68,0.6)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>REMOVE</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Footer Actions */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem' }}>
+            <Link href={ROUTES.HOME} style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.35)', textDecoration: 'none', letterSpacing: '0.15em', fontFamily: 'Space Grotesk, sans-serif' }}>← BACK TO HOME</Link>
             <button
-              type="button"
-              onClick={() => setShowForm(v => !v)}
-              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/50"
+              onClick={handleLogout}
+              style={{ padding: '0.6rem 1.5rem', border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.7rem', letterSpacing: '0.2em', borderRadius: '0.4rem', cursor: 'pointer', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}
             >
-              {showForm ? 'Cancel' : '+ Add address'}
+              SIGN OUT
             </button>
           </div>
 
-          {/* Add address form */}
-          {showForm && (
-            <form onSubmit={handleAddAddress} className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm">
-                  <span className="mb-1 block text-white/60">Label (e.g. Home, Work)</span>
-                  <input
-                    value={newLabel}
-                    onChange={e => setNewLabel(e.target.value)}
-                    placeholder="Home"
-                    maxLength={50}
-                    className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-white outline-none transition focus:border-primary/40 placeholder:text-white/25"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-white/60 self-end pb-2">
-                  <input
-                    type="checkbox"
-                    checked={newDefault}
-                    onChange={e => setNewDefault(e.target.checked)}
-                    className="accent-primary"
-                  />
-                  Set as default
-                </label>
-              </div>
-              <label className="block text-sm">
-                <span className="mb-1 block text-white/60">Full address</span>
-                <textarea
-                  value={newFull}
-                  onChange={e => setNewFull(e.target.value)}
-                  rows={3}
-                  placeholder="Street, city, postal code, country"
-                  maxLength={300}
-                  className="w-full resize-none rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-white outline-none transition focus:border-primary/40 placeholder:text-white/25"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : 'Save address'}
-              </button>
-            </form>
-          )}
-
-          {/* Address list */}
-          <div className="mt-5 space-y-3">
-            {addrLoading ? (
-              <p className="text-sm text-white/40">Loading addresses…</p>
-            ) : addrError ? (
-              <p className="text-sm text-rose-400">{addrError}</p>
-            ) : addresses.length === 0 ? (
-              <p className="text-sm text-white/40">No saved addresses yet.</p>
-            ) : (
-              addresses.map(addr => (
-                <div key={addr.id} className={`rounded-2xl border p-4 transition ${addr.is_default ? 'border-primary/40 bg-primary/5' : 'border-white/10 bg-white/[0.02]'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">{addr.label}</span>
-                      {addr.is_default && (
-                        <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                          Default
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {!addr.is_default && (
-                        <button
-                          type="button"
-                          onClick={() => handleSetDefault(addr.id)}
-                          className="text-xs text-white/50 transition hover:text-primary"
-                        >
-                          Set default
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(addr.id)}
-                        className="text-xs text-rose-400/70 transition hover:text-rose-400"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-1.5 text-sm text-white/60">{addr.full_address}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6">
-          <Link href={ROUTES.HOME} className="text-sm text-white/50 transition hover:text-white">← Back to home</Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20"
-          >
-            Sign out
-          </button>
         </div>
-
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

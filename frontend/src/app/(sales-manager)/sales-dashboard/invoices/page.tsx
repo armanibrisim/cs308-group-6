@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../../../../context/AuthContext'
 import {
@@ -260,9 +260,8 @@ export default function SalesManagerInvoicesPage() {
                   {filtered.map((inv) => {
                     const expanded = expandedId === inv.id
                     return (
-                      <>
+                      <React.Fragment key={inv.id}>
                         <tr
-                          key={inv.id}
                           className="border-b border-white/5 cursor-pointer hover:bg-white/[0.02] transition"
                           onClick={() => setExpandedId(expanded ? null : inv.id)}
                         >
@@ -314,7 +313,7 @@ export default function SalesManagerInvoicesPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     )
                   })}
                 </tbody>

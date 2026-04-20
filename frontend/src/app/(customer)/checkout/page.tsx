@@ -31,7 +31,7 @@ const LABEL_STYLE: React.CSSProperties = {
   fontSize: '10px',
   fontFamily: 'monospace',
   textTransform: 'uppercase',
-  color: '#c4c7c7',
+  color: 'rgba(var(--c-text-rgb), 0.6)',
   marginBottom: '0.5rem',
   letterSpacing: '0.05em',
 }
@@ -39,12 +39,13 @@ const LABEL_STYLE: React.CSSProperties = {
 const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   boxSizing: 'border-box',
-  background: '#2a2a2a',
-  border: 'none',
+  background: 'rgba(var(--c-text-rgb), 0.07)',
+  border: '1px solid rgba(var(--c-text-rgb), 0.18)',
+  borderRadius: '0.75rem',
   padding: '1rem',
   fontSize: '13px',
-  fontFamily: 'monospace',
-  color: '#e5e2e1',
+  fontFamily: 'Inter, sans-serif',
+  color: 'var(--c-text)',
   outline: 'none',
 }
 
@@ -68,10 +69,9 @@ function SuccessScreen({
   onContinue: () => void
 }) {
   return (
-    <div style={{
+    <div className="atmospheric-bg" style={{
       minHeight: '100vh',
-      background: '#080808',
-      color: '#e5e2e1',
+      color: 'var(--c-text)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -85,13 +85,13 @@ function SuccessScreen({
           <div style={{
             width: '80px',
             height: '80px',
-            background: '#2ff801',
+            background: 'var(--c-neon)',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '1.5rem',
-            boxShadow: '0 0 24px rgba(47,248,1,0.5)',
+            boxShadow: '0 0 24px rgba(var(--c-neon-rgb), 0.5)',
           }}>
             <span
               className="material-symbols-outlined"
@@ -105,20 +105,21 @@ function SuccessScreen({
             fontFamily: 'monospace',
             textTransform: 'uppercase',
             letterSpacing: '0.4em',
-            color: '#2ff801',
+            color: 'var(--c-neon)',
             marginBottom: '0.5rem',
           }}>
             Payment Confirmed
           </h1>
-          <p style={{ color: '#c4c7c7', fontSize: '12px', fontFamily: 'monospace' }}>
+          <p style={{ color: 'rgba(var(--c-text-rgb), 0.6)', fontSize: '12px', fontFamily: 'monospace' }}>
             TRANSACTION ID: #{invoice.id.slice(-8).toUpperCase()}
           </p>
         </div>
 
         {/* Invoice card */}
         <div style={{
-          background: '#1c1b1b',
-          border: '1px solid #353534',
+          background: 'var(--c-panel)',
+          border: '1px solid rgba(var(--c-text-rgb), 0.08)',
+          borderRadius: '1.25rem',
           padding: '3rem',
           marginBottom: '2rem',
           position: 'relative',
@@ -130,7 +131,7 @@ function SuccessScreen({
             left: 0,
             right: 0,
             height: '3px',
-            background: 'linear-gradient(to right, #2ae500, #d7ffc5)',
+            background: 'linear-gradient(to right, var(--c-neon), rgba(var(--c-neon-rgb), 0.4))',
           }} />
 
           {/* From / Bill To */}
@@ -142,10 +143,10 @@ function SuccessScreen({
             marginBottom: '3rem',
           }}>
             <div>
-              <div style={{ color: '#00FF41', fontSize: '20px', fontWeight: 900, marginBottom: '1rem' }}>
+              <div style={{ color: 'var(--c-neon)', fontSize: '20px', fontWeight: 900, marginBottom: '1rem' }}>
                 LUMEN
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#c4c7c7', lineHeight: 1.8 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', lineHeight: 1.8 }}>
                 SUPPORT@LUMEN.TECH
               </div>
             </div>
@@ -159,7 +160,7 @@ function SuccessScreen({
               }}>
                 Bill To
               </div>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#c4c7c7', lineHeight: 1.8 }}>
+              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', lineHeight: 1.8 }}>
                 {invoice.customer_name.toUpperCase()}<br />
                 {invoice.customer_email.toUpperCase()}<br />
                 {invoice.delivery_address.toUpperCase()}
@@ -170,14 +171,14 @@ function SuccessScreen({
           {/* Items table */}
           <table style={{ width: '100%', fontFamily: 'monospace', marginBottom: '2rem', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #353534' }}>
-                <th style={{ textAlign: 'left', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: '#c4c7c7', fontWeight: 500 }}>
+              <tr style={{ borderBottom: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
+                <th style={{ textAlign: 'left', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
                   Description
                 </th>
-                <th style={{ textAlign: 'center', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: '#c4c7c7', fontWeight: 500 }}>
+                <th style={{ textAlign: 'center', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
                   Qty
                 </th>
-                <th style={{ textAlign: 'right', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: '#c4c7c7', fontWeight: 500 }}>
+                <th style={{ textAlign: 'right', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
                   Price
                 </th>
               </tr>
@@ -198,8 +199,8 @@ function SuccessScreen({
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: '1px solid #353534' }}>
-                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '10px', textTransform: 'uppercase', color: '#c4c7c7' }}>
+              <tr style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
+                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
                   Subtotal
                 </td>
                 <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontSize: '12px' }}>
@@ -207,7 +208,7 @@ function SuccessScreen({
                 </td>
               </tr>
               <tr>
-                <td colSpan={2} style={{ paddingTop: '0.5rem', fontSize: '10px', textTransform: 'uppercase', color: '#c4c7c7' }}>
+                <td colSpan={2} style={{ paddingTop: '0.5rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
                   Shipping + Tax
                 </td>
                 <td style={{ paddingTop: '0.5rem', textAlign: 'right', fontSize: '12px' }}>
@@ -215,10 +216,10 @@ function SuccessScreen({
                 </td>
               </tr>
               <tr>
-                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: '#00FF41' }}>
+                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--c-neon)' }}>
                   Total Paid
                 </td>
-                <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontWeight: 700, color: '#00FF41', fontSize: '20px' }}>
+                <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontWeight: 700, color: 'var(--c-neon)', fontSize: '20px' }}>
                   {fmt(invoice.total_amount)}
                 </td>
               </tr>
@@ -228,10 +229,12 @@ function SuccessScreen({
           <div style={{
             textAlign: 'center',
             padding: '1rem',
-            background: '#201f1f',
-            fontSize: '10px',
-            fontFamily: 'monospace',
-            color: '#c4c7c7',
+            background: 'rgba(var(--c-text-rgb), 0.04)',
+            borderRadius: '0.75rem',
+            fontSize: '0.7rem',
+            fontFamily: 'Space Grotesk, sans-serif',
+            letterSpacing: '0.1em',
+            color: 'rgba(var(--c-text-rgb), 0.4)',
           }}>
             INVOICE SENT TO {invoice.customer_email.toUpperCase()} — THANK YOU FOR YOUR ACQUISITION.
           </div>
@@ -241,10 +244,12 @@ function SuccessScreen({
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{
             flex: 1,
-            background: '#2a2a2a',
-            color: '#c6c6c7',
+            background: 'rgba(var(--c-text-rgb), 0.04)',
+            border: '1px solid rgba(var(--c-text-rgb), 0.07)',
+            borderRadius: '0.75rem',
+            color: 'rgba(var(--c-text-rgb), 0.5)',
             padding: '1rem 2rem',
-            fontFamily: 'monospace',
+            fontFamily: 'Space Grotesk, sans-serif',
             fontSize: '11px',
             textTransform: 'uppercase',
             display: 'flex',
@@ -260,7 +265,7 @@ function SuccessScreen({
             onClick={onContinue}
             style={{
               flex: 1,
-              background: '#2ff801',
+              background: 'var(--c-neon)',
               color: '#022100',
               border: 'none',
               padding: '1rem 2rem',
@@ -361,10 +366,10 @@ export default function CheckoutPage() {
   }, [loadCart])
 
   // Derived totals (mirrors backend logic)
-  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0)
+  const subtotal = Math.round(cartItems.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
   const shipping = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST
-  const tax = subtotal * TAX_RATE
-  const total = subtotal + shipping + tax
+  const tax = Math.round(subtotal * TAX_RATE * 100) / 100
+  const total = Math.round((subtotal + shipping + tax) * 100) / 100
 
   // Card number formatting: groups of 4 digits
   function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -473,21 +478,21 @@ export default function CheckoutPage() {
   if (authLoading || !user) return null
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#080808', color: '#e5e2e1' }}>
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)' }}>
       <SideNav />
 
       <main style={{ paddingLeft: '9rem', paddingRight: '4rem', paddingTop: '3rem', paddingBottom: '5rem' }}>
 
         {/* Checkout progress bar — 75% filled (payment step) */}
-        <div style={{ width: '100%', height: '2px', background: '#201f1f', marginBottom: '3rem', overflow: 'hidden' }}>
-          <div style={{ width: '75%', height: '100%', background: 'linear-gradient(to right, #2ae500, #d7ffc5)' }} />
+        <div style={{ width: '100%', height: '2px', background: 'rgba(var(--c-text-rgb), 0.06)', marginBottom: '3rem', overflow: 'hidden' }}>
+          <div style={{ width: '75%', height: '100%', background: 'linear-gradient(to right, var(--c-neon), rgba(var(--c-neon-rgb), 0.4))' }} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '5fr 7fr', gap: '3rem', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '5fr 7fr', gap: '3rem', maxWidth: '1400px', margin: '0 auto', alignItems: 'start' }}>
 
           {/* ── LEFT: Order Summary ──────────────────────────────────────────── */}
-          <section>
-            <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#c4c7c7', marginBottom: '2rem' }}>
+          <section className="grounded-box" style={{ borderRadius: '1.5rem', padding: '2.5rem' }}>
+            <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.6)', marginBottom: '2rem' }}>
               Order Summary
             </h2>
 
@@ -509,7 +514,7 @@ export default function CheckoutPage() {
                 </p>
                 <button
                   onClick={() => router.push('/browse')}
-                  style={{ marginTop: '1rem', color: '#2ff801', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em' }}
+                  style={{ marginTop: '1rem', color: 'var(--c-neon)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em' }}
                 >
                   Browse Products
                 </button>
@@ -517,8 +522,8 @@ export default function CheckoutPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {cartItems.map(item => (
-                  <div key={item.id} style={{ background: '#201f1f', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                    <div style={{ width: '96px', height: '96px', background: '#1c1b1b', flexShrink: 0, overflow: 'hidden' }}>
+                  <div key={item.id} style={{ background: 'rgba(var(--c-text-rgb), 0.03)', border: '1px solid rgba(var(--c-text-rgb), 0.06)', borderRadius: '0.75rem', padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                    <div style={{ width: '96px', height: '96px', background: 'rgba(var(--c-text-rgb), 0.04)', borderRadius: '0.75rem', flexShrink: 0, overflow: 'hidden' }}>
                       {item.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -534,7 +539,7 @@ export default function CheckoutPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>{item.name}</div>
-                      <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#c4c7c7', marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '11px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', marginBottom: '1rem' }}>
                         QTY: {String(item.quantity).padStart(2, '0')}
                       </div>
                       <div style={{ fontSize: '13px', fontFamily: 'monospace' }}>
@@ -547,33 +552,33 @@ export default function CheckoutPage() {
             )}
 
             {/* Totals */}
-            <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid #353534' }}>
+            <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
               {[
                 { label: 'Subtotal', value: fmt(subtotal) },
                 { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping) },
                 { label: 'Tax', value: fmt(tax) },
               ].map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', color: '#c4c7c7' }}>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
                   <span>{label}</span>
                   <span>{value}</span>
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '1rem' }}>
                 <span style={{ fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', fontWeight: 700 }}>Total</span>
-                <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#2ff801', letterSpacing: '-0.02em' }}>
-                  {fmt(total)}
+                <span style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--c-neon)', letterSpacing: '-0.02em' }}>
+                  ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
           </section>
 
           {/* ── RIGHT: Delivery + Payment form ──────────────────────────────── */}
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
             {/* Section 01: Delivery Address */}
-            <div>
-              <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#c4c7c7', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#c6c6c7', flexShrink: 0 }}>01</span>
+            <div className="grounded-box" style={{ borderRadius: '1.5rem', padding: '2.5rem' }}>
+              <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.6)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(var(--c-text-rgb), 0.06)', border: '1px solid rgba(var(--c-text-rgb), 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'rgba(var(--c-text-rgb), 0.6)', flexShrink: 0 }}>01</span>
                 Delivery Address
               </h2>
 
@@ -590,21 +595,22 @@ export default function CheckoutPage() {
                           type="button"
                           onClick={() => { setSelectedAddressId(active ? null : addr.id); setShowManualForm(false) }}
                           style={{
-                            textAlign: 'left', background: active ? 'rgba(47,248,1,0.07)' : '#201f1f',
-                            border: `1px solid ${active ? '#2ff801' : '#353534'}`,
+                            textAlign: 'left', background: active ? 'rgba(var(--c-neon-rgb), 0.07)' : 'rgba(var(--c-text-rgb), 0.03)',
+                            borderRadius: '0.75rem',
+                            border: `1px solid ${active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.07)'}`,
                             padding: '1rem 1.25rem', cursor: 'pointer',
                             transition: 'border-color 0.2s, background 0.2s',
-                            boxShadow: active ? '0 0 8px rgba(47,248,1,0.15)' : 'none',
+                            boxShadow: active ? `0 0 8px rgba(var(--c-neon-rgb), 0.15)` : 'none',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-                            <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${active ? '#2ff801' : '#555'}`, background: active ? '#2ff801' : 'transparent', flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: active ? '#2ff801' : '#fff' }}>
+                            <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.3)'}`, background: active ? 'var(--c-neon)' : 'transparent', flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: active ? 'var(--c-neon)' : 'var(--c-text)' }}>
                               {addr.label}
-                              {addr.is_default && <span style={{ marginLeft: '0.5rem', fontSize: '9px', color: '#2ff801', opacity: 0.7 }}>DEFAULT</span>}
+                              {addr.is_default && <span style={{ marginLeft: '0.5rem', fontSize: '9px', color: 'var(--c-neon)', opacity: 0.7 }}>DEFAULT</span>}
                             </span>
                           </div>
-                          <p style={{ fontSize: '11px', fontFamily: 'monospace', color: '#c4c7c7', marginLeft: '1.65rem', lineHeight: 1.5 }}>
+                          <p style={{ fontSize: '11px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', marginLeft: '1.65rem', lineHeight: 1.5 }}>
                             {addr.full_address}
                           </p>
                         </button>
@@ -614,9 +620,9 @@ export default function CheckoutPage() {
 
                   {/* Divider */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
-                    <div style={{ flex: 1, height: '1px', background: '#353534' }} />
-                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: '#555', textTransform: 'uppercase', letterSpacing: '0.2em' }}>or</span>
-                    <div style={{ flex: 1, height: '1px', background: '#353534' }} />
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(var(--c-text-rgb), 0.07)' }} />
+                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.5)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>or</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(var(--c-text-rgb), 0.07)' }} />
                   </div>
 
                   {/* Toggle button */}
@@ -625,10 +631,11 @@ export default function CheckoutPage() {
                     onClick={() => { setShowManualForm(v => !v); setSelectedAddressId(null) }}
                     style={{
                       width: '100%',
-                      background: showManualForm ? 'transparent' : 'rgba(47,248,1,0.08)',
-                      border: `1px solid ${showManualForm ? '#353534' : '#2ff801'}`,
-                      color: showManualForm ? '#888' : '#2ff801',
+                      background: showManualForm ? 'transparent' : `rgba(var(--c-neon-rgb), 0.08)`,
+                      border: `1px solid ${showManualForm ? 'rgba(var(--c-text-rgb), 0.07)' : 'var(--c-neon)'}`,
+                      color: showManualForm ? 'rgba(var(--c-text-rgb), 0.5)' : 'var(--c-neon)',
                       padding: '0.85rem 1.5rem',
+                      borderRadius: '0.75rem',
                       fontFamily: 'monospace',
                       fontSize: '11px',
                       textTransform: 'uppercase',
@@ -641,8 +648,8 @@ export default function CheckoutPage() {
                       gap: '0.5rem',
                       transition: 'background 0.2s, border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { if (!showManualForm) e.currentTarget.style.background = 'rgba(47,248,1,0.14)' }}
-                    onMouseLeave={e => { if (!showManualForm) e.currentTarget.style.background = 'rgba(47,248,1,0.08)' }}
+                    onMouseEnter={e => { if (!showManualForm) e.currentTarget.style.background = `rgba(var(--c-neon-rgb), 0.14)` }}
+                    onMouseLeave={e => { if (!showManualForm) e.currentTarget.style.background = `rgba(var(--c-neon-rgb), 0.08)` }}
                   >
                     {showManualForm
                       ? '× Cancel new address'
@@ -681,9 +688,9 @@ export default function CheckoutPage() {
                       type="checkbox"
                       checked={saveNewAddress}
                       onChange={e => setSaveNewAddress(e.target.checked)}
-                      style={{ accentColor: '#2ff801', width: '14px', height: '14px', cursor: 'pointer' }}
+                      style={{ accentColor: 'var(--c-neon)', width: '14px', height: '14px', cursor: 'pointer' }}
                     />
-                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#c4c7c7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Save this address to my account
                     </span>
                   </label>
@@ -692,9 +699,9 @@ export default function CheckoutPage() {
             </div>
 
             {/* Section 02: Card Information */}
-            <div>
-              <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#c4c7c7', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#c6c6c7', flexShrink: 0 }}>
+            <div className="grounded-box" style={{ borderRadius: '1.5rem', padding: '2.5rem' }}>
+              <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.6)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(var(--c-text-rgb), 0.06)', border: '1px solid rgba(var(--c-text-rgb), 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'rgba(var(--c-text-rgb), 0.6)', flexShrink: 0 }}>
                   02
                 </span>
                 Card Information
@@ -712,7 +719,7 @@ export default function CheckoutPage() {
                   />
                   <span
                     className="material-symbols-outlined"
-                    style={{ position: 'absolute', right: '1rem', bottom: '1rem', color: '#c4c7c7', fontSize: '20px' }}
+                    style={{ position: 'absolute', right: '1rem', bottom: '1rem', color: 'rgba(var(--c-text-rgb), 0.6)', fontSize: '20px' }}
                   >
                     credit_card
                   </span>
@@ -768,11 +775,11 @@ export default function CheckoutPage() {
                 disabled={processing || cartItems.length === 0}
                 style={{
                   width: '100%',
-                  background: processing || cartItems.length === 0 ? 'rgba(47,248,1,0.4)' : '#2ff801',
+                  background: processing || cartItems.length === 0 ? `rgba(var(--c-neon-rgb), 0.4)` : 'var(--c-neon)',
                   color: '#022100',
                   border: 'none',
                   padding: '1.5rem',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0.75rem',
                   fontWeight: 900,
                   fontSize: '12px',
                   textTransform: 'uppercase',
@@ -782,7 +789,7 @@ export default function CheckoutPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.75rem',
-                  boxShadow: '0 0 20px rgba(47,248,1,0.2)',
+                  boxShadow: `0 0 20px rgba(var(--c-neon-rgb), 0.2)`,
                   transition: 'filter 0.2s',
                 }}
                 onMouseEnter={e => { if (!processing && cartItems.length > 0) e.currentTarget.style.filter = 'brightness(1.1)' }}
@@ -797,7 +804,7 @@ export default function CheckoutPage() {
                   </>
                 )}
               </button>
-              <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#8e9192', marginTop: '1rem', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <p style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.45)', marginTop: '1rem', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 By placing your order, you agree to our Terms of Acquisition.
               </p>
             </div>
