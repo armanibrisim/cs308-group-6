@@ -553,3 +553,35 @@ body {
 [data-theme="light"] .hover\:text-white:hover { color: #1a1916 !important; }
 [data-theme="light"] .hover\:border-white\/25:hover { border-color: rgba(26,25,22,0.25) !important; }
 [data-theme="light"] .placeholder\:text-zinc-600::placeholder { color: #4a4440 !important; }
+
+/* Sales manager order status dropdown theme-safe options */
+.sales-order-status-select option,
+.sales-order-status-option {
+  background-color: #1a1a2e;
+  color: #f8fafc;
+}
+
+[data-theme="light"] .sales-order-status-select option,
+[data-theme="light"] .sales-order-status-option {
+  background-color: #f3ede2;
+  color: #1a1916;
+}
+
+/* Sales manager status pill colors (light mode only) */
+[data-theme="light"] .sales-order-status-select[data-status="processing"] {
+  color: #0369a1;
+  border-color: rgba(14, 165, 233, 0.55);
+  background-color: rgba(14, 165, 233, 0.08);
+}
+
+[data-theme="light"] .sales-order-status-select[data-status="in-transit"] {
+  color: #7c3aed;
+  border-color: rgba(167, 139, 250, 0.75);
+  background-color: rgba(167, 139, 250, 0.16);
+}
+
+[data-theme="light"] .sales-order-status-select[data-status="delivered"] {
+  color: #059669;
+  border-color: rgba(52, 211, 153, 0.65);
+  background-color: rgba(52, 211, 153, 0.10);
+}
