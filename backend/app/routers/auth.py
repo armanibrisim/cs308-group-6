@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
-from app.models.user import AddressCreate, AddressResponse, AuthResponse, LoginRequest, RegisterRequest
+from app.models.user import AddressCreate, AddressResponse, AuthResponse, LoginRequest, RegisterRequest, SavedCardCreate, SavedCardResponse
 from app.repositories.user_repository import (
     add_address,
+    add_saved_card,
     delete_address,
+    delete_saved_card,
     get_addresses,
+    get_saved_cards,
     get_user_by_id,
     set_default_address,
+    set_default_card,
 )
 from app.services.auth_service import login_user, register_user
 
@@ -77,3 +81,48 @@ async def make_default_address(
     if not found:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found")
     return get_addresses(current_user["user_id"])
+
+
+# ── Saved card endpoints ──────────────────────────────────────────────────────
+
+@router.get("/me/cards", response_model=list[SavedCardResponse])
+async def list_cards(current_user: dict = Depends(get_current_user)):
+    return get_saved_cards(current_user["user_id"])
+
+
+@router.post("/me/cards", response_model=SavedCardResponse, status_code=status.HTTP_201_CREATED)
+async def create_card(
+    body: SavedCardCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    existing = get_saved_cards(current_user["user_id"])
+    if len(existing) >= 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum of 10 saved cards allowed",
+        )
+    return add_saved_card(
+        current_user["user_id"], body.label, body.last4,
+        body.card_holder_name, body.expiry, body.is_default,
+    )
+
+
+@router.delete("/me/cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_card(
+    card_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    found = delete_saved_card(current_user["user_id"], card_id)
+    if not found:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
+
+
+@router.patch("/me/cards/{card_id}/default", response_model=list[SavedCardResponse])
+async def make_default_card(
+    card_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    found = set_default_card(current_user["user_id"], card_id)
+    if not found:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
+    return get_saved_cards(current_user["user_id"])

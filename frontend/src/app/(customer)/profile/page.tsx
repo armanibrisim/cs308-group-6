@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { ROUTES } from '../../../constants/routes'
 import { Address, addressService } from '../../../services/addressService'
+import { SavedCard, cardService } from '../../../services/cardService'
 import { SideNav } from '../../../components/layout/SideNav'
 
 const NEON = 'var(--c-neon)'
@@ -26,43 +27,6 @@ const ROLE_LABEL: Record<KnownRole | 'other', string> = {
   other: 'USER',
 }
 
-// ── Saved Card types ──────────────────────────────────────────────────────────
-interface SavedCard {
-  id: string
-  label: string
-  last4: string
-  cardType: 'visa' | 'mastercard' | 'amex' | 'other'
-  expiry: string
-  holderName: string
-  isDefault: boolean
-}
-
-function detectCardType(num: string): SavedCard['cardType'] {
-  const n = num.replace(/\D/g, '')
-  if (/^4/.test(n)) return 'visa'
-  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'mastercard'
-  if (/^3[47]/.test(n)) return 'amex'
-  return 'other'
-}
-
-const CARD_STORAGE_KEY = 'lumen_saved_cards'
-
-function loadCards(): SavedCard[] {
-  try { return JSON.parse(localStorage.getItem(CARD_STORAGE_KEY) || '[]') } catch { return [] }
-}
-function saveCards(cards: SavedCard[]) {
-  localStorage.setItem(CARD_STORAGE_KEY, JSON.stringify(cards))
-}
-
-function cardTypeIcon(type: SavedCard['cardType']) {
-  const map: Record<SavedCard['cardType'], string> = {
-    visa: 'VISA',
-    mastercard: 'MC',
-    amex: 'AMEX',
-    other: 'CARD',
-  }
-  return map[type]
-}
 
 // ── Input style helper ────────────────────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
@@ -122,12 +86,15 @@ export default function ProfilePage() {
 
   // ── Cards ─────────────────────────────────────────────────────────────────
   const [cards, setCards] = useState<SavedCard[]>([])
+  const [cardsLoading, setCardsLoading] = useState(false)
   const [showCardForm, setShowCardForm] = useState(false)
   const [cardLabel, setCardLabel] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardHolder, setCardHolder] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
   const [cardDefault, setCardDefault] = useState(false)
+  const [savingCard, setSavingCard] = useState(false)
 
   // ── Banner ────────────────────────────────────────────────────────────────
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
@@ -152,15 +119,28 @@ export default function ProfilePage() {
     }
   }, [user?.token])
 
+  const loadCards = useCallback(async () => {
+    if (!user?.token) return
+    setCardsLoading(true)
+    try {
+      const data = await cardService.getCards(user.token)
+      setCards(data)
+    } catch {
+      // silently ignore
+    } finally {
+      setCardsLoading(false)
+    }
+  }, [user?.token])
+
   useEffect(() => {
     if (!isLoading && user) {
       loadAddresses()
-      setCards(loadCards())
+      loadCards()
     }
-  }, [isLoading, user, loadAddresses])
+  }, [isLoading, user, loadAddresses, loadCards])
 
   // ── Add address ───────────────────────────────────────────────────────────
-  async function handleAddAddress(e: React.FormEvent) {
+  async function handleAddAddress(e: React.SyntheticEvent) {
     e.preventDefault()
     if (!user?.token) return
     if (!newLabel.trim() || !newFull.trim()) {
@@ -206,42 +186,51 @@ export default function ProfilePage() {
   }
 
   // ── Add card ──────────────────────────────────────────────────────────────
-  function handleAddCard(e: React.FormEvent) {
+  async function handleAddCard(e: React.SyntheticEvent) {
     e.preventDefault()
+    if (!user?.token) return
     const digits = cardNumber.replace(/\D/g, '')
     if (digits.length < 13) { setBanner({ type: 'error', msg: 'Enter a valid card number.' }); return }
     if (!cardExpiry.match(/^\d{2}\/\d{2}$/)) { setBanner({ type: 'error', msg: 'Expiry must be MM/YY.' }); return }
     if (!cardHolder.trim()) { setBanner({ type: 'error', msg: 'Cardholder name is required.' }); return }
-
-    const newCard: SavedCard = {
-      id: Date.now().toString(),
-      label: cardLabel.trim() || 'My Card',
-      last4: digits.slice(-4),
-      cardType: detectCardType(digits),
-      expiry: cardExpiry,
-      holderName: cardHolder.trim(),
-      isDefault: cardDefault || cards.length === 0,
+    setSavingCard(true)
+    try {
+      await cardService.addCard(user.token, {
+        label: cardLabel.trim() || 'My Card',
+        last4: digits.slice(-4),
+        card_holder_name: cardHolder.trim(),
+        expiry: cardExpiry,
+        is_default: cardDefault || cards.length === 0,
+      })
+      setBanner({ type: 'success', msg: 'Card saved.' })
+      setCardLabel(''); setCardNumber(''); setCardExpiry(''); setCardHolder(''); setCardCvv(''); setCardDefault(false); setShowCardForm(false)
+      await loadCards()
+    } catch (err) {
+      setBanner({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to save card.' })
+    } finally {
+      setSavingCard(false)
     }
-    const updated = cardDefault || cards.length === 0
-      ? cards.map(c => ({ ...c, isDefault: false })).concat(newCard)
-      : [...cards, newCard]
-    saveCards(updated)
-    setCards(updated)
-    setBanner({ type: 'success', msg: 'Card saved.' })
-    setCardLabel(''); setCardNumber(''); setCardExpiry(''); setCardHolder(''); setCardDefault(false); setShowCardForm(false)
   }
 
-  function handleDeleteCard(id: string) {
-    const updated = cards.filter(c => c.id !== id)
-    saveCards(updated)
-    setCards(updated)
-    setBanner({ type: 'success', msg: 'Card removed.' })
+  async function handleDeleteCard(id: string) {
+    if (!user?.token) return
+    try {
+      await cardService.deleteCard(user.token, id)
+      setCards(prev => prev.filter(c => c.id !== id))
+      setBanner({ type: 'success', msg: 'Card removed.' })
+    } catch (err) {
+      setBanner({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to delete.' })
+    }
   }
 
-  function handleSetDefaultCard(id: string) {
-    const updated = cards.map(c => ({ ...c, isDefault: c.id === id }))
-    saveCards(updated)
-    setCards(updated)
+  async function handleSetDefaultCard(id: string) {
+    if (!user?.token) return
+    try {
+      const updated = await cardService.setDefault(user.token, id)
+      setCards(updated)
+    } catch (err) {
+      setBanner({ type: 'error', msg: err instanceof Error ? err.message : 'Failed to update.' })
+    }
   }
 
   function handleLogout() {
@@ -422,7 +411,7 @@ export default function ProfilePage() {
                     <input value={cardHolder} onChange={e => setCardHolder(e.target.value)} placeholder="John Doe" maxLength={60} style={inputStyle} />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={labelStyle}>CARD NUMBER</label>
                     <input
@@ -450,6 +439,16 @@ export default function ProfilePage() {
                       style={inputStyle}
                     />
                   </div>
+                  <div>
+                    <label style={labelStyle}>CVV</label>
+                    <input
+                      value={cardCvv}
+                      onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                      placeholder="000"
+                      maxLength={3}
+                      style={{ ...inputStyle, textAlign: 'center' }}
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <input type="checkbox" checked={cardDefault} onChange={e => setCardDefault(e.target.checked)} style={{ accentColor: NEON }} />
@@ -467,24 +466,24 @@ export default function ProfilePage() {
                 <p style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.3)', letterSpacing: '0.1em' }}>NO SAVED CARDS YET</p>
               ) : (
                 cards.map(card => (
-                  <div key={card.id} style={{ padding: '1rem 1.25rem', borderRadius: '0.75rem', border: `1px solid ${card.isDefault ? `rgba(${NEON_RGB}, 0.20)` : 'var(--c-panel-border)'}`, background: card.isDefault ? `rgba(${NEON_RGB}, 0.05)` : 'rgba(var(--c-text-rgb), 0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                  <div key={card.id} style={{ padding: '1rem 1.25rem', borderRadius: '0.75rem', border: `1px solid ${card.is_default ? `rgba(${NEON_RGB}, 0.20)` : 'var(--c-panel-border)'}`, background: card.is_default ? `rgba(${NEON_RGB}, 0.05)` : 'rgba(var(--c-text-rgb), 0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ width: '3rem', height: '2rem', background: 'rgba(var(--c-text-rgb), 0.06)', border: '1px solid rgba(var(--c-text-rgb), 0.12)', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: NEON, letterSpacing: '0.05em', fontFamily: 'Space Grotesk, sans-serif' }}>{cardTypeIcon(card.cardType)}</span>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: NEON, letterSpacing: '0.05em', fontFamily: 'Space Grotesk, sans-serif' }}>CARD</span>
                       </div>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif' }}>{card.label}</span>
-                          {card.isDefault && <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: `1px solid rgba(${NEON_RGB}, 0.25)`, background: `rgba(${NEON_RGB}, 0.06)`, color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>DEFAULT</span>}
+                          {card.is_default && <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: `1px solid rgba(${NEON_RGB}, 0.25)`, background: `rgba(${NEON_RGB}, 0.06)`, color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>DEFAULT</span>}
                         </div>
                         <p style={{ fontSize: '0.75rem', color: 'rgba(var(--c-text-rgb), 0.4)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em' }}>
                           •••• •••• •••• {card.last4} &nbsp;|&nbsp; {card.expiry}
                         </p>
-                        <p style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.3)', marginTop: '0.1rem' }}>{card.holderName}</p>
+                        <p style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.3)', marginTop: '0.1rem' }}>{card.card_holder_name}</p>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
-                      {!card.isDefault && (
+                      {!card.is_default && (
                         <button onClick={() => handleSetDefaultCard(card.id)} style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>SET DEFAULT</button>
                       )}
                       <button onClick={() => handleDeleteCard(card.id)} style={{ fontSize: '0.7rem', color: 'rgba(239,68,68,0.6)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>REMOVE</button>

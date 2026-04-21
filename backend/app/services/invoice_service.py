@@ -3,10 +3,14 @@ from fastapi import HTTPException, status
 from app.models.invoice import InvoiceCreate, InvoiceResponse
 from app.repositories import invoice_repository
 from app.repositories.product_repository import increment_purchase_count
+from app.repositories.user_repository import get_user_by_id
 
 
 def create_invoice(payload: InvoiceCreate) -> InvoiceResponse:
     data = payload.model_dump()
+    user = get_user_by_id(payload.customer_id)
+    if user:
+        data["customer_tax_id"] = user.get("tax_id")
     invoice_id = invoice_repository.create_invoice(data)
     invoice = invoice_repository.get_invoice_by_id(invoice_id)
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,7 @@ class InvoiceResponse(BaseModel):
     customer_id: str
     customer_email: str
     customer_name: str
+    customer_tax_id: Optional[str] = None
     delivery_address: str
     items: List[InvoiceItem]
     subtotal: float

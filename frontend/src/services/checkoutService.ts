@@ -41,6 +41,7 @@ export interface CheckoutInvoice {
   customer_id: string
   customer_name: string
   customer_email: string
+  customer_tax_id?: string
   delivery_address: string
   items: CheckoutItem[]
   subtotal: number

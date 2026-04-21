@@ -63,8 +63,9 @@ def send_invoice_email(invoice: "InvoiceResponse", pdf_bytes: bytes) -> None:
         f"Tax:       ${invoice.tax:.2f}\n"
         f"Shipping:  {'FREE' if invoice.shipping == 0 else f'${invoice.shipping:.2f}'}\n"
         f"Total:     ${invoice.total_amount:.2f}\n\n"
-        f"Delivery to: {invoice.delivery_address}\n\n"
-        f"For support, contact support@lumen-store.com\n\n"
+        f"Delivery to: {invoice.delivery_address}\n"
+        + (f"Tax ID: {invoice.customer_tax_id}\n" if invoice.customer_tax_id else "")
+        + f"\nFor support, contact support@lumen-store.com\n\n"
         f"— The LUMEN Team"
     )
     msg.attach(MIMEText(body, "plain"))

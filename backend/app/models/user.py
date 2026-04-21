@@ -36,3 +36,20 @@ class AddressResponse(BaseModel):
     label: str
     full_address: str
     is_default: bool
+
+
+class SavedCardCreate(BaseModel):
+    label: str = Field(min_length=1, max_length=50)
+    last4: str = Field(min_length=4, max_length=4)
+    card_holder_name: str = Field(min_length=1, max_length=100)
+    expiry: str = Field(min_length=4, max_length=5)   # MM/YY
+    is_default: bool = False
+
+
+class SavedCardResponse(BaseModel):
+    id: str
+    label: str
+    last4: str
+    card_holder_name: str
+    expiry: str
+    is_default: bool
