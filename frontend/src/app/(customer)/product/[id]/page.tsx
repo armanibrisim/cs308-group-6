@@ -863,54 +863,7 @@ export default function ProductDetailPage() {
         )}
       </main>
 
-      {/* ── Footer ── */}
-      <footer style={{ marginTop: '5rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.06)', paddingTop: '4rem', paddingBottom: '4rem', background: 'var(--c-panel)' }}>
-        <div style={{ maxWidth: '1920px', margin: '0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.05em', color: '#9ca3af', fontFamily: 'Space Grotesk, sans-serif' }}>LUMEN</div>
-            <p style={{ color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.875rem', lineHeight: 1.75 }}>
-              Pioneering the future of computational hardware. Engineered for the enthusiasts, the creators, and the visionaries.
-            </p>
-          </div>
-          {[
-            { title: 'Systems', links: ['Neon Series', 'Quantum Series', 'Workstation Pro', 'Custom Build'] },
-            { title: 'Support', links: ['Technical Logs', 'Deployment Status', 'Firmware Updates', 'Global Network'] },
-          ].map((col) => (
-            <div key={col.title}>
-              <h5 style={{ color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>{col.title}</h5>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: 0, listStyle: 'none' }}>
-                {col.links.map((link) => (
-                  <li key={link}>
-                    <a href="#" style={{ color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = NEON)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = 'rgba(var(--c-text-rgb), 0.4)')}
-                    >{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-          <div>
-            <h5 style={{ color: 'var(--c-text)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.2em', fontSize: '0.75rem', marginBottom: '2rem', textTransform: 'uppercase' }}>Newsletter</h5>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                placeholder="ACCESS_ID@MAIL.COM"
-                style={{ background: 'rgba(var(--c-text-rgb), 0.02)', border: '1px solid rgba(var(--c-text-rgb), 0.1)', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.75rem', flex: 1, color: 'var(--c-text)', outline: 'none', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.1em' }}
-                onFocus={(e) => ((e.currentTarget as HTMLInputElement).style.borderColor = `${NEON}50`)}
-                onBlur={(e) => ((e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.1)')}
-              />
-              <button
-                style={{ background: NEON, color: '#000', border: 'none', borderRadius: '0.5rem', padding: '0 1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 20px ${NEON}40` }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none' }}
-              >
-                <span className="material-symbols-outlined">send</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      
     </div>
   )
 }
