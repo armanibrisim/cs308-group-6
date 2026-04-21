@@ -12,6 +12,7 @@ import {
   CheckoutResult,
 } from '../../../services/checkoutService'
 import { Address, addressService } from '../../../services/addressService'
+import { SavedCard, cardService } from '../../../services/cardService'
 import { CartItem } from '../../../types/cart'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -163,6 +164,7 @@ function SuccessScreen({
               <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', lineHeight: 1.8 }}>
                 {invoice.customer_name.toUpperCase()}<br />
                 {invoice.customer_email.toUpperCase()}<br />
+                {invoice.customer_tax_id && <>{invoice.customer_tax_id}<br /></>}
                 {invoice.delivery_address.toUpperCase()}
               </div>
             </div>
@@ -309,11 +311,18 @@ export default function CheckoutPage() {
   const [newAddressLabel, setNewAddressLabel] = useState('')
   const [showManualForm, setShowManualForm] = useState(false)
 
-  // Card form fields
+  // Saved cards
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([])
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [showManualCardForm, setShowManualCardForm] = useState(false)
+
+  // Card form fields (used when entering manually)
   const [cardNumber, setCardNumber] = useState('')
   const [cardHolder, setCardHolder] = useState('')
   const [expiry, setExpiry] = useState('')
   const [cvv, setCvv] = useState('')
+  const [saveNewCard, setSaveNewCard] = useState(false)
+  const [newCardLabel, setNewCardLabel] = useState('')
 
   // Checkout state
   const [processing, setProcessing] = useState(false)
@@ -357,7 +366,17 @@ export default function CheckoutPage() {
       setSavedAddresses(data)
       const def = data.find(a => a.is_default)
       if (def) setSelectedAddressId(def.id)
-    }).catch(() => {/* ignore — user may have no addresses */})
+    }).catch(() => {})
+  }, [user?.token])
+
+  // Load saved cards
+  useEffect(() => {
+    if (!user?.token) return
+    cardService.getCards(user.token).then(data => {
+      setSavedCards(data)
+      const def = data.find(c => c.is_default)
+      if (def) setSelectedCardId(def.id)
+    }).catch((err) => console.error('Failed to load saved cards:', err))
   }, [user?.token])
 
   useEffect(() => {
@@ -410,28 +429,57 @@ export default function CheckoutPage() {
       setCheckoutError('Please select a saved address or fill in the delivery address fields.')
       return
     }
-    const rawCard = cardNumber.replace(/\s/g, '')
-    if (rawCard.length !== 16) {
-      setCheckoutError('Please enter a valid 16-digit card number.')
-      return
-    }
-    if (!cardHolder.trim()) {
-      setCheckoutError('Please enter the name on your card.')
-      return
-    }
-    if (expiry.length !== 5) {
-      setCheckoutError('Please enter a valid expiry date (MM/YY).')
-      return
-    }
-    if (cvv.length !== 3) {
-      setCheckoutError('Please enter a valid 3-digit CVV.')
-      return
+    let resolvedLast4: string
+    let resolvedHolder: string
+
+    if (selectedCardId) {
+      const saved = savedCards.find(c => c.id === selectedCardId)!
+      resolvedLast4 = saved.last4
+      resolvedHolder = saved.card_holder_name
+    } else {
+      const rawCard = cardNumber.replace(/\s/g, '')
+      if (rawCard.length !== 16) {
+        setCheckoutError('Please enter a valid 16-digit card number.')
+        return
+      }
+      if (!cardHolder.trim()) {
+        setCheckoutError('Please enter the name on your card.')
+        return
+      }
+      if (expiry.length !== 5) {
+        setCheckoutError('Please enter a valid expiry date (MM/YY).')
+        return
+      }
+      if (cvv.length !== 3) {
+        setCheckoutError('Please enter a valid 3-digit CVV.')
+        return
+      }
+      resolvedLast4 = rawCard.slice(-4)
+      resolvedHolder = cardHolder.trim()
     }
 
     const payload: CheckoutPayload = {
       delivery_address: deliveryAddress!,
-      card_last4: rawCard.slice(-4),
-      card_holder_name: cardHolder.trim(),
+      card_last4: resolvedLast4,
+      card_holder_name: resolvedHolder,
+    }
+
+    // Save new card to account if requested
+    if (!selectedCardId && saveNewCard && user?.token) {
+      const label = newCardLabel.trim() || 'Saved Card'
+      const rawCard = cardNumber.replace(/\s/g, '')
+      try {
+        const saved = await cardService.addCard(user.token, {
+          label,
+          last4: rawCard.slice(-4),
+          card_holder_name: cardHolder.trim(),
+          expiry,
+          is_default: savedCards.length === 0,
+        })
+        setSavedCards(prev => [...prev, saved])
+      } catch {
+        // Non-fatal
+      }
     }
 
     // Save new address to account if requested
@@ -706,59 +754,161 @@ export default function CheckoutPage() {
                 </span>
                 Card Information
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <div style={{ gridColumn: '1 / -1', position: 'relative' }}>
-                  <label style={LABEL_STYLE}>Card Number</label>
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={handleCardNumberChange}
-                    placeholder="0000 0000 0000 0000"
-                    maxLength={19}
-                    style={{ ...INPUT_STYLE, paddingRight: '3rem' }}
-                  />
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ position: 'absolute', right: '1rem', bottom: '1rem', color: 'rgba(var(--c-text-rgb), 0.6)', fontSize: '20px' }}
+
+              {/* Saved card list */}
+              {savedCards.length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <p style={{ ...LABEL_STYLE, marginBottom: '1rem' }}>Saved cards</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {savedCards.map(card => {
+                      const active = selectedCardId === card.id
+                      return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={() => { setSelectedCardId(active ? null : card.id); setShowManualCardForm(false) }}
+                          style={{
+                            textAlign: 'left',
+                            background: active ? 'rgba(var(--c-neon-rgb), 0.07)' : 'rgba(var(--c-text-rgb), 0.03)',
+                            borderRadius: '0.75rem',
+                            border: `1px solid ${active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.07)'}`,
+                            padding: '1rem 1.25rem',
+                            cursor: 'pointer',
+                            transition: 'border-color 0.2s, background 0.2s',
+                            boxShadow: active ? '0 0 8px rgba(var(--c-neon-rgb), 0.15)' : 'none',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                            <span style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${active ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.3)'}`, background: active ? 'var(--c-neon)' : 'transparent', flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: active ? 'var(--c-neon)' : 'var(--c-text)' }}>
+                              {card.label}
+                              {card.is_default && <span style={{ marginLeft: '0.5rem', fontSize: '9px', color: 'var(--c-neon)', opacity: 0.7 }}>DEFAULT</span>}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '11px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', marginLeft: '1.65rem', lineHeight: 1.5 }}>
+                            •••• •••• •••• {card.last4} &nbsp;·&nbsp; {card.card_holder_name} &nbsp;·&nbsp; {card.expiry}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(var(--c-text-rgb), 0.07)' }} />
+                    <span style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.5)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>or</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(var(--c-text-rgb), 0.07)' }} />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowManualCardForm(v => !v); setSelectedCardId(null) }}
+                    style={{
+                      width: '100%',
+                      background: showManualCardForm ? 'transparent' : 'rgba(var(--c-neon-rgb), 0.08)',
+                      border: `1px solid ${showManualCardForm ? 'rgba(var(--c-text-rgb), 0.07)' : 'var(--c-neon)'}`,
+                      color: showManualCardForm ? 'rgba(var(--c-text-rgb), 0.5)' : 'var(--c-neon)',
+                      padding: '0.85rem 1.5rem',
+                      borderRadius: '0.75rem',
+                      fontFamily: 'monospace',
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.15em',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      transition: 'background 0.2s, border-color 0.2s, color 0.2s',
+                    }}
                   >
-                    credit_card
-                  </span>
+                    {showManualCardForm ? '× Cancel new card' : '+ Enter a new card'}
+                  </button>
                 </div>
-                <div>
-                  <label style={LABEL_STYLE}>Name on Card</label>
-                  <input
-                    type="text"
-                    value={cardHolder}
-                    onChange={e => setCardHolder(e.target.value)}
-                    placeholder="JOHN DOE"
-                    style={INPUT_STYLE}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={LABEL_STYLE}>Expiry MM/YY</label>
-                    <input
-                      type="text"
-                      value={expiry}
-                      onChange={handleExpiryChange}
-                      placeholder="12/28"
-                      maxLength={5}
-                      style={{ ...INPUT_STYLE, textAlign: 'center' }}
-                    />
+              )}
+
+              {/* Manual card fields */}
+              {(savedCards.length === 0 || showManualCardForm) && !selectedCardId && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ gridColumn: '1 / -1', position: 'relative' }}>
+                      <label style={LABEL_STYLE}>Card Number</label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={handleCardNumberChange}
+                        placeholder="0000 0000 0000 0000"
+                        maxLength={19}
+                        style={{ ...INPUT_STYLE, paddingRight: '3rem' }}
+                      />
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ position: 'absolute', right: '1rem', bottom: '1rem', color: 'rgba(var(--c-text-rgb), 0.6)', fontSize: '20px' }}
+                      >
+                        credit_card
+                      </span>
+                    </div>
+                    <div>
+                      <label style={LABEL_STYLE}>Name on Card</label>
+                      <input
+                        type="text"
+                        value={cardHolder}
+                        onChange={e => setCardHolder(e.target.value)}
+                        placeholder="JOHN DOE"
+                        style={INPUT_STYLE}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={LABEL_STYLE}>Expiry MM/YY</label>
+                        <input
+                          type="text"
+                          value={expiry}
+                          onChange={handleExpiryChange}
+                          placeholder="12/28"
+                          maxLength={5}
+                          style={{ ...INPUT_STYLE, textAlign: 'center' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={LABEL_STYLE}>CVV</label>
+                        <input
+                          type="text"
+                          value={cvv}
+                          onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                          placeholder="000"
+                          maxLength={3}
+                          style={{ ...INPUT_STYLE, textAlign: 'center' }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label style={LABEL_STYLE}>CVV</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                     <input
-                      type="text"
-                      value={cvv}
-                      onChange={e => setCvv(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                      placeholder="000"
-                      maxLength={3}
-                      style={{ ...INPUT_STYLE, textAlign: 'center' }}
+                      type="checkbox"
+                      checked={saveNewCard}
+                      onChange={e => setSaveNewCard(e.target.checked)}
+                      style={{ accentColor: 'var(--c-neon)', width: '14px', height: '14px', cursor: 'pointer' }}
                     />
-                  </div>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Save this card to my account
+                    </span>
+                  </label>
+                  {saveNewCard && (
+                    <div>
+                      <label style={LABEL_STYLE}>Card Label (e.g. Personal, Work)</label>
+                      <input
+                        type="text"
+                        value={newCardLabel}
+                        onChange={e => setNewCardLabel(e.target.value)}
+                        placeholder="PERSONAL"
+                        maxLength={50}
+                        style={INPUT_STYLE}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Error banner */}

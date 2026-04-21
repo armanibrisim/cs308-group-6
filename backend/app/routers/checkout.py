@@ -97,9 +97,11 @@ async def checkout(
         last = user.get("last_name", "")
         customer_name = f"{first} {last}".strip() or user_id
         customer_email = user.get("email", user_id)
+        customer_tax_id = user.get("tax_id")
     else:
         customer_name = user_id
         customer_email = user_id
+        customer_tax_id = None
 
     # ── 4. Mock payment ───────────────────────────────────────────────────────
     approved = _mock_payment_approved(
@@ -164,7 +166,9 @@ async def checkout(
         shipping=shipping,
         total_amount=total_amount,
     )
-    invoice_id = invoice_repository.create_invoice(invoice_payload.model_dump())
+    invoice_data = invoice_payload.model_dump()
+    invoice_data["customer_tax_id"] = customer_tax_id
+    invoice_id = invoice_repository.create_invoice(invoice_data)
     invoice_doc = invoice_repository.get_invoice_by_id(invoice_id)
     invoice = InvoiceResponse(**invoice_doc)
 
@@ -190,8 +194,8 @@ async def checkout(
     try:
         pdf_bytes = generate_invoice_pdf(invoice)
         send_invoice_email(invoice, pdf_bytes)
-    except RuntimeError:
-        # reportlab not installed — skip silently (dev environment)
+    except Exception:
+        # PDF/email failure must never abort checkout
         pass
 
     # ── 10. Clear cart ─────────────────────────────────────────────────────────
