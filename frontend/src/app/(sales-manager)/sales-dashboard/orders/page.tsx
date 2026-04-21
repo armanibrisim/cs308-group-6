@@ -258,12 +258,13 @@ export default function SalesManagerOrdersPage() {
                             ) : (
                               <select
                                 value={order.status}
+                                data-status={order.status}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
                                   e.stopPropagation()
                                   handleStatusChange(order.id, e.target.value as OrderStatus)
                                 }}
-                                className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition
+                                className={`sales-order-status-select rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition
                                   ${STATUS_BADGE[order.status]}
                                   bg-transparent hover:opacity-80`}
                               >
@@ -271,7 +272,7 @@ export default function SalesManagerOrdersPage() {
                                   <option
                                     key={s}
                                     value={s}
-                                    className="bg-[#1a1a2e] text-white capitalize"
+                                    className="sales-order-status-option capitalize"
                                   >
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
                                   </option>
