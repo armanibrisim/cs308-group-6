@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, MouseEvent, memo, useReducer } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { productService } from '../../../services/productService'
+import { cartService } from '../../../services/cartService'
 import { SideNav } from '../../../components/layout/SideNav'
 import { useCategories } from '../../../context/CategoryContext'
 import { useWishlist } from '../../../context/WishlistContext'
@@ -46,6 +47,21 @@ function GlowBox({ children, className = '', style, onClick }: {
 const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeartClick }: { product: any; onClick: () => void; saved?: boolean; onHeartClick?: (e: MouseEvent) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
+  const [cartState, setCartState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+
+  const handleAddToCart = async (e: MouseEvent) => {
+    e.stopPropagation()
+    if (cartState !== 'idle') return
+    setCartState('loading')
+    try {
+      await cartService.addItem({ product_id: product.id, quantity: 1 })
+      setCartState('done')
+      setTimeout(() => setCartState('idle'), 1800)
+    } catch {
+      setCartState('error')
+      setTimeout(() => setCartState('idle'), 1800)
+    }
+  }
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
     const r = ref.current.getBoundingClientRect()
@@ -142,14 +158,38 @@ const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeart
           <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
             ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <div style={{
-            width: '2.25rem', height: '2.25rem', borderRadius: '50%',
-            border: hovered ? `1px solid ${NEON}` : `1px solid rgba(${NEON_RGB}, 0.30)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: hovered ? NEON : 'transparent',
-            transition: 'background 0.2s, color 0.2s',
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: hovered ? '#000' : NEON, transition: 'color 0.2s' }}>arrow_forward</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Quick add to cart */}
+            {inStock && (
+              <button
+                onClick={handleAddToCart}
+                title="Add to cart"
+                style={{
+                  width: '2.25rem', height: '2.25rem', borderRadius: '50%',
+                  border: cartState === 'done' ? '1px solid #22c55e' : cartState === 'error' ? '1px solid #ef4444' : `1px solid rgba(${NEON_RGB}, 0.30)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: cartState === 'done' ? 'rgba(34,197,94,0.15)' : cartState === 'error' ? 'rgba(239,68,68,0.15)' : 'transparent',
+                  cursor: cartState === 'loading' ? 'wait' : 'pointer',
+                  transition: 'border-color 0.2s, background 0.2s',
+                }}
+                onMouseEnter={e => { if (cartState === 'idle') { (e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.12)`; (e.currentTarget as HTMLButtonElement).style.borderColor = NEON } }}
+                onMouseLeave={e => { if (cartState === 'idle') { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.borderColor = `rgba(${NEON_RGB}, 0.30)` } }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: cartState === 'done' ? '#22c55e' : cartState === 'error' ? '#ef4444' : NEON, transition: 'color 0.2s' }}>
+                  {cartState === 'done' ? 'check' : cartState === 'error' ? 'close' : 'shopping_cart'}
+                </span>
+              </button>
+            )}
+            {/* Arrow / view detail */}
+            <div style={{
+              width: '2.25rem', height: '2.25rem', borderRadius: '50%',
+              border: hovered ? `1px solid ${NEON}` : `1px solid rgba(${NEON_RGB}, 0.30)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: hovered ? NEON : 'transparent',
+              transition: 'background 0.2s, color 0.2s',
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: hovered ? '#000' : NEON, transition: 'color 0.2s' }}>arrow_forward</span>
+            </div>
           </div>
         </div>
       </div>

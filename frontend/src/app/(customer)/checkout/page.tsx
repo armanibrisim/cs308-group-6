@@ -76,212 +76,126 @@ function SuccessScreen({
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '4rem 2rem',
+      padding: '6rem 2rem 4rem',
       overflowY: 'auto',
     }}>
-      <div style={{ maxWidth: '900px', width: '100%' }}>
+      <div style={{ maxWidth: '760px', width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-        {/* Confirmation header */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3rem' }}>
+        {/* ── Confirmation header ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
           <div style={{
-            width: '80px',
-            height: '80px',
+            width: '72px', height: '72px',
             background: 'var(--c-neon)',
             borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '1.5rem',
-            boxShadow: '0 0 24px rgba(var(--c-neon-rgb), 0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 32px rgba(var(--c-neon-rgb), 0.45)',
           }}>
-            <span
-              className="material-symbols-outlined"
-              style={{ color: '#022100', fontSize: '2.5rem', fontVariationSettings: '"wght" 700' }}
-            >
-              check
-            </span>
+            <span className="material-symbols-outlined" style={{ color: '#000', fontSize: '2rem', fontVariationSettings: '"FILL" 1, "wght" 700' }}>check</span>
           </div>
-          <h1 style={{
-            fontSize: '10px',
-            fontFamily: 'monospace',
-            textTransform: 'uppercase',
-            letterSpacing: '0.4em',
-            color: 'var(--c-neon)',
-            marginBottom: '0.5rem',
-          }}>
-            Payment Confirmed
-          </h1>
-          <p style={{ color: 'rgba(var(--c-text-rgb), 0.6)', fontSize: '12px', fontFamily: 'monospace' }}>
-            TRANSACTION ID: #{invoice.id.slice(-8).toUpperCase()}
-          </p>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'var(--c-neon)', marginBottom: '0.4rem' }}>
+              PAYMENT CONFIRMED
+            </p>
+            <p style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.45)', letterSpacing: '0.15em' }}>
+              TRANSACTION ID: #{invoice.id.slice(-8).toUpperCase()}
+            </p>
+          </div>
         </div>
 
-        {/* Invoice card */}
-        <div style={{
-          background: 'var(--c-panel)',
-          border: '1px solid rgba(var(--c-text-rgb), 0.08)',
-          borderRadius: '1.25rem',
-          padding: '3rem',
-          marginBottom: '2rem',
-          position: 'relative',
-        }}>
-          {/* Green accent bar */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '3px',
-            background: 'linear-gradient(to right, var(--c-neon), rgba(var(--c-neon-rgb), 0.4))',
-          }} />
+        {/* ── Invoice card ── */}
+        <div className="grounded-box" style={{ borderRadius: '1.5rem', padding: '2.5rem', position: 'relative', overflow: 'hidden' }}>
+          {/* Accent bar */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(to right, var(--c-neon), rgba(var(--c-neon-rgb), 0.2))' }} />
 
           {/* From / Bill To */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '2rem',
-            marginBottom: '3rem',
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '2rem', marginBottom: '2.5rem' }}>
             <div>
-              <div style={{ color: 'var(--c-neon)', fontSize: '20px', fontWeight: 900, marginBottom: '1rem' }}>
-                LUMEN
-              </div>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', lineHeight: 1.8 }}>
-                SUPPORT@LUMEN.TECH
-              </div>
+              <p style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 900, color: 'var(--c-neon)', letterSpacing: '-0.01em', marginBottom: '0.5rem' }}>LUMEN</p>
+              <p style={{ fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.45)', letterSpacing: '0.08em' }}>SUPPORT@LUMEN.TECH</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{
-                fontSize: '11px',
-                fontFamily: 'monospace',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                marginBottom: '1rem',
-              }}>
-                Bill To
-              </div>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.6)', lineHeight: 1.8 }}>
-                {invoice.customer_name.toUpperCase()}<br />
-                {invoice.customer_email.toUpperCase()}<br />
-                {invoice.customer_tax_id && <>{invoice.customer_tax_id}<br /></>}
-                {invoice.delivery_address.toUpperCase()}
+              <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)', marginBottom: '0.5rem' }}>BILL TO</p>
+              <div style={{ fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.65)', lineHeight: 1.9 }}>
+                <p>{invoice.customer_name.toUpperCase()}</p>
+                <p>{invoice.customer_email.toUpperCase()}</p>
+                {invoice.customer_tax_id && <p>{invoice.customer_tax_id}</p>}
+                <p>{invoice.delivery_address.toUpperCase()}</p>
               </div>
             </div>
           </div>
 
+          {/* Divider */}
+          <div style={{ height: '1px', background: 'rgba(var(--c-text-rgb), 0.07)', marginBottom: '2rem' }} />
+
           {/* Items table */}
-          <table style={{ width: '100%', fontFamily: 'monospace', marginBottom: '2rem', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
-                <th style={{ textAlign: 'left', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
-                  Description
-                </th>
-                <th style={{ textAlign: 'center', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
-                  Qty
-                </th>
-                <th style={{ textAlign: 'right', paddingBottom: '1rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)', fontWeight: 500 }}>
-                  Price
-                </th>
+              <tr>
+                <th style={{ textAlign: 'left', paddingBottom: '1rem', fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>DESCRIPTION</th>
+                <th style={{ textAlign: 'center', paddingBottom: '1rem', fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>QTY</th>
+                <th style={{ textAlign: 'right', paddingBottom: '1rem', fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>PRICE</th>
               </tr>
             </thead>
             <tbody>
               {invoice.items.map((item, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid rgba(53,53,52,0.5)' }}>
-                  <td style={{ padding: '1.25rem 0', fontSize: '12px' }}>
-                    {item.product_name.toUpperCase()}
-                  </td>
-                  <td style={{ padding: '1.25rem 0', textAlign: 'center', fontSize: '12px' }}>
-                    {String(item.quantity).padStart(2, '0')}
-                  </td>
-                  <td style={{ padding: '1.25rem 0', textAlign: 'right', fontSize: '12px' }}>
-                    {fmt(item.subtotal)}
-                  </td>
+                <tr key={idx} style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+                  <td style={{ padding: '1.1rem 0', fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, color: 'var(--c-text)' }}>{item.product_name.toUpperCase()}</td>
+                  <td style={{ padding: '1.1rem 0', textAlign: 'center', fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.55)' }}>{String(item.quantity).padStart(2, '0')}</td>
+                  <td style={{ padding: '1.1rem 0', textAlign: 'right', fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-text)' }}>{fmt(item.subtotal)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
-                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
-                  Subtotal
-                </td>
-                <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontSize: '12px' }}>
-                  {fmt(invoice.subtotal)}
-                </td>
+                <td colSpan={2} style={{ paddingTop: '1.1rem', fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.45)' }}>SUBTOTAL</td>
+                <td style={{ paddingTop: '1.1rem', textAlign: 'right', fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.75)' }}>{fmt(invoice.subtotal)}</td>
               </tr>
               <tr>
-                <td colSpan={2} style={{ paddingTop: '0.5rem', fontSize: '10px', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
-                  Shipping + Tax
-                </td>
-                <td style={{ paddingTop: '0.5rem', textAlign: 'right', fontSize: '12px' }}>
-                  {fmt(invoice.shipping + invoice.tax)}
-                </td>
+                <td colSpan={2} style={{ paddingTop: '0.5rem', fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.45)' }}>SHIPPING + TAX</td>
+                <td style={{ paddingTop: '0.5rem', textAlign: 'right', fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.75)' }}>{fmt(invoice.shipping + invoice.tax)}</td>
               </tr>
-              <tr>
-                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--c-neon)' }}>
-                  Total Paid
-                </td>
-                <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontWeight: 700, color: 'var(--c-neon)', fontSize: '20px' }}>
-                  {fmt(invoice.total_amount)}
-                </td>
+              <tr style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
+                <td colSpan={2} style={{ paddingTop: '1.25rem', fontSize: '0.7rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--c-neon)' }}>TOTAL PAID</td>
+                <td style={{ paddingTop: '1.25rem', textAlign: 'right', fontSize: '1.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-neon)' }}>{fmt(invoice.total_amount)}</td>
               </tr>
             </tfoot>
           </table>
 
-          <div style={{
-            textAlign: 'center',
-            padding: '1rem',
-            background: 'rgba(var(--c-text-rgb), 0.04)',
-            borderRadius: '0.75rem',
-            fontSize: '0.7rem',
-            fontFamily: 'Space Grotesk, sans-serif',
-            letterSpacing: '0.1em',
-            color: 'rgba(var(--c-text-rgb), 0.4)',
-          }}>
-            INVOICE SENT TO {invoice.customer_email.toUpperCase()} — THANK YOU FOR YOUR ACQUISITION.
+          {/* Footer note */}
+          <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(var(--c-text-rgb), 0.03)', borderRadius: '0.75rem', border: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em', color: 'rgba(var(--c-text-rgb), 0.35)' }}>
+              INVOICE SENT TO {invoice.customer_email.toUpperCase()} — THANK YOU FOR YOUR ACQUISITION.
+            </p>
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Action buttons ── */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{
-            flex: 1,
-            background: 'rgba(var(--c-text-rgb), 0.04)',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+            background: 'rgba(var(--c-text-rgb), 0.03)',
             border: '1px solid rgba(var(--c-text-rgb), 0.07)',
-            borderRadius: '0.75rem',
-            color: 'rgba(var(--c-text-rgb), 0.5)',
-            padding: '1rem 2rem',
-            fontFamily: 'Space Grotesk, sans-serif',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            opacity: 0.6,
+            borderRadius: '0.75rem', padding: '1rem 2rem',
+            fontSize: '0.65rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600,
+            letterSpacing: '0.15em', textTransform: 'uppercase' as const,
+            color: 'rgba(var(--c-text-rgb), 0.4)',
           }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>mail</span>
-            Invoice Sent to Email
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>mail</span>
+            INVOICE SENT TO EMAIL
           </div>
           <button
             onClick={onContinue}
             style={{
-              flex: 1,
-              background: 'var(--c-neon)',
-              color: '#022100',
-              border: 'none',
-              padding: '1rem 2rem',
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              fontWeight: 900,
-              cursor: 'pointer',
-              transition: 'filter 0.2s',
+              flex: 1, background: 'var(--c-neon)', color: '#000', border: 'none',
+              borderRadius: '0.75rem', padding: '1rem 2rem',
+              fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.7rem',
+              fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+              cursor: 'pointer', transition: 'filter 0.2s, transform 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.1)')}
-            onMouseLeave={e => (e.currentTarget.style.filter = '')}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = ''; (e.currentTarget as HTMLButtonElement).style.transform = '' }}
           >
-            Continue Shopping
+            CONTINUE SHOPPING
           </button>
         </div>
 
