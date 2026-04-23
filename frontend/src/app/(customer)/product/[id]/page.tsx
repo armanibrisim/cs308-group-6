@@ -6,6 +6,7 @@ import { productService } from '../../../../services/productService'
 import { cartService } from '../../../../services/cartService'
 import { reviewService, Review } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
+import { useWishlist } from '../../../../context/WishlistContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
 const NEON = 'var(--c-neon)'
@@ -66,6 +67,7 @@ export default function ProductDetailPage() {
   const id = params.id as string
   const router = useRouter()
   const { user } = useAuth()
+  const { isSaved, toggle: toggleWishlist } = useWishlist()
 
   const [activeTab, setActiveTab] = useState('desc')
   const [showCatalogue, setShowCatalogue] = useState(false)
@@ -79,6 +81,7 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1)
   const [cartStatus, setCartStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [cartError, setCartError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   // ── Reviews ──
   const commentsRef = useRef<HTMLDivElement>(null)
@@ -87,6 +90,9 @@ export default function ProductDetailPage() {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
   const [hoverStar, setHoverStar] = useState(0)
   const [localReviews, setLocalReviews] = useState<Review[]>([])
+  const [myReview, setMyReview] = useState<Review | null>(null)
+  const [reviewsReady, setReviewsReady] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [reviewSuccess, setReviewSuccess] = useState(false)
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
@@ -162,20 +168,41 @@ export default function ProductDetailPage() {
     setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
+  const handleDeleteReview = async () => {
+    if (!user?.token || !myReview) return
+    if (!window.confirm('Delete your review? This cannot be undone.')) return
+    try {
+      await reviewService.deleteReview(myReview.id, user.token)
+      setLocalReviews(prev => prev.filter(r => r.id !== myReview.id))
+      setMyReview(null)
+      setShowReviewForm(false)
+      setIsEditMode(false)
+      setNewReview({ rating: 5, comment: '' })
+    } catch {
+      // silent — review stays visible
+    }
+  }
+
   const submitReview = async () => {
     if (!user?.token) return
     setReviewSubmitting(true)
     setReviewError('')
     try {
-      const submitted = await reviewService.submitReview(id, newReview.rating, newReview.comment.trim(), user.token)
-      setLocalReviews(prev => [submitted, ...prev])
+      if (isEditMode && myReview) {
+        const updated = await reviewService.updateReview(myReview.id, newReview.rating, newReview.comment.trim(), user.token)
+        setLocalReviews(prev => prev.map(r => r.id === myReview.id ? updated : r))
+        setMyReview(updated)
+        setReviewSuccessMsg(updated.status === 'approved' ? 'REVIEW UPDATED!' : 'REVIEW UPDATED — PENDING APPROVAL')
+      } else {
+        const submitted = await reviewService.submitReview(id, newReview.rating, newReview.comment.trim(), user.token)
+        setLocalReviews(prev => [submitted, ...prev])
+        setMyReview(submitted)
+        setReviewSuccessMsg(submitted.status === 'approved' ? 'RATING SUBMITTED!' : 'REVIEW SUBMITTED — PENDING APPROVAL')
+      }
       setNewReview({ rating: 5, comment: '' })
       setShowReviewForm(false)
+      setIsEditMode(false)
       setReviewSuccess(true)
-      // Auto-approved (no comment) or pending (has comment)
-      setReviewSuccessMsg(submitted.status === 'approved'
-        ? 'RATING SUBMITTED!'
-        : 'REVIEW SUBMITTED — PENDING APPROVAL')
       setTimeout(() => setReviewSuccess(false), 4000)
     } catch (err: any) {
       const msg = err?.message || ''
@@ -193,6 +220,7 @@ export default function ProductDetailPage() {
     if (!id) return
     window.scrollTo({ top: 0, behavior: 'instant' })
     setLoading(true)
+    setReviewsReady(false)
 
     // Fire all independent requests in parallel
     const productP    = productService.getProduct(id).catch(() => null)
@@ -227,6 +255,8 @@ export default function ProductDetailPage() {
         const alreadyIncluded = ownReview && reviews.some((r) => r.id === ownReview!.id)
         const merged = ownReview && !alreadyIncluded ? [ownReview, ...reviews] : reviews
         setLocalReviews(merged)
+        setMyReview(ownReview)
+        setReviewsReady(true)
 
         const voteMap = new Map<string, VoteData>()
         merged.forEach((r) => {
@@ -557,41 +587,45 @@ export default function ProductDetailPage() {
               )}
 
               {/* Secondary actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
                 {[
-                  { icon: 'favorite', label: 'SAVE' },
-                  { icon: 'compare_arrows', label: 'COMPARE' },
-                  { icon: 'share', label: 'SHARE' },
-                ].map((action, i) => (
+                  { icon: 'favorite', label: isSaved(id) ? 'SAVED' : 'SAVE', onClick: () => { if (!user) { router.push('/login'); return; } toggleWishlist(id) } },
+                  { icon: copied ? 'check_circle' : 'share', label: copied ? 'COPIED!' : 'SHARE', onClick: () => { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) } },
+                ].map((action, i) => {
+                  const isSaveBtn = action.icon === 'favorite'
+                  const saved = isSaveBtn && isSaved(id)
+                  return (
                   <button
                     key={action.label}
+                    onClick={action.onClick}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      color: 'rgba(var(--c-text-rgb), 0.4)',
+                      color: saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)',
                       background: 'none',
                       border: 'none',
                       borderLeft: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
-                      borderRight: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
+                      borderRight: 'none',
                       cursor: 'pointer',
                       padding: '0.75rem 0.5rem',
                       transition: 'color 0.2s ease, transform 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      ;(e.currentTarget as HTMLButtonElement).style.color = NEON
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${NEON}`)
+                      if (!saved) (e.currentTarget as HTMLButtonElement).style.color = NEON
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${saved ? '#ff4d6d' : NEON}; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                     onMouseLeave={(e) => {
-                      ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.4)'
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', 'font-size: 1.5rem; transform: scale(1); transition: transform 0.2s')
+                      ;(e.currentTarget as HTMLButtonElement).style.color = saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)'
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1); transition: transform 0.2s; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', transition: 'transform 0.2s' }}>{action.icon}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', transition: 'transform 0.2s', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0", color: saved ? '#ff4d6d' : undefined }}>{action.icon}</span>
                     <span style={{ fontSize: '0.5625rem', textTransform: 'uppercase' as const, fontWeight: 700, letterSpacing: '0.2em' }}>{action.label}</span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </GlowBox>
           </div>
@@ -675,14 +709,22 @@ export default function ProductDetailPage() {
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap' as const, gap: '1rem' }}>
                   <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>USER REVIEWS</h3>
-                  <button
-                    onClick={() => { if (!user) { router.push('/login'); return; } setShowReviewForm(v => !v) }}
-                    style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
-                    onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
-                  >
-                    {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
-                  </button>
+                  {reviewsReady && !myReview && (
+                    <button
+                      onClick={() => {
+                        if (!user) { router.push('/login'); return; }
+                        setNewReview({ rating: 5, comment: '' })
+                        setIsEditMode(false)
+                        setReviewError('')
+                        setShowReviewForm(v => !v)
+                      }}
+                      style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
+                      onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+                    >
+                      {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
+                    </button>
+                  )}
                 </div>
 
                 {/* Success Message */}
@@ -734,13 +776,26 @@ export default function ProductDetailPage() {
                     {reviewError && (
                       <span style={{ color: 'red', fontFamily: 'Space Grotesk, sans-serif', fontSize: '0.8rem' }}>{reviewError}</span>
                     )}
-                    <button
-                      onClick={submitReview}
-                      disabled={reviewSubmitting}
-                      style={{ padding: '0.75rem 2rem', background: !reviewSubmitting ? NEON : 'rgba(var(--c-text-rgb), 0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: !reviewSubmitting ? 'pointer' : 'not-allowed' }}
-                    >
-                      {reviewSubmitting ? 'SUBMITTING...' : 'SUBMIT REVIEW'}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <button
+                        onClick={submitReview}
+                        disabled={reviewSubmitting}
+                        style={{ padding: '0.75rem 2rem', background: !reviewSubmitting ? NEON : 'rgba(var(--c-text-rgb), 0.1)', color: '#000', border: 'none', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: !reviewSubmitting ? 'pointer' : 'not-allowed' }}
+                      >
+                        {reviewSubmitting ? 'SUBMITTING...' : isEditMode ? 'UPDATE REVIEW' : 'SUBMIT REVIEW'}
+                      </button>
+                      {isEditMode && (
+                        <button
+                          onClick={() => { setShowReviewForm(false); setIsEditMode(false); setReviewError('') }}
+                          disabled={reviewSubmitting}
+                          style={{ padding: '0.75rem 1.5rem', background: 'none', color: 'rgba(var(--c-text-rgb), 0.45)', border: '1px solid rgba(var(--c-text-rgb), 0.15)', borderRadius: '0.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.2em', cursor: reviewSubmitting ? 'not-allowed' : 'pointer', transition: 'color 0.2s, border-color 0.2s' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--c-text)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.35)' }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.45)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.15)' }}
+                        >
+                          CANCEL
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -776,7 +831,26 @@ export default function ProductDetailPage() {
                       const rid = review.id || review.user_id || String(idx)
                       const votes = reviewVotes.get(rid) || { likes: 0, dislikes: 0, voted: null }
                       return (
-                        <ReviewCard key={rid} user={review.username || review.user_id || 'ANONYMOUS'} text={review.comment || review.text || ''} rating={review.rating} likes={votes.likes} dislikes={votes.dislikes} voted={votes.voted} onVote={(type) => handleVote(rid, type)} pending={review.status === 'pending'} rejected={review.status === 'rejected'} />
+                        <ReviewCard
+                          key={rid}
+                          user={review.username || review.user_id || 'ANONYMOUS'}
+                          text={review.comment || review.text || ''}
+                          rating={review.rating}
+                          likes={votes.likes}
+                          dislikes={votes.dislikes}
+                          voted={votes.voted}
+                          onVote={(type) => handleVote(rid, type)}
+                          pending={review.status === 'pending'}
+                          rejected={review.status === 'rejected'}
+                          onEdit={myReview?.id === rid ? () => {
+                            setNewReview({ rating: myReview!.rating, comment: myReview!.comment })
+                            setIsEditMode(true)
+                            setReviewError('')
+                            setShowReviewForm(true)
+                            setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+                          } : undefined}
+                          onDelete={myReview?.id === rid ? handleDeleteReview : undefined}
+                        />
                       )
                     })}
                   </div>
@@ -894,7 +968,7 @@ function FeatureCard({ icon, title, desc }: { icon: string; title: string; desc:
   )
 }
 
-const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending, rejected }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean; rejected?: boolean }) {
+const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislikes, voted, onVote, pending, rejected, onEdit, onDelete }: { user: string; text: string; rating?: number; likes: number; dislikes: number; voted: 'like'|'dislike'|null; onVote: (type: 'like'|'dislike') => void; pending?: boolean; rejected?: boolean; onEdit?: () => void; onDelete?: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [expanded, setExpanded] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -933,6 +1007,32 @@ const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislike
               <span key={s} className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: rejected ? 'rgba(var(--c-text-rgb), 0.18)' : NEON, fontVariationSettings: rating != null && s <= rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
             ))}
           </div>
+          {(onEdit || onDelete) && (
+            <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.25rem' }}>
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  title="Edit review"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.15rem', color: 'rgba(var(--c-text-rgb), 0.35)', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = NEON)}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.35)')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>edit</span>
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  title="Delete review"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.15rem', color: 'rgba(var(--c-text-rgb), 0.35)', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#ef4444')}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.35)')}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>delete</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

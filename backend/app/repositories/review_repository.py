@@ -76,6 +76,16 @@ def update_review_status(review_id: str, new_status: str) -> None:
     db.collection(REVIEWS_COLLECTION).document(review_id).update({"status": new_status})
 
 
+def update_review(review_id: str, updates: dict) -> None:
+    db = _db()
+    db.collection(REVIEWS_COLLECTION).document(review_id).update(updates)
+
+
+def delete_review(review_id: str) -> None:
+    db = _db()
+    db.collection(REVIEWS_COLLECTION).document(review_id).delete()
+
+
 def get_user_vote(review_id: str, user_id: str) -> str | None:
     """Return 'like', 'dislike', or None for this user's vote on this review."""
     db = _db()

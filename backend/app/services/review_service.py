@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
 
-from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, VoteResponse
+from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, ReviewUpdate, VoteResponse
 from app.repositories import review_repository
 from app.repositories.product_repository import (
+    adjust_product_rating_counters,
     get_product_by_id,
     get_product_names_by_ids,
     update_product_rating_counters,
@@ -103,6 +104,69 @@ def reject_review(review_id: str) -> ReviewResponse:
     review_repository.update_review_status(review_id, "rejected")
     review["status"] = "rejected"
     return ReviewResponse(**review)
+
+
+def edit_review(review_id: str, payload: ReviewUpdate, user_id: str) -> ReviewResponse:
+    review = review_repository.get_review_by_id(review_id)
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+    if review["user_id"] != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own reviews")
+
+    old_rating = review["rating"]
+    old_comment = review["comment"]
+    old_status = review["status"]
+
+    new_rating = payload.rating
+    new_comment = payload.comment
+
+    comment_changed = new_comment.strip() != old_comment.strip()
+    rating_changed = new_rating != old_rating
+    has_new_comment = bool(new_comment.strip())
+
+    # Determine new approval status
+    if comment_changed:
+        # Comment added or modified → needs re-approval; blank comment → auto-approve
+        new_status = "pending" if has_new_comment else "approved"
+    else:
+        # Only rating changed (or nothing changed) → keep current status
+        new_status = old_status
+
+    # Adjust product rating counters to stay consistent
+    was_approved = old_status == "approved"
+    becomes_approved = new_status == "approved"
+
+    if was_approved and not becomes_approved:
+        # Review going back to pending — remove its contribution from product stats
+        adjust_product_rating_counters(review["product_id"], -old_rating, -1)
+    elif not was_approved and becomes_approved:
+        # Previously non-approved review is now auto-approved (comment cleared)
+        adjust_product_rating_counters(review["product_id"], new_rating, 1)
+    elif was_approved and becomes_approved and rating_changed:
+        # Stays approved, rating changed — adjust sum only (count unchanged)
+        adjust_product_rating_counters(review["product_id"], new_rating - old_rating, 0)
+
+    review_repository.update_review(review_id, {
+        "rating": new_rating,
+        "comment": new_comment,
+        "status": new_status,
+    })
+
+    updated = review_repository.get_review_by_id(review_id)
+    return ReviewResponse(**updated)
+
+
+def remove_review(review_id: str, user_id: str) -> None:
+    review = review_repository.get_review_by_id(review_id)
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+    if review["user_id"] != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own reviews")
+
+    if review["status"] == "approved":
+        adjust_product_rating_counters(review["product_id"], -review["rating"], -1)
+
+    review_repository.delete_review(review_id)
 
 
 def fetch_my_review(product_id: str, user_id: str) -> ReviewResponse | None:

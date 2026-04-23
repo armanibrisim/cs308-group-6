@@ -32,6 +32,25 @@ export const reviewService = {
     )
   },
 
+  async deleteReview(reviewId: string, token: string): Promise<void> {
+    await apiService.delete(`/reviews/${reviewId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+
+  async updateReview(
+    reviewId: string,
+    rating: number,
+    comment: string = '',
+    token: string
+  ): Promise<Review> {
+    return apiService.put<Review>(
+      `/reviews/${reviewId}`,
+      { rating, comment },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+  },
+
   async voteReview(
     reviewId: string,
     voteType: 'like' | 'dislike',

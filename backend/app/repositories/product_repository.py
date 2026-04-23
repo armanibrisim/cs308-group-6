@@ -272,6 +272,27 @@ def update_product_rating_counters(product_id: str, rating: int) -> None:
     _invalidate_products()
 
 
+def adjust_product_rating_counters(product_id: str, rating_delta: int, count_delta: int) -> None:
+    """Atomically adjust rating_sum and rating_count by arbitrary deltas.
+
+    Used when editing a review changes the effective approved rating contribution.
+    Pass negative deltas to remove a contribution (e.g. review going pending),
+    or mixed deltas to swap one rating for another.
+    """
+    if rating_delta == 0 and count_delta == 0:
+        return
+    db = _db()
+    ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
+    updates: dict = {}
+    if count_delta != 0:
+        updates["rating_count"] = firestore_module.Increment(count_delta)
+    if rating_delta != 0:
+        updates["rating_sum"] = firestore_module.Increment(rating_delta)
+    ref.update(updates)
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
 def decrement_stock(product_id: str, quantity: int) -> None:
     """Atomically decrement stock. Raises ValueError if insufficient stock."""
     db = _db()
