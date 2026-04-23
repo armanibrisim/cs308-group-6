@@ -155,9 +155,23 @@ const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeart
           )
         })()}
         <div style={{ marginTop: 'auto', paddingTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
-            ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            {product.original_price != null && product.original_price > product.price && (
+              <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.4)', textDecoration: 'line-through' }}>
+                ${(product.original_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
+                ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              {product.discount_percent != null && product.discount_percent > 0 && (
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, background: NEON, color: '#000', borderRadius: '999px', padding: '0.15rem 0.45rem' }}>
+                  -{product.discount_percent.toFixed(0)}%
+                </span>
+              )}
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {/* Quick add to cart */}
             {inStock && (

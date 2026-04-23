@@ -38,7 +38,7 @@ def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
                     message=(
                         f"Good news! '{product_data['name']}' in your wishlist "
                         f"is now {payload.discount_percent:.0f}% off — "
-                        f"new price is ₺{refreshed['price']:.2f}."
+                        f"new price is ${refreshed['price']:.2f}."
                     ),
                     product_id=product_id,
                     product_name=product_data["name"],
@@ -52,8 +52,38 @@ def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
     )
 
 
+def set_product_price_directly(product_id: str, new_price: float) -> dict:
+    """Set a product's price directly and notify wishlist users."""
+    from app.services.product_service import modify_product, _to_product_response
+    from app.models.product import ProductUpdate
+
+    data = product_repository.get_product_by_id(product_id)
+    if data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
+
+    updated = modify_product(product_id, ProductUpdate(price=new_price))
+
+    wishlists = wishlist_repository.get_wishlists_for_product(product_id)
+    notified: set[str] = set()
+    for wl in wishlists:
+        user_id = wl.get("user_id")
+        if user_id and user_id not in notified:
+            notified.add(user_id)
+            notification_repository.create_notification(
+                user_id=user_id,
+                message=(
+                    f"The price of '{data['name']}' in your wishlist "
+                    f"has been updated to ${new_price:.2f}."
+                ),
+                product_id=product_id,
+                product_name=data["name"],
+            )
+
+    return updated
+
+
 def remove_discount_from_product(product_id: str) -> dict:
-    """Restore a product's original price, removing the discount."""
+    """Restore a product's original price, removing the discount, and notify wishlist users."""
     from app.services.product_service import _to_product_response
     data = product_repository.get_product_by_id(product_id)
     if data is None:
@@ -65,4 +95,21 @@ def remove_discount_from_product(product_id: str) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     refreshed = product_repository.get_product_by_id(product_id)
+
+    wishlists = wishlist_repository.get_wishlists_for_product(product_id)
+    notified: set[str] = set()
+    for wl in wishlists:
+        user_id = wl.get("user_id")
+        if user_id and user_id not in notified:
+            notified.add(user_id)
+            notification_repository.create_notification(
+                user_id=user_id,
+                message=(
+                    f"The discount on '{data['name']}' in your wishlist has ended. "
+                    f"Current price: ${refreshed['price']:.2f}."
+                ),
+                product_id=product_id,
+                product_name=data["name"],
+            )
+
     return _to_product_response(refreshed)

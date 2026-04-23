@@ -29,15 +29,18 @@ def create_notification(user_id: str, message: str, product_id: str, product_nam
 
 
 def get_notifications_for_user(user_id: str) -> list[dict]:
+    # NOTE: Firestore requires a composite index for where("user_id") + order_by("created_at").
+    # Until that index is created in Firebase Console, we sort in Python as a fallback.
     db = _db()
     docs = (
         db.collection(NOTIFICATIONS_COLLECTION)
         .where("user_id", "==", user_id)
+        .limit(50)
         .stream()
     )
     results = [d.to_dict() for d in docs]
     results.sort(key=lambda n: n.get("created_at", ""), reverse=True)
-    return results[:50]
+    return results
 
 
 def mark_notification_read(user_id: str, notification_id: str) -> bool:

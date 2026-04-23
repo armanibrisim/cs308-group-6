@@ -151,6 +151,13 @@ export const salesService = {
     })
   },
 
+  setProductPrice(token: string, productId: string, price: number): Promise<DiscountProduct> {
+    return request(`/sales/products/${productId}/price`, token, {
+      method: 'PATCH',
+      body: JSON.stringify({ price }),
+    })
+  },
+
   async downloadInvoicePdf(token: string, invoiceId: string): Promise<Blob> {
     const res = await fetch(`${API_BASE}/invoices/${invoiceId}/pdf`, {
       headers: { Authorization: `Bearer ${token}` },

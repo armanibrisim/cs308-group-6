@@ -27,7 +27,8 @@ function fmt(n: number) {
 }
 
 function fmtDate(iso: string) {
-  return iso.slice(0, 10)
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return `${d}.${m}.${y}`
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
@@ -42,9 +43,14 @@ export default function SalesManagerInvoicesPage() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
 
-  // date filter
+  // date filter — stored as dd.mm.yyyy for display, converted to yyyy-mm-dd for API
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  function toIso(ddmmyyyy: string): string | undefined {
+    const m = ddmmyyyy.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : undefined
+  }
 
   // search
   const [search, setSearch] = useState('')
@@ -70,8 +76,8 @@ export default function SalesManagerInvoicesPage() {
     setLoading(true)
     setFetchError(null)
     try {
-      const sd = startDate || undefined
-      const ed = endDate || undefined
+      const sd = toIso(startDate)
+      const ed = toIso(endDate)
       const [invData, analyticsData] = await Promise.all([
         salesService.getInvoices(user.token, sd, ed),
         salesService.getAnalytics(user.token, sd, ed),
@@ -223,19 +229,23 @@ export default function SalesManagerInvoicesPage() {
             <label className="flex items-center gap-2 text-sm text-white/60">
               From
               <input
-                type="date"
+                type="text"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-white outline-none transition focus:border-primary/40"
+                placeholder="dd.mm.yyyy"
+                maxLength={10}
+                className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-white outline-none transition focus:border-primary/40 placeholder:text-white/30 w-32"
               />
             </label>
             <label className="flex items-center gap-2 text-sm text-white/60">
               To
               <input
-                type="date"
+                type="text"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-white outline-none transition focus:border-primary/40"
+                placeholder="dd.mm.yyyy"
+                maxLength={10}
+                className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-white outline-none transition focus:border-primary/40 placeholder:text-white/30 w-32"
               />
             </label>
             <button
