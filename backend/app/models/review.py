@@ -22,6 +22,11 @@ class ReviewResponse(BaseModel):
     dislikes: int = 0
 
 
+class ReviewUpdate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(default='', max_length=600)
+
+
 class ReviewStatusUpdate(BaseModel):
     status: str = Field(pattern="^(approved|rejected)$")
 

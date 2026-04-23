@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_current_user, require_role
-from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, VoteCreate, VoteResponse
+from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, ReviewUpdate, VoteCreate, VoteResponse
 from app.services.review_service import (
     approve_review,
+    edit_review,
     fetch_all_reviews,
     fetch_approved_reviews,
     fetch_my_review,
@@ -11,6 +12,7 @@ from app.services.review_service import (
     get_my_votes,
     handle_vote,
     reject_review,
+    remove_review,
     submit_review,
 )
 
@@ -45,6 +47,24 @@ async def list_pending_reviews(
     _: dict = Depends(require_role("product_manager")),
 ):
     return fetch_pending_reviews()
+
+
+@router.put("/{review_id}", response_model=ReviewResponse)
+async def update_review(
+    review_id: str,
+    payload: ReviewUpdate,
+    current_user: dict = Depends(get_current_user),
+):
+    return edit_review(review_id, payload, current_user["user_id"])
+
+
+@router.delete("/{review_id}", status_code=200)
+async def delete_review(
+    review_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    remove_review(review_id, current_user["user_id"])
+    return {"ok": True}
 
 
 @router.put("/{review_id}/status", response_model=ReviewResponse)
