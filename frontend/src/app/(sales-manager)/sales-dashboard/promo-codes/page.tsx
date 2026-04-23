@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { PromoCode, promoCodeService } from '../../../../services/checkoutService'
@@ -147,46 +148,50 @@ export default function PromoCodesPage() {
   if (isLoading || !user || user.role !== 'sales_manager') return null
 
   return (
-    <main style={{ minHeight: '100vh', padding: '2.5rem 2rem', color: '#fff' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <main className="min-h-screen px-8 py-10 text-white">
+      <div className="mx-auto w-full max-w-[1100px] space-y-6">
 
         {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <button
-              onClick={() => router.push('/sales-dashboard')}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontFamily: 'monospace', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', padding: 0, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>
-              Dashboard
-            </button>
-            <p style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.3em', color: 'rgba(255,255,255,0.4)', marginBottom: '0.4rem' }}>Sales Manager</p>
-            <h1 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Promo Codes</h1>
+        <section className="glass-panel rounded-3xl border border-white/10 p-7">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Sales Module</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">Promo Codes</h1>
+              <p className="mt-2 text-sm text-white/60">Create and manage promotional discount codes for customers.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/sales-dashboard"
+                className="inline-flex rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition hover:border-primary/40 hover:text-primary"
+              >
+                ← Back to Dashboard
+              </Link>
+              <button
+                onClick={() => setShowForm(v => !v)}
+                style={{
+                  background: showForm ? 'rgba(255,255,255,0.06)' : 'var(--c-neon, #39ff14)',
+                  color: showForm ? 'rgba(255,255,255,0.5)' : '#022100',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  padding: '0.85rem 1.5rem',
+                  fontFamily: 'monospace',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{showForm ? 'close' : 'add'}</span>
+                {showForm ? 'Cancel' : 'New Code'}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowForm(v => !v)}
-            style={{
-              background: showForm ? 'rgba(255,255,255,0.06)' : 'var(--c-neon, #39ff14)',
-              color: showForm ? 'rgba(255,255,255,0.5)' : '#022100',
-              border: 'none',
-              borderRadius: '0.75rem',
-              padding: '0.85rem 1.5rem',
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'background 0.2s, color 0.2s',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{showForm ? 'close' : 'add'}</span>
-            {showForm ? 'Cancel' : 'New Code'}
-          </button>
-        </div>
+        </section>
 
         {/* ── Create Form ── */}
         {showForm && (
