@@ -154,7 +154,7 @@ export default function SalesManagerOrdersPage() {
               { label: 'Total Orders', value: String(kpis.count), color: 'text-white' },
               { label: 'Processing', value: String(kpis.byStatus.processing), color: 'text-sky-300' },
               { label: 'In Transit', value: String(kpis.byStatus['in-transit']), color: 'text-violet-300' },
-              { label: 'Revenue', value: `₺${fmt(kpis.total)}`, color: 'text-emerald-300' },
+              { label: 'Revenue', value: `$${fmt(kpis.total)}`, color: 'text-emerald-300' },
             ].map(({ label, value, color }) => (
               <div key={label} className="glass-panel rounded-2xl border border-white/10 p-4">
                 <p className="text-xs uppercase tracking-widest text-white/40">{label}</p>
@@ -250,7 +250,7 @@ export default function SalesManagerOrdersPage() {
                           <td className="px-3 py-3 text-white/70">
                             {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                           </td>
-                          <td className="px-3 py-3 font-semibold text-white">₺{fmt(order.total_amount)}</td>
+                          <td className="px-3 py-3 font-semibold text-white">${fmt(order.total_amount)}</td>
                           <td className="px-3 py-3 text-white/65">{fmtDate(order.created_at)}</td>
                           <td className="px-3 py-3">
                             {updatingId === order.id ? (
@@ -304,8 +304,8 @@ export default function SalesManagerOrdersPage() {
                                     <tr key={i} className="border-t border-white/5">
                                       <td className="py-1 text-white/80">{item.product_name}</td>
                                       <td className="py-1 text-right text-white/60">{item.quantity}</td>
-                                      <td className="py-1 text-right text-white/60">₺{fmt(item.unit_price)}</td>
-                                      <td className="py-1 text-right text-white/80">₺{fmt(item.subtotal)}</td>
+                                      <td className="py-1 text-right text-white/60">${fmt(item.unit_price)}</td>
+                                      <td className="py-1 text-right text-white/80">${fmt(item.subtotal)}</td>
                                     </tr>
                                   ))}
                                 </tbody>

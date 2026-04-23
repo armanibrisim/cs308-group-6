@@ -3,6 +3,15 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 import { useAuth } from '../../../../context/AuthContext'
 import {
@@ -42,6 +51,9 @@ export default function SalesManagerInvoicesPage() {
 
   // expanded row
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // pdf download
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   // feedback banner
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -88,6 +100,25 @@ export default function SalesManagerInvoicesPage() {
         inv.customer_email.toLowerCase().includes(q),
     )
   }, [invoices, search])
+
+  // ── PDF download ───────────────────────────────────────────────────────────────
+  async function downloadPdf(invoiceId: string) {
+    if (!user?.token) return
+    setDownloadingId(invoiceId)
+    try {
+      const blob = await salesService.downloadInvoicePdf(user.token, invoiceId)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `invoice_${invoiceId}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setBanner({ type: 'error', message: `Failed to download PDF for invoice ${invoiceId}.` })
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   // ── CSV export ─────────────────────────────────────────────────────────────────
   function exportCSV() {
@@ -166,9 +197,9 @@ export default function SalesManagerInvoicesPage() {
         {analytics && (
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: 'Revenue', value: `₺${fmt(analytics.total_revenue)}`, color: 'text-emerald-300' },
-              { label: 'Cost', value: `₺${fmt(analytics.total_cost)}`, color: 'text-white/80' },
-              { label: 'Profit', value: `₺${fmt(analytics.total_profit)}`, color: 'text-primary' },
+              { label: 'Revenue', value: `$${fmt(analytics.total_revenue)}`, color: 'text-emerald-300' },
+              { label: 'Cost', value: `$${fmt(analytics.total_cost)}`, color: 'text-white/80' },
+              { label: 'Profit', value: `$${fmt(analytics.total_profit)}`, color: 'text-primary' },
               { label: 'Invoices', value: String(analytics.invoice_count), color: 'text-sky-300' },
             ].map(({ label, value, color }) => (
               <div key={label} className="glass-panel rounded-2xl border border-white/10 p-4">
@@ -226,6 +257,37 @@ export default function SalesManagerInvoicesPage() {
           </div>
         </section>
 
+        {/* ── Revenue / Profit Chart ── */}
+        {analytics && analytics.chart_data.length > 0 && (
+          <section className="glass-panel rounded-3xl border border-white/10 p-5">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/50">Revenue &amp; Profit Over Time</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={analytics.chart_data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6ee7b7" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#6ee7b7" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--c-neon)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--c-neon)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} width={60} />
+                <Tooltip
+                  contentStyle={{ background: 'rgba(20,20,20,0.92)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '0.75rem', fontSize: 12 }}
+                  labelStyle={{ color: 'rgba(255,255,255,0.6)' }}
+                  formatter={(value, name) => [`$${Number(value).toFixed(2)}`, name === 'revenue' ? 'Revenue' : 'Profit']}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#6ee7b7" strokeWidth={2} fill="url(#gradRevenue)" dot={false} />
+                <Area type="monotone" dataKey="profit" stroke="var(--c-neon)" strokeWidth={2} fill="url(#gradProfit)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </section>
+        )}
+
         {/* ── Table ── */}
         <section className="glass-panel rounded-3xl border border-white/10 p-5">
           {fetchError ? (
@@ -254,6 +316,7 @@ export default function SalesManagerInvoicesPage() {
                     <th className="px-3 py-3">Total</th>
                     <th className="px-3 py-3">Date</th>
                     <th className="px-3 py-3">Items</th>
+                    <th className="px-3 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -270,20 +333,30 @@ export default function SalesManagerInvoicesPage() {
                             <p className="text-white/90">{inv.customer_name}</p>
                             <p className="text-xs text-white/45">{inv.customer_email}</p>
                           </td>
-                          <td className="px-3 py-3 text-white/80">₺{fmt(inv.subtotal)}</td>
-                          <td className="px-3 py-3 text-white/65">₺{fmt(inv.tax)}</td>
-                          <td className="px-3 py-3 text-white/65">₺{fmt(inv.shipping)}</td>
-                          <td className="px-3 py-3 font-semibold text-white">₺{fmt(inv.total_amount)}</td>
+                          <td className="px-3 py-3 text-white/80">${fmt(inv.subtotal)}</td>
+                          <td className="px-3 py-3 text-white/65">${fmt(inv.tax)}</td>
+                          <td className="px-3 py-3 text-white/65">${fmt(inv.shipping)}</td>
+                          <td className="px-3 py-3 font-semibold text-white">${fmt(inv.total_amount)}</td>
                           <td className="px-3 py-3 text-white/65">{fmtDate(inv.created_at)}</td>
                           <td className="px-3 py-3">
                             <span className="rounded-full border border-white/20 px-2.5 py-1 text-xs text-white/60">
                               {inv.items.length} item{inv.items.length !== 1 ? 's' : ''} {expanded ? '▲' : '▼'}
                             </span>
                           </td>
+                          <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => downloadPdf(inv.id)}
+                              disabled={downloadingId === inv.id}
+                              className="rounded-lg border border-white/20 px-2.5 py-1 text-xs text-white/60 transition hover:border-primary/40 hover:text-primary disabled:opacity-40"
+                              title="Download PDF"
+                            >
+                              {downloadingId === inv.id ? '…' : 'PDF'}
+                            </button>
+                          </td>
                         </tr>
                         {expanded && (
                           <tr key={`${inv.id}-items`} className="border-b border-white/5 bg-white/[0.015]">
-                            <td colSpan={8} className="px-6 py-4">
+                            <td colSpan={9} className="px-6 py-4">
                               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/40">
                                 Line Items
                               </p>
@@ -301,8 +374,8 @@ export default function SalesManagerInvoicesPage() {
                                     <tr key={i} className="border-t border-white/5">
                                       <td className="py-1 text-white/80">{item.product_name}</td>
                                       <td className="py-1 text-right text-white/60">{item.quantity}</td>
-                                      <td className="py-1 text-right text-white/60">₺{fmt(item.unit_price)}</td>
-                                      <td className="py-1 text-right text-white/80">₺{fmt(item.subtotal)}</td>
+                                      <td className="py-1 text-right text-white/60">${fmt(item.unit_price)}</td>
+                                      <td className="py-1 text-right text-white/80">${fmt(item.subtotal)}</td>
                                     </tr>
                                   ))}
                                 </tbody>

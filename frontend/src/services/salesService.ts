@@ -151,6 +151,14 @@ export const salesService = {
     })
   },
 
+  async downloadInvoicePdf(token: string, invoiceId: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/invoices/${invoiceId}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.blob()
+  },
+
   getProducts(token: string, page = 1, limit = 100): Promise<{ products: DiscountProduct[]; total: number }> {
     return request(`/products?page=${page}&limit=${limit}`, token)
   },
