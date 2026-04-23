@@ -53,15 +53,15 @@ def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
 
 
 def set_product_price_directly(product_id: str, new_price: float) -> dict:
-    """Set a product's price directly and notify wishlist users."""
-    from app.services.product_service import modify_product, _to_product_response
-    from app.models.product import ProductUpdate
+    """Set a product's price directly, clear any discount, and notify wishlist users."""
+    from app.services.product_service import _to_product_response
 
     data = product_repository.get_product_by_id(product_id)
     if data is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
 
-    updated = modify_product(product_id, ProductUpdate(price=new_price))
+    product_repository.set_price_directly(product_id, new_price)
+    updated = _to_product_response(product_repository.get_product_by_id(product_id))
 
     wishlists = wishlist_repository.get_wishlists_for_product(product_id)
     notified: set[str] = set()

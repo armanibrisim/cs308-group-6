@@ -227,6 +227,15 @@ def apply_discount(product_id: str, discount_percent: float) -> None:
     update_product(product_id, updates)
 
 
+def set_price_directly(product_id: str, new_price: float) -> None:
+    """Set a product's price directly, clearing any active discount."""
+    update_product(product_id, {
+        "price": new_price,
+        "original_price": None,
+        "discount_percent": None,
+    })
+
+
 def remove_discount(product_id: str) -> None:
     """Restore a product's price to its original_price.
 
