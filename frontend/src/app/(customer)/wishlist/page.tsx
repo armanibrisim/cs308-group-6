@@ -91,9 +91,23 @@ const WishlistCard = memo(function WishlistCard({
           </div>
         )}
         <div style={{ marginTop: 'auto', paddingTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
-            ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            {product.original_price != null && product.original_price > product.price && (
+              <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.4)', textDecoration: 'line-through' }}>
+                ${(product.original_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '1.25rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)' }}>
+                ${(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              {product.discount_percent != null && product.discount_percent > 0 && (
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, background: NEON, color: '#000', borderRadius: '999px', padding: '0.15rem 0.45rem' }}>
+                  -{product.discount_percent.toFixed(0)}%
+                </span>
+              )}
+            </div>
+          </div>
           <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', border: hovered ? `1px solid ${NEON}` : `1px solid rgba(${NEON_RGB}, 0.30)`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: hovered ? NEON : 'transparent', transition: 'background 0.2s' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: hovered ? '#000' : NEON, transition: 'color 0.2s' }}>arrow_forward</span>
           </div>

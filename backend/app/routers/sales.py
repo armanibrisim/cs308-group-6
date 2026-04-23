@@ -1,12 +1,21 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
 
 from app.dependencies import require_role
 from app.models.product import DiscountApply, DiscountApplyResponse, ProductResponse
 from app.models.invoice import InvoiceResponse
-from app.services.discount_service import apply_discount_to_products, remove_discount_from_product
+from app.services.discount_service import (
+    apply_discount_to_products,
+    remove_discount_from_product,
+    set_product_price_directly,
+)
 from app.services.analytics_service import get_analytics, get_invoices_in_range
+
+
+class PriceUpdate(BaseModel):
+    price: float = Field(gt=0)
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -39,6 +48,16 @@ async def list_invoices_filtered(
 ):
     """List invoices, optionally filtered to a date range (YYYY-MM-DD)."""
     return get_invoices_in_range(start_date, end_date)
+
+
+@router.patch("/products/{product_id}/price", response_model=ProductResponse)
+async def set_product_price(
+    product_id: str,
+    body: PriceUpdate,
+    _: dict = Depends(_sm),
+):
+    """Sales manager: directly set a product's price and notify wishlist users."""
+    return set_product_price_directly(product_id, body.price)
 
 
 @router.get("/analytics")

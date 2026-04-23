@@ -37,6 +37,11 @@ export default function SalesManagerDiscountsPage() {
   const [search, setSearch] = useState('')
   const [filterDiscounted, setFilterDiscounted] = useState<'all' | 'discounted' | 'none'>('all')
 
+  // inline price editing
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
+  const [priceInput, setPriceInput] = useState('')
+  const [savingPrice, setSavingPrice] = useState(false)
+
   // feedback banner
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -152,6 +157,28 @@ export default function SalesManagerDiscountsPage() {
       setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Failed to remove discount' })
     } finally {
       setRemoving(null)
+    }
+  }
+
+  // ── set price directly ────────────────────────────────────────────────────────
+  async function handleSavePrice(productId: string) {
+    if (!user?.token) return
+    const val = parseFloat(priceInput.replace(',', '.'))
+    if (isNaN(val) || val <= 0) {
+      setBanner({ type: 'error', message: 'Please enter a valid price greater than 0.' })
+      return
+    }
+    setSavingPrice(true)
+    try {
+      await salesService.setProductPrice(user.token, productId, val)
+      setBanner({ type: 'success', message: 'Price updated successfully.' })
+      setEditingPriceId(null)
+      setPriceInput('')
+      await loadProducts()
+    } catch (err: unknown) {
+      setBanner({ type: 'error', message: err instanceof Error ? err.message : 'Failed to update price' })
+    } finally {
+      setSavingPrice(false)
     }
   }
 
@@ -346,7 +373,49 @@ export default function SalesManagerDiscountsPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3 font-semibold text-white">
-                          ${fmt(product.price)}
+                          {editingPriceId === product.id ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-white/50">$</span>
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={priceInput}
+                                onChange={(e) => setPriceInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSavePrice(product.id)
+                                  if (e.key === 'Escape') { setEditingPriceId(null); setPriceInput('') }
+                                }}
+                                autoFocus
+                                className="w-24 rounded-lg border border-primary/40 bg-white/[0.05] px-2 py-1 text-sm text-white outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSavePrice(product.id)}
+                                disabled={savingPrice}
+                                className="rounded-lg bg-primary px-2 py-1 text-xs font-bold text-black disabled:opacity-50"
+                              >
+                                {savingPrice ? '…' : '✓'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setEditingPriceId(null); setPriceInput('') }}
+                                className="rounded-lg border border-white/20 px-2 py-1 text-xs text-white/50 hover:text-white"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setEditingPriceId(product.id); setPriceInput(product.price.toFixed(2)) }}
+                              className="group flex items-center gap-1.5 hover:text-primary transition-colors"
+                              title="Click to edit price"
+                            >
+                              ${fmt(product.price)}
+                              <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-60 transition-opacity">edit</span>
+                            </button>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-white/55">
                           {product.original_price ? `$${fmt(product.original_price)}` : '—'}
