@@ -31,6 +31,14 @@ const MODULES = [
     accent: 'text-primary',
     border: 'hover:border-primary/40',
   },
+  {
+    href: '/sales-dashboard/promo-codes',
+    title: 'Promo Codes',
+    description: 'Create, manage, and deactivate promo codes. Customers can apply codes at checkout for a subtotal discount.',
+    icon: 'confirmation_number',
+    accent: 'text-violet-300',
+    border: 'hover:border-violet-500/40',
+  },
 ]
 
 export default function SalesDashboardPage() {

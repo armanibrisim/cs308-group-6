@@ -10,6 +10,7 @@ import {
   CheckoutInvoice,
   CheckoutPayload,
   CheckoutResult,
+  promoCodeService,
 } from '../../../services/checkoutService'
 import { Address, addressService } from '../../../services/addressService'
 import { SavedCard, cardService } from '../../../services/cardService'
@@ -238,6 +239,12 @@ export default function CheckoutPage() {
   const [saveNewCard, setSaveNewCard] = useState(false)
   const [newCardLabel, setNewCardLabel] = useState('')
 
+  // Promo code state
+  const [promoInput, setPromoInput] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount_percent: number } | null>(null)
+  const [promoError, setPromoError] = useState<string | null>(null)
+  const [promoLoading, setPromoLoading] = useState(false)
+
   // Checkout state
   const [processing, setProcessing] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -249,6 +256,19 @@ export default function CheckoutPage() {
       router.push('/login')
     }
   }, [user, authLoading, router])
+
+  // Pick up any promo code applied on the cart page
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('lumen_promo')
+      if (stored) {
+        const promo = JSON.parse(stored) as { code: string; discount_percent: number }
+        setAppliedPromo(promo)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
 
   // Load cart from backend
   const loadCart = useCallback(async () => {
@@ -299,7 +319,9 @@ export default function CheckoutPage() {
   }, [loadCart])
 
   // Derived totals (mirrors backend logic)
-  const subtotal = Math.round(cartItems.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
+  const rawSubtotal = Math.round(cartItems.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
+  const discountAmount = appliedPromo ? Math.round(rawSubtotal * appliedPromo.discount_percent / 100 * 100) / 100 : 0
+  const subtotal = Math.round((rawSubtotal - discountAmount) * 100) / 100
   const shipping = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST
   const tax = Math.round(subtotal * TAX_RATE * 100) / 100
   const total = Math.round((subtotal + shipping + tax) * 100) / 100
@@ -318,6 +340,23 @@ export default function CheckoutPage() {
   function handleExpiryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 4)
     setExpiry(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits)
+  }
+
+  // Promo code handler
+  async function handleApplyPromo() {
+    if (!promoInput.trim()) return
+    setPromoError(null)
+    setPromoLoading(true)
+    try {
+      const res = await promoCodeService.validate(promoInput.trim())
+      setAppliedPromo({ code: res.code, discount_percent: res.discount_percent })
+      setPromoInput('')
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : 'Invalid promo code.')
+      setAppliedPromo(null)
+    } finally {
+      setPromoLoading(false)
+    }
   }
 
   // Resolve final delivery address string
@@ -376,6 +415,7 @@ export default function CheckoutPage() {
       delivery_address: deliveryAddress!,
       card_last4: resolvedLast4,
       card_holder_name: resolvedHolder,
+      ...(appliedPromo ? { promo_code: appliedPromo.code } : {}),
     }
 
     // Save new card to account if requested
@@ -515,8 +555,19 @@ export default function CheckoutPage() {
 
             {/* Totals */}
             <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.07)' }}>
+              {/* Subtotal row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.6)' }}>
+                <span>Subtotal</span>
+                <span>{fmt(rawSubtotal)}</span>
+              </div>
+              {/* Discount row — only shown when a promo is applied */}
+              {appliedPromo && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', color: 'var(--c-neon)' }}>
+                  <span>Promo ({appliedPromo.code}) -{appliedPromo.discount_percent}%</span>
+                  <span>-{fmt(discountAmount)}</span>
+                </div>
+              )}
               {[
-                { label: 'Subtotal', value: fmt(subtotal) },
                 { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping) },
                 { label: 'Tax', value: fmt(tax) },
               ].map(({ label, value }) => (
@@ -822,6 +873,70 @@ export default function CheckoutPage() {
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Section 03: Promo Code */}
+            <div className="grounded-box" style={{ borderRadius: '1.5rem', padding: '2.5rem' }}>
+              <h2 style={{ fontSize: '10px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(var(--c-text-rgb), 0.6)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(var(--c-text-rgb), 0.06)', border: '1px solid rgba(var(--c-text-rgb), 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'rgba(var(--c-text-rgb), 0.6)', flexShrink: 0 }}>03</span>
+                Promo Code
+              </h2>
+
+              {appliedPromo ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(var(--c-neon-rgb), 0.07)', border: '1px solid var(--c-neon)', borderRadius: '0.75rem', padding: '1rem 1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span className="material-symbols-outlined" style={{ color: 'var(--c-neon)', fontSize: '18px' }}>check_circle</span>
+                    <div>
+                      <p style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--c-neon)' }}>{appliedPromo.code}</p>
+                      <p style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.5)', marginTop: '2px' }}>{appliedPromo.discount_percent}% OFF SUBTOTAL</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAppliedPromo(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(var(--c-text-rgb), 0.4)', fontSize: '18px', padding: '0.25rem' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <input
+                    id="promo-code-input"
+                    type="text"
+                    value={promoInput}
+                    onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null) }}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyPromo()}
+                    placeholder="ENTER CODE"
+                    maxLength={32}
+                    style={{ ...INPUT_STYLE, flex: 1, letterSpacing: '0.1em', fontWeight: 700 }}
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    disabled={promoLoading || !promoInput.trim()}
+                    style={{
+                      background: promoLoading || !promoInput.trim() ? 'rgba(var(--c-neon-rgb), 0.3)' : 'var(--c-neon)',
+                      color: '#022100',
+                      border: 'none',
+                      borderRadius: '0.75rem',
+                      padding: '0.75rem 1.25rem',
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      cursor: promoLoading || !promoInput.trim() ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    {promoLoading ? '...' : 'Apply'}
+                  </button>
+                </div>
+              )}
+
+              {promoError && (
+                <p style={{ marginTop: '0.75rem', fontSize: '11px', fontFamily: 'monospace', color: '#ef4444' }}>{promoError}</p>
               )}
             </div>
 

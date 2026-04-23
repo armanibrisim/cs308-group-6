@@ -27,6 +27,8 @@ export interface CheckoutOrder {
   delivery_address: string
   items: CheckoutItem[]
   subtotal: number
+  discount_amount?: number
+  promo_code?: string
   tax: number
   shipping: number
   total_amount: number
@@ -45,6 +47,8 @@ export interface CheckoutInvoice {
   delivery_address: string
   items: CheckoutItem[]
   subtotal: number
+  discount_amount?: number
+  promo_code?: string
   tax: number
   shipping: number
   total_amount: number
@@ -60,6 +64,18 @@ export interface CheckoutPayload {
   delivery_address: string
   card_last4: string
   card_holder_name: string
+  promo_code?: string
+}
+
+export interface PromoCode {
+  id: string
+  code: string
+  discount_percent: number
+  max_uses?: number
+  uses: number
+  expires_at?: string
+  is_active: boolean
+  created_at: string
 }
 
 async function request<T>(endpoint: string, options: RequestInit): Promise<T> {
@@ -87,6 +103,71 @@ export const checkoutService = {
     return request<CheckoutResult>('/checkout', {
       method: 'POST',
       body: JSON.stringify(payload),
+    })
+  },
+}
+
+export const promoCodeService = {
+  validate(code: string): Promise<{ code: string; discount_percent: number; message: string }> {
+    return request('/promo-codes/validate', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  },
+
+  list(token: string): Promise<PromoCode[]> {
+    return fetch(`${API_BASE_URL}/promo-codes`, {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }).then(async res => {
+      if (!res.ok) { const e = await res.json().catch(() => ({ detail: 'Error' })); throw new Error(e.detail) }
+      return res.json()
+    })
+  },
+
+  create(token: string, data: {
+    code: string
+    discount_percent: number
+    max_uses?: number
+    expires_at?: string
+    is_active: boolean
+  }): Promise<PromoCode> {
+    return fetch(`${API_BASE_URL}/promo-codes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }).then(async res => {
+      if (!res.ok) { const e = await res.json().catch(() => ({ detail: 'Error' })); throw new Error(e.detail) }
+      return res.json()
+    })
+  },
+
+  update(token: string, id: string, data: Partial<{ discount_percent: number; max_uses: number; expires_at: string; is_active: boolean }>): Promise<PromoCode> {
+    return fetch(`${API_BASE_URL}/promo-codes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }).then(async res => {
+      if (!res.ok) { const e = await res.json().catch(() => ({ detail: 'Error' })); throw new Error(e.detail) }
+      return res.json()
+    })
+  },
+
+  deactivate(token: string, id: string): Promise<PromoCode> {
+    return fetch(`${API_BASE_URL}/promo-codes/${id}/deactivate`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    }).then(async res => {
+      if (!res.ok) { const e = await res.json().catch(() => ({ detail: 'Error' })); throw new Error(e.detail) }
+      return res.json()
+    })
+  },
+
+  delete(token: string, id: string): Promise<void> {
+    return fetch(`${API_BASE_URL}/promo-codes/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(async res => {
+      if (!res.ok && res.status !== 204) { const e = await res.json().catch(() => ({ detail: 'Error' })); throw new Error(e.detail) }
     })
   },
 }
