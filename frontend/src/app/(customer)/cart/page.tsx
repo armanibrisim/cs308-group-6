@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { cartService } from '../../../services/cartService'
+import { promoCodeService } from '../../../services/checkoutService'
 import { CartItem } from '../../../types/cart'
 import { SideNav } from '../../../components/layout/SideNav'
 
@@ -86,15 +87,45 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [promoCode, setPromoCode] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount_percent: number } | null>(null)
+  const [promoError, setPromoError] = useState<string | null>(null)
+  const [promoLoading, setPromoLoading] = useState(false)
 
   // ── Derived totals ────────────────────────────────────────────────────────
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0)
-  const subtotal   = items.reduce((s, i) => s + i.price * i.quantity, 0)
-  const shipping   = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST
-  const tax        = subtotal * TAX_RATE
-  const total      = subtotal + shipping + tax
-  const progress   = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)
+  const rawSubtotal  = items.reduce((s, i) => s + i.price * i.quantity, 0)
+  const discountAmt  = appliedPromo ? Math.round(rawSubtotal * appliedPromo.discount_percent / 100 * 100) / 100 : 0
+  const subtotal     = Math.round((rawSubtotal - discountAmt) * 100) / 100
+  const shipping     = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST
+  const tax          = subtotal * TAX_RATE
+  const total        = subtotal + shipping + tax
+  const progress     = Math.min((rawSubtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)
+
+  // Persist applied promo to sessionStorage so checkout page can read it
+  useEffect(() => {
+    if (appliedPromo) {
+      sessionStorage.setItem('lumen_promo', JSON.stringify(appliedPromo))
+    } else {
+      sessionStorage.removeItem('lumen_promo')
+    }
+  }, [appliedPromo])
+
+  async function handleApplyPromo() {
+    if (!promoCode.trim()) return
+    setPromoError(null)
+    setPromoLoading(true)
+    try {
+      const res = await promoCodeService.validate(promoCode.trim())
+      setAppliedPromo({ code: res.code, discount_percent: res.discount_percent })
+      setPromoCode('')
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : 'Invalid promo code.')
+      setAppliedPromo(null)
+    } finally {
+      setPromoLoading(false)
+    }
+  }
 
   // ── Helpers to convert backend CartItem → DisplayItem ─────────────────────
 
@@ -399,7 +430,8 @@ export default function CartPage() {
 
                   <div style={{ borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)', paddingTop: '2.5rem', marginBottom: '3rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     {[
-                      { label: 'Subtotal', value: fmt(subtotal), color: 'var(--c-text)' },
+                      { label: 'Subtotal', value: fmt(rawSubtotal), color: 'var(--c-text)' },
+                      ...(appliedPromo ? [{ label: `Promo (${appliedPromo.code}) -${appliedPromo.discount_percent}%`, value: `-${fmt(discountAmt)}`, color: 'var(--c-neon)' }] : []),
                       { label: 'Shipping', value: shipping === 0 ? 'FREE' : fmt(shipping), color: 'var(--c-neon)' },
                       { label: 'Tax (Est.)', value: fmt(tax), color: 'var(--c-text)' },
                     ].map(({ label, value, color }) => (
@@ -422,24 +454,53 @@ export default function CartPage() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {/* Promo code */}
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        value={promoCode}
-                        onChange={e => setPromoCode(e.target.value)}
-                        placeholder="PROMO CODE"
-                        style={{
-                          width: '100%', boxSizing: 'border-box',
-                          background: 'var(--c-panel)', border: '1px solid rgba(var(--c-text-rgb), 0.1)',
-                          borderRadius: '1rem', padding: '1.25rem 6rem 1.25rem 1.5rem',
-                          fontSize: '11px', fontWeight: 900, letterSpacing: '0.2em',
-                          color: 'var(--c-text)', outline: 'none', textTransform: 'uppercase',
-                        }}
-                      />
-                      <button style={{
-                        position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: '10px', fontWeight: 900, color: 'var(--c-neon)', textTransform: 'uppercase',
-                      }}>Apply</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {appliedPromo ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(var(--c-neon-rgb), 0.07)', border: '1px solid var(--c-neon)', borderRadius: '1rem', padding: '1rem 1.5rem' }}>
+                          <div>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--c-neon)', letterSpacing: '0.1em' }}>{appliedPromo.code}</p>
+                            <p style={{ fontSize: '9px', color: 'rgba(var(--c-text-rgb), 0.5)', marginTop: '2px', letterSpacing: '0.1em' }}>{appliedPromo.discount_percent}% OFF APPLIED</p>
+                          </div>
+                          <button onClick={() => setAppliedPromo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(var(--c-text-rgb), 0.4)', padding: 0 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            id="cart-promo-input"
+                            value={promoCode}
+                            onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null) }}
+                            onKeyDown={e => e.key === 'Enter' && handleApplyPromo()}
+                            placeholder="PROMO CODE"
+                            maxLength={32}
+                            style={{
+                              width: '100%', boxSizing: 'border-box',
+                              background: 'var(--c-panel)', border: '1px solid rgba(var(--c-text-rgb), 0.1)',
+                              borderRadius: '1rem', padding: '1.25rem 6rem 1.25rem 1.5rem',
+                              fontSize: '11px', fontWeight: 900, letterSpacing: '0.2em',
+                              color: 'var(--c-text)', outline: 'none', textTransform: 'uppercase',
+                            }}
+                          />
+                          <button
+                            onClick={handleApplyPromo}
+                            disabled={promoLoading || !promoCode.trim()}
+                            style={{
+                              position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
+                              background: 'none', border: 'none',
+                              cursor: promoLoading || !promoCode.trim() ? 'not-allowed' : 'pointer',
+                              fontSize: '10px', fontWeight: 900,
+                              color: promoLoading || !promoCode.trim() ? 'rgba(var(--c-neon-rgb), 0.4)' : 'var(--c-neon)',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {promoLoading ? '...' : 'Apply'}
+                          </button>
+                        </div>
+                      )}
+                      {promoError && (
+                        <p style={{ fontSize: '10px', color: '#ef4444', fontFamily: 'monospace', paddingLeft: '0.5rem' }}>{promoError}</p>
+                      )}
                     </div>
 
                     {/* Checkout */}

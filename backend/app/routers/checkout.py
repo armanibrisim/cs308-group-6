@@ -20,6 +20,7 @@ from app.models.order import CheckoutRequest, OrderResponse
 from app.repositories import delivery_repository, invoice_repository, order_repository
 from app.repositories.cart_repository import clear_cart, get_cart
 from app.repositories.product_repository import decrement_stock, get_product_by_id
+from app.repositories.promo_code_repository import increment_uses, validate_promo_code
 from app.repositories.user_repository import get_user_by_id
 from app.services.email_service import send_invoice_email
 from app.utils.pdf import generate_invoice_pdf
@@ -86,6 +87,16 @@ async def checkout(
         })
 
     subtotal = round(subtotal, 2)
+
+    # ── 3. Validate & apply promo code (if provided) ───────────────────────────────
+    applied_promo: dict | None = None
+    discount_amount = 0.0
+
+    if payload.promo_code:
+        applied_promo = validate_promo_code(payload.promo_code)
+        discount_amount = round(subtotal * applied_promo["discount_percent"] / 100, 2)
+        subtotal = round(subtotal - discount_amount, 2)
+
     shipping = 0.0 if subtotal >= FREE_SHIPPING_THRESHOLD else SHIPPING_COST
     tax = round(subtotal * TAX_RATE, 2)
     total_amount = round(subtotal + shipping + tax, 2)
@@ -146,6 +157,8 @@ async def checkout(
         "delivery_address": payload.delivery_address,
         "items": enriched_items,
         "subtotal": subtotal,
+        "discount_amount": discount_amount if discount_amount else None,
+        "promo_code": applied_promo["code"] if applied_promo else None,
         "tax": tax,
         "shipping": shipping,
         "total_amount": total_amount,
@@ -162,6 +175,8 @@ async def checkout(
         delivery_address=payload.delivery_address,
         items=[InvoiceItem(**i) for i in enriched_items],
         subtotal=subtotal,
+        discount_amount=discount_amount if discount_amount else None,
+        promo_code=applied_promo["code"] if applied_promo else None,
         tax=tax,
         shipping=shipping,
         total_amount=total_amount,
@@ -190,7 +205,15 @@ async def checkout(
     }
     delivery_repository.create_delivery(delivery_data)
 
-    # ── 9. Generate PDF & send email ──────────────────────────────────────────
+    # ── 9. Increment promo code uses (if a code was applied) ──────────────────
+    if applied_promo:
+        try:
+            increment_uses(applied_promo["id"])
+        except Exception:
+            # Non-critical: log and continue even if increment fails
+            pass
+
+    # ── 10. Generate PDF & send email ─────────────────────────────────────────
     try:
         pdf_bytes = generate_invoice_pdf(invoice)
         send_invoice_email(invoice, pdf_bytes)
@@ -198,10 +221,10 @@ async def checkout(
         # PDF/email failure must never abort checkout
         pass
 
-    # ── 10. Clear cart ─────────────────────────────────────────────────────────
+    # ── 11. Clear cart ─────────────────────────────────────────────────────────
     clear_cart(user_id)
 
-    # ── 11. Respond ────────────────────────────────────────────────────────────
+    # ── 12. Respond ────────────────────────────────────────────────────────────
     return {
         "order": OrderResponse(**order).model_dump(),
         "invoice": invoice.model_dump(),

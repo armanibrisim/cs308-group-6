@@ -18,6 +18,8 @@ class InvoiceCreate(BaseModel):
     delivery_address: str
     items: List[InvoiceItem]
     subtotal: float = Field(ge=0)
+    discount_amount: Optional[float] = Field(default=None, ge=0)
+    promo_code: Optional[str] = None
     tax: float = Field(ge=0)
     shipping: float = Field(ge=0)
     total_amount: float = Field(ge=0)
@@ -32,6 +34,8 @@ class InvoiceResponse(BaseModel):
     delivery_address: str
     items: List[InvoiceItem]
     subtotal: float
+    discount_amount: Optional[float] = None
+    promo_code: Optional[str] = None
     tax: float
     shipping: float
     total_amount: float

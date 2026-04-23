@@ -21,6 +21,8 @@ class OrderResponse(BaseModel):
     delivery_address: str
     items: List[OrderItem]
     subtotal: float
+    discount_amount: Optional[float] = None
+    promo_code: Optional[str] = None
     tax: float
     shipping: float
     total_amount: float
@@ -39,3 +41,4 @@ class CheckoutRequest(BaseModel):
     # Mock payment fields — no real processing, just stored for audit
     card_last4: str = Field(min_length=4, max_length=4, pattern="^[0-9]{4}$")
     card_holder_name: str
+    promo_code: Optional[str] = None  # Optional promo code to apply at checkout
