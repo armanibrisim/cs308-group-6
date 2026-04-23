@@ -10,7 +10,7 @@ import { Order, orderService } from '../../../services/orderService'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function fmtDate(iso: string): string {
