@@ -290,6 +290,10 @@ body {
   --c-neon-rgb: 57, 255, 20;
   --c-text: #e5e2e1;
   --c-text-rgb: 229, 226, 225;
+  --sidenav-bg: rgba(15, 15, 18, 0.55);
+  --sidenav-border: rgba(255, 255, 255, 0.08);
+  --trust-title: var(--c-text);
+  --trust-sub: rgba(var(--c-text-rgb), 0.30);
   --c-panel: rgba(22, 24, 28, 0.78);
   --c-panel-border: rgba(255, 255, 255, 0.07);
   --c-checkout-box: rgba(28, 30, 36, 0.92);
@@ -334,9 +338,13 @@ body {
   --c-checkout-border: rgba(80, 60, 30, 0.28);
   --c-muted: rgba(26, 25, 22, 0.45);
   --c-hero: rgba(120, 100, 75, 0.97);
-  --c-hero-gradient: rgba(90, 72, 50, 0.97);
-  --c-hero-gradient-mid: rgba(90, 72, 50, 0.80);
-  --c-hero-gradient-fade: rgba(90, 72, 50, 0.15);
+  --c-hero-gradient: rgba(110, 88, 62, 0.88);
+  --c-hero-gradient-mid: rgba(110, 88, 62, 0.60);
+  --c-hero-gradient-fade: rgba(110, 88, 62, 0.08);
+  --sidenav-bg: rgba(220, 208, 188, 0.65);
+  --sidenav-border: rgba(80, 60, 30, 0.25);
+  --trust-title: #e8e0d0;
+  --trust-sub: rgba(232, 224, 208, 0.55);
   --auth-bg: #e8e2d5;
   --auth-card-bg: rgba(225, 215, 198, 0.68);
   --auth-card-border: rgba(255, 255, 255, 0.55);

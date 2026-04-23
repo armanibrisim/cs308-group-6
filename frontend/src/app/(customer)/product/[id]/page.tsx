@@ -436,7 +436,7 @@ export default function ProductDetailPage() {
                     {(product?.category_id || product?.categoryId).replace(/-/g, ' ')}
                   </span>
                 )}
-                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? `rgba(var(--c-neon-rgb), 0.1)` : 'rgba(var(--c-text-rgb), 0.05)', color: inStock ? NEON : 'rgba(var(--c-text-rgb), 0.4)', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const }}>
+                <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? `rgba(var(--c-neon-rgb), 0.1)` : 'rgba(220,38,38,0.15)', color: inStock ? NEON : '#ef4444', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, border: inStock ? 'none' : '1px solid rgba(220,38,38,0.35)' }}>
                   {inStock ? `IN STOCK — ${stockQty} units` : 'OUT OF STOCK'}
                 </span>
               </div>
@@ -547,8 +547,8 @@ export default function ProductDetailPage() {
                 }}
                 style={{
                   width: '100%',
-                  background: cartStatus === 'success' ? '#22c55e' : cartStatus === 'error' ? '#ef4444' : inStock ? NEON : 'rgba(var(--c-text-rgb), 0.08)',
-                  color: cartStatus === 'error' ? '#fff' : '#000',
+                  background: cartStatus === 'success' ? '#22c55e' : cartStatus === 'error' ? '#ef4444' : inStock ? NEON : 'rgba(192,38,38,0.80)',
+                  color: (!inStock || cartStatus === 'error' || cartStatus === 'success') ? '#fff' : '#000',
                   fontFamily: 'Space Grotesk, sans-serif',
                   fontWeight: 700,
                   padding: '1.5rem',
@@ -587,7 +587,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Secondary actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
                 {[
                   { icon: 'favorite', label: isSaved(id) ? 'SAVED' : 'SAVE', onClick: () => { if (!user) { router.push('/login'); return; } toggleWishlist(id) } },
                   { icon: copied ? 'check_circle' : 'share', label: copied ? 'COPIED!' : 'SHARE', onClick: () => { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) } },
@@ -606,23 +606,23 @@ export default function ProductDetailPage() {
                       color: saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)',
                       background: 'none',
                       border: 'none',
-                      borderLeft: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
+                      borderLeft: 'none',
                       borderRight: 'none',
                       cursor: 'pointer',
-                      padding: '0.75rem 0.5rem',
+                      padding: '0.75rem 1.5rem',
                       transition: 'color 0.2s ease, transform 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
                       if (!saved) (e.currentTarget as HTMLButtonElement).style.color = NEON
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${saved ? '#ff4d6d' : NEON}; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.75rem; transform: scale(1.2); transition: transform 0.2s; color: ${saved ? '#ff4d6d' : NEON}; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                     onMouseLeave={(e) => {
                       ;(e.currentTarget as HTMLButtonElement).style.color = saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)'
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1); transition: transform 0.2s; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.75rem; transform: scale(1); transition: transform 0.2s; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', transition: 'transform 0.2s', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0", color: saved ? '#ff4d6d' : undefined }}>{action.icon}</span>
-                    <span style={{ fontSize: '0.5625rem', textTransform: 'uppercase' as const, fontWeight: 700, letterSpacing: '0.2em' }}>{action.label}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.75rem', transition: 'transform 0.2s', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0", color: saved ? '#ff4d6d' : undefined }}>{action.icon}</span>
+                    <span style={{ fontSize: '0.625rem', textTransform: 'uppercase' as const, fontWeight: 700, letterSpacing: '0.2em' }}>{action.label}</span>
                   </button>
                   )
                 })}
@@ -633,8 +633,9 @@ export default function ProductDetailPage() {
 
         {/* ── Tabs Section ── */}
         <section style={{ marginTop: '5rem' }}>
+          <div className="grounded-box" style={{ borderRadius: '1.5rem', overflow: 'hidden' }}>
           {/* Tab triggers */}
-          <div className="hide-scrollbar" style={{ display: 'flex', gap: '3rem', borderBottom: '1px solid rgba(var(--c-text-rgb), 0.05)', marginBottom: '3rem', overflowX: 'auto', paddingLeft: '1rem' }}>
+          <div className="hide-scrollbar" style={{ display: 'flex', gap: '3rem', borderBottom: '1px solid rgba(var(--c-text-rgb), 0.08)', overflowX: 'auto', paddingLeft: '2rem' }}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -664,7 +665,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Tab content */}
-          <GlowBox style={{ padding: '3rem', borderRadius: '1.5rem', minHeight: '400px' }}>
+          <GlowBox style={{ padding: '3rem', borderRadius: '0', minHeight: '400px', background: 'transparent', border: 'none', boxShadow: 'none' }}>
 
             {/* Description */}
             {activeTab === 'desc' && (
@@ -892,6 +893,7 @@ export default function ProductDetailPage() {
               </div>
             )}
           </GlowBox>
+          </div>
         </section>
 
         {/* ── Related Products ── */}
