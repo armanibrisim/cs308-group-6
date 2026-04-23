@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { productService } from '../../../services/productService'
 import { SideNav } from '../../../components/layout/SideNav'
 import { useCategories } from '../../../context/CategoryContext'
+import { useWishlist } from '../../../context/WishlistContext'
+import { useAuth } from '../../../context/AuthContext'
 
 const NEON = 'var(--c-neon)'
 const NEON_RGB = 'var(--c-neon-rgb)'
@@ -41,7 +43,7 @@ function GlowBox({ children, className = '', style, onClick }: {
 }
 
 // ── Product card ──────────────────────────────────────────────────────────────
-const ProductCard = memo(function ProductCard({ product, onClick }: { product: any; onClick: () => void }) {
+const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeartClick }: { product: any; onClick: () => void; saved?: boolean; onHeartClick?: (e: MouseEvent) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -75,6 +77,18 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: a
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: `rgba(${NEON_RGB}, 0.08)` }}>image_not_supported</span>
           </div>
+        )}
+        {/* Wishlist heart */}
+        {onHeartClick && (
+          <button
+            onClick={onHeartClick}
+            title={saved ? 'Remove from wishlist' : 'Save to wishlist'}
+            style={{ position: 'absolute', top: '0.6rem', right: '0.6rem', zIndex: 10, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', border: 'none', borderRadius: '50%', width: '2rem', height: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.15s, background 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: saved ? '#ff4d6d' : 'rgba(255,255,255,0.6)', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0", transition: 'color 0.2s' }}>favorite</span>
+          </button>
         )}
         {/* Out of stock overlay */}
         {!inStock && (
@@ -160,6 +174,8 @@ function productsReducer(
 export default function BrowsePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user } = useAuth()
+  const { isSaved, toggle } = useWishlist()
 
   const [{ items: products, total }, dispatchProducts] = useReducer(productsReducer, { items: [], total: 0 })
   const [page, setPage]       = useState(1)
@@ -444,7 +460,13 @@ export default function BrowsePage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
             {products.map(p => (
-              <ProductCard key={p.id} product={p} onClick={() => router.push(`/product/${p.id}`)} />
+              <ProductCard
+                key={p.id}
+                product={p}
+                onClick={() => router.push(`/product/${p.id}`)}
+                saved={isSaved(p.id)}
+                onHeartClick={user ? (e) => { e.stopPropagation(); toggle(p.id) } : undefined}
+              />
             ))}
           </div>
         )}

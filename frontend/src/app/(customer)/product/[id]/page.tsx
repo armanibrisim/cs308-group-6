@@ -6,6 +6,7 @@ import { productService } from '../../../../services/productService'
 import { cartService } from '../../../../services/cartService'
 import { reviewService, Review } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
+import { useWishlist } from '../../../../context/WishlistContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
 const NEON = 'var(--c-neon)'
@@ -66,6 +67,7 @@ export default function ProductDetailPage() {
   const id = params.id as string
   const router = useRouter()
   const { user } = useAuth()
+  const { isSaved, toggle: toggleWishlist } = useWishlist()
 
   const [activeTab, setActiveTab] = useState('desc')
   const [showCatalogue, setShowCatalogue] = useState(false)
@@ -79,6 +81,7 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1)
   const [cartStatus, setCartStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [cartError, setCartError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   // ── Reviews ──
   const commentsRef = useRef<HTMLDivElement>(null)
@@ -584,41 +587,45 @@ export default function ProductDetailPage() {
               )}
 
               {/* Secondary actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', paddingTop: '2rem', borderTop: '1px solid rgba(var(--c-text-rgb), 0.05)' }}>
                 {[
-                  { icon: 'favorite', label: 'SAVE' },
-                  { icon: 'compare_arrows', label: 'COMPARE' },
-                  { icon: 'share', label: 'SHARE' },
-                ].map((action, i) => (
+                  { icon: 'favorite', label: isSaved(id) ? 'SAVED' : 'SAVE', onClick: () => { if (!user) { router.push('/login'); return; } toggleWishlist(id) } },
+                  { icon: copied ? 'check_circle' : 'share', label: copied ? 'COPIED!' : 'SHARE', onClick: () => { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000) } },
+                ].map((action, i) => {
+                  const isSaveBtn = action.icon === 'favorite'
+                  const saved = isSaveBtn && isSaved(id)
+                  return (
                   <button
                     key={action.label}
+                    onClick={action.onClick}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      color: 'rgba(var(--c-text-rgb), 0.4)',
+                      color: saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)',
                       background: 'none',
                       border: 'none',
                       borderLeft: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
-                      borderRight: i === 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
+                      borderRight: 'none',
                       cursor: 'pointer',
                       padding: '0.75rem 0.5rem',
                       transition: 'color 0.2s ease, transform 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      ;(e.currentTarget as HTMLButtonElement).style.color = NEON
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${NEON}`)
+                      if (!saved) (e.currentTarget as HTMLButtonElement).style.color = NEON
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1.25); transition: transform 0.2s; color: ${saved ? '#ff4d6d' : NEON}; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                     onMouseLeave={(e) => {
-                      ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.4)'
-                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', 'font-size: 1.5rem; transform: scale(1); transition: transform 0.2s')
+                      ;(e.currentTarget as HTMLButtonElement).style.color = saved ? '#ff4d6d' : 'rgba(var(--c-text-rgb), 0.4)'
+                      ;(e.currentTarget as HTMLButtonElement).querySelector('.material-symbols-outlined')?.setAttribute('style', `font-size: 1.5rem; transform: scale(1); transition: transform 0.2s; font-variation-settings: ${saved ? "'FILL' 1" : "'FILL' 0"}`)
                     }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', transition: 'transform 0.2s' }}>{action.icon}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.5rem', transition: 'transform 0.2s', fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0", color: saved ? '#ff4d6d' : undefined }}>{action.icon}</span>
                     <span style={{ fontSize: '0.5625rem', textTransform: 'uppercase' as const, fontWeight: 700, letterSpacing: '0.2em' }}>{action.label}</span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </GlowBox>
           </div>

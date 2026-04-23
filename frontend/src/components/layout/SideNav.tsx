@@ -4,11 +4,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
-  { icon: 'home',           label: 'HOME',     path: '/',        authOnly: false },
-  { icon: 'inventory_2',    label: 'PRODUCTS', path: '/browse',  authOnly: false },
-  { icon: 'shopping_bag',   label: 'CART',     path: '/cart',    authOnly: false },
-  { icon: 'receipt_long',   label: 'ORDERS',   path: '/orders',  authOnly: false },
-  { icon: 'account_circle', label: 'PROFILE',  path: '/profile', authOnly: true  },
+  { icon: 'home',           label: 'HOME',     path: '/',         authOnly: false },
+  { icon: 'inventory_2',    label: 'PRODUCTS', path: '/browse',   authOnly: false },
+  { icon: 'shopping_bag',   label: 'CART',     path: '/cart',     authOnly: false },
+  { icon: 'favorite',       label: 'SAVED',    path: '/wishlist', authOnly: true  },
+  { icon: 'receipt_long',   label: 'ORDERS',   path: '/orders',   authOnly: false },
+  { icon: 'account_circle', label: 'PROFILE',  path: '/profile',  authOnly: true  },
 ] as const
 
 export function SideNav() {

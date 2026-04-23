@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { AuthProvider } from '../context/AuthContext'
 import { CategoryProvider } from '../context/CategoryContext'
+import { WishlistProvider } from '../context/WishlistContext'
 import { Navbar } from '../components/layout/Navbar'
 import './globals.css'
 
@@ -25,10 +26,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
-          <CategoryProvider>
-            <Navbar />
-            <div style={{ paddingTop: '8rem' }}>{children}</div>
-          </CategoryProvider>
+          <WishlistProvider>
+            <CategoryProvider>
+              <Navbar />
+              <div style={{ paddingTop: '8rem' }}>{children}</div>
+            </CategoryProvider>
+          </WishlistProvider>
         </AuthProvider>
       </body>
     </html>
