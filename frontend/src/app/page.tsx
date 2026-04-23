@@ -427,7 +427,7 @@ export default function HomePage() {
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
                   {hero.original_price != null && hero.original_price > hero.price && (
                     <span className="hero-orig-price" style={{ fontSize: '1rem', color: 'rgba(var(--c-text-rgb), 0.28)', textDecoration: 'line-through', fontFamily: 'Space Grotesk, sans-serif' }}>
-                      ${hero.original_price.toLocaleString()}
+                      ${hero.original_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
                   <span className="hero-price-main" style={{ fontSize: '2.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 300, color: 'var(--c-text)', letterSpacing: '-0.03em', lineHeight: 1 }}>
