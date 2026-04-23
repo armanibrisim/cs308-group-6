@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
 from app.models.user import AddressCreate, AddressResponse, AuthResponse, LoginRequest, RegisterRequest, SavedCardCreate, SavedCardResponse
+from app.repositories import notification_repository
 from app.repositories.user_repository import (
     add_address,
     add_saved_card,
@@ -126,3 +127,23 @@ async def make_default_card(
     if not found:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card not found")
     return get_saved_cards(current_user["user_id"])
+
+
+# ── Notification endpoints ────────────────────────────────────────────────────
+
+@router.get("/me/notifications")
+async def list_notifications(current_user: dict = Depends(get_current_user)):
+    return notification_repository.get_notifications_for_user(current_user["user_id"])
+
+
+@router.patch("/me/notifications/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)
+async def read_notification(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    notification_repository.mark_notification_read(current_user["user_id"], notification_id)
+
+
+@router.patch("/me/notifications/read-all", status_code=status.HTTP_204_NO_CONTENT)
+async def read_all_notifications(current_user: dict = Depends(get_current_user)):
+    notification_repository.mark_all_read(current_user["user_id"])

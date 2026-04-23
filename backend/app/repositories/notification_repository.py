@@ -33,8 +33,29 @@ def get_notifications_for_user(user_id: str) -> list[dict]:
     docs = (
         db.collection(NOTIFICATIONS_COLLECTION)
         .where("user_id", "==", user_id)
-        .order_by("created_at", direction="DESCENDING")
-        .limit(50)
         .stream()
     )
-    return [d.to_dict() for d in docs]
+    results = [d.to_dict() for d in docs]
+    results.sort(key=lambda n: n.get("created_at", ""), reverse=True)
+    return results[:50]
+
+
+def mark_notification_read(user_id: str, notification_id: str) -> bool:
+    db = _db()
+    doc = db.collection(NOTIFICATIONS_COLLECTION).document(notification_id).get()
+    if not doc.exists or doc.to_dict().get("user_id") != user_id:
+        return False
+    doc.reference.update({"read": True})
+    return True
+
+
+def mark_all_read(user_id: str) -> None:
+    db = _db()
+    docs = (
+        db.collection(NOTIFICATIONS_COLLECTION)
+        .where("user_id", "==", user_id)
+        .where("read", "==", False)
+        .stream()
+    )
+    for doc in docs:
+        doc.reference.update({"read": True})

@@ -346,10 +346,10 @@ export default function SalesManagerDiscountsPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3 font-semibold text-white">
-                          ₺{fmt(product.price)}
+                          ${fmt(product.price)}
                         </td>
                         <td className="px-3 py-3 text-white/55">
-                          {product.original_price ? `₺${fmt(product.original_price)}` : '—'}
+                          {product.original_price ? `$${fmt(product.original_price)}` : '—'}
                         </td>
                         <td className="px-3 py-3">
                           {hasDiscount ? (
