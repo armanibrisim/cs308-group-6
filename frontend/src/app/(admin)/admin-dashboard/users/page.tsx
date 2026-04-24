@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
+import { ROLE_META } from '../../../../constants/roleColors'
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
@@ -16,13 +17,6 @@ interface UserRow {
   last_name: string
   role: Role
   created_at: string
-}
-
-const ROLE_META: Record<Role, { label: string; color: string; bg: string }> = {
-  customer:        { label: 'Customer',        color: 'rgba(var(--c-text-rgb), 0.55)', bg: 'rgba(var(--c-text-rgb), 0.07)' },
-  sales_manager:   { label: 'Sales Manager',   color: 'var(--c-neon)',                 bg: 'rgba(var(--c-neon-rgb), 0.10)' },
-  product_manager: { label: 'Product Manager', color: '#818cf8',                        bg: 'rgba(129,140,248,0.12)' },
-  admin:           { label: 'Admin',           color: '#ef4444',                        bg: 'rgba(239,68,68,0.12)' },
 }
 
 export default function AdminUsersPage() {
@@ -148,7 +142,7 @@ export default function AdminUsersPage() {
             filtered.map((u, idx) => {
               const meta = ROLE_META[u.role]
               const isUpdating = updating === u.id
-              const isSelf = u.id === user?.uid || u.email === user?.email
+              const isSelf = u.id === user?.doc_id || u.email === user?.email
               return (
                 <div
                   key={u.id}

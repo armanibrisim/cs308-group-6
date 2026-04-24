@@ -17,6 +17,9 @@ export const ROUTES = {
   SALES_INVOICES: '/sales-manager/invoices',
   SALES_DISCOUNTS: '/sales-manager/discounts',
   
+  // Admin routes
+  ADMIN_DASHBOARD: '/admin-dashboard',
+
   // Product Manager routes
   PRODUCT_DASHBOARD: '/products-dashboard',
   PRODUCT_MANAGEMENT: '/products-dashboard/products',

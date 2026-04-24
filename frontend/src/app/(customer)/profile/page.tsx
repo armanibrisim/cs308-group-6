@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../../../context/AuthContext'
 import { ROUTES } from '../../../constants/routes'
+import { ROLE_META } from '../../../constants/roleColors'
 import { Address, addressService } from '../../../services/addressService'
 import { SavedCard, cardService } from '../../../services/cardService'
 import { SideNav } from '../../../components/layout/SideNav'
@@ -13,10 +14,10 @@ import { SideNav } from '../../../components/layout/SideNav'
 const NEON = 'var(--c-neon)'
 const NEON_RGB = 'var(--c-neon-rgb)'
 
-type KnownRole = 'customer' | 'sales_manager' | 'product_manager'
+type KnownRole = 'customer' | 'sales_manager' | 'product_manager' | 'admin'
 
 function normalizeRole(role: string): KnownRole | 'other' {
-  if (role === 'customer' || role === 'sales_manager' || role === 'product_manager') return role
+  if (role === 'customer' || role === 'sales_manager' || role === 'product_manager' || role === 'admin') return role
   return 'other'
 }
 
@@ -24,6 +25,7 @@ const ROLE_LABEL: Record<KnownRole | 'other', string> = {
   customer: 'CUSTOMER',
   sales_manager: 'SALES MANAGER',
   product_manager: 'PRODUCT MANAGER',
+  admin: 'ADMIN',
   other: 'USER',
 }
 
@@ -86,7 +88,7 @@ export default function ProfilePage() {
 
   // ── Cards ─────────────────────────────────────────────────────────────────
   const [cards, setCards] = useState<SavedCard[]>([])
-  const [cardsLoading, setCardsLoading] = useState(false)
+  const [, setCardsLoading] = useState(false)
   const [showCardForm, setShowCardForm] = useState(false)
   const [cardLabel, setCardLabel] = useState('')
   const [cardNumber, setCardNumber] = useState('')
@@ -94,7 +96,7 @@ export default function ProfilePage() {
   const [cardHolder, setCardHolder] = useState('')
   const [cardCvv, setCardCvv] = useState('')
   const [cardDefault, setCardDefault] = useState(false)
-  const [savingCard, setSavingCard] = useState(false)
+  const [, setSavingCard] = useState(false)
 
   // ── Banner ────────────────────────────────────────────────────────────────
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
@@ -298,16 +300,21 @@ export default function ProfilePage() {
             <p style={sectionTitleStyle}>Quick Actions</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
               {[
-                { label: 'Browse', href: ROUTES.BROWSE },
-                { label: 'Cart', href: ROUTES.CART },
-                { label: 'Orders', href: ROUTES.ORDERS },
-                ...(roleKey === 'sales_manager' ? [{ label: 'Sales Dashboard', href: ROUTES.SALES_DASHBOARD }] : []),
-                ...(roleKey === 'product_manager' ? [{ label: 'Product Dashboard', href: ROUTES.PRODUCT_DASHBOARD }] : []),
+                { label: 'Browse', href: ROUTES.BROWSE, color: NEON, colorRgb: NEON_RGB },
+                { label: 'Cart', href: ROUTES.CART, color: NEON, colorRgb: NEON_RGB },
+                { label: 'Orders', href: ROUTES.ORDERS, color: NEON, colorRgb: NEON_RGB },
+                ...(roleKey === 'sales_manager' ? [{ label: 'Sales Dashboard', href: ROUTES.SALES_DASHBOARD, color: ROLE_META.sales_manager.color, colorRgb: ROLE_META.sales_manager.colorRgb }] : []),
+                ...(roleKey === 'product_manager' ? [{ label: 'Product Dashboard', href: ROUTES.PRODUCT_DASHBOARD, color: ROLE_META.product_manager.color, colorRgb: ROLE_META.product_manager.colorRgb }] : []),
+                ...(roleKey === 'admin' ? [
+                  { label: 'Admin Dashboard', href: ROUTES.ADMIN_DASHBOARD, color: ROLE_META.admin.color, colorRgb: ROLE_META.admin.colorRgb },
+                  { label: 'Sales Dashboard', href: ROUTES.SALES_DASHBOARD, color: ROLE_META.sales_manager.color, colorRgb: ROLE_META.sales_manager.colorRgb },
+                  { label: 'Product Dashboard', href: ROUTES.PRODUCT_DASHBOARD, color: ROLE_META.product_manager.color, colorRgb: ROLE_META.product_manager.colorRgb },
+                ] : []),
               ].map(action => (
                 <Link
                   key={action.label}
                   href={action.href}
-                  style={{ padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: `1px solid rgba(${NEON_RGB}, 0.20)`, background: `rgba(${NEON_RGB}, 0.05)`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.15em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, textDecoration: 'none', transition: 'background 0.2s' }}
+                  style={{ padding: '0.5rem 1.25rem', borderRadius: '0.5rem', border: `1px solid rgba(${action.colorRgb}, 0.25)`, background: `rgba(${action.colorRgb}, 0.06)`, color: action.color, fontSize: '0.75rem', letterSpacing: '0.15em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, textDecoration: 'none', transition: 'background 0.2s' }}
                 >
                   {action.label.toUpperCase()}
                 </Link>

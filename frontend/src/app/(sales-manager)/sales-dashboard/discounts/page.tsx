@@ -48,7 +48,7 @@ export default function SalesManagerDiscountsPage() {
   // ── auth guard ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return
-    if (!user || user.role !== 'sales_manager') router.replace('/login')
+    if (!user || user.role !== 'sales_manager' && user.role !== 'admin') router.replace('/login')
   }, [isLoading, router, user])
 
   // ── load products ────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export default function SalesManagerDiscountsPage() {
   }, [user?.token])
 
   useEffect(() => {
-    if (!isLoading && user?.role === 'sales_manager') loadProducts()
+    if (!isLoading && (user?.role === 'sales_manager' || user?.role === 'admin')) loadProducts()
   }, [isLoading, user, loadProducts])
 
   // ── filtered list ────────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ export default function SalesManagerDiscountsPage() {
   if (isLoading) {
     return <main className="min-h-screen px-8 py-10 text-white/60">Loading…</main>
   }
-  if (!user || user.role !== 'sales_manager') return null
+  if (!user || user.role !== 'sales_manager' && user.role !== 'admin') return null
 
   const allVisibleSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id))
 
