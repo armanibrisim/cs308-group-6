@@ -266,8 +266,9 @@ def increment_purchase_count(product_id: str, quantity: int = 1) -> None:
 
 
 def update_product_rating_counters(product_id: str, rating: int) -> None:
-    """Atomically add one approved review's rating to rating_sum and rating_count.
+    """Atomically add one counted review's rating to rating_sum and rating_count.
 
+    Both approved and rejected reviews count — only pending reviews are excluded.
     Keeps avg_rating computable as rating_sum / rating_count without fetching
     any review documents — the product document already has everything needed.
     """
@@ -284,9 +285,9 @@ def update_product_rating_counters(product_id: str, rating: int) -> None:
 def adjust_product_rating_counters(product_id: str, rating_delta: int, count_delta: int) -> None:
     """Atomically adjust rating_sum and rating_count by arbitrary deltas.
 
-    Used when editing a review changes the effective approved rating contribution.
-    Pass negative deltas to remove a contribution (e.g. review going pending),
-    or mixed deltas to swap one rating for another.
+    Used when editing or deleting a review changes the counted rating contribution
+    (approved or rejected reviews both count). Pass negative deltas to remove a
+    contribution (e.g. review going back to pending), or mixed deltas to change a rating.
     """
     if rating_delta == 0 and count_delta == 0:
         return

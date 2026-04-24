@@ -14,6 +14,12 @@ export interface Review {
   dislikes: number
 }
 
+export interface CanReviewStatus {
+  can_review: boolean
+  has_delivered_order: boolean
+  already_reviewed: boolean
+}
+
 export const reviewService = {
   async getApprovedReviews(productId: string): Promise<Review[]> {
     return apiService.get<Review[]>(`/reviews/product/${productId}`)
@@ -61,6 +67,17 @@ export const reviewService = {
       { vote_type: voteType },
       { headers: { Authorization: `Bearer ${token}` } }
     )
+  },
+
+  async canReview(productId: string, token: string): Promise<CanReviewStatus> {
+    try {
+      return await apiService.get<CanReviewStatus>(
+        `/reviews/can-review/${productId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    } catch {
+      return { can_review: false, has_delivered_order: false, already_reviewed: false }
+    }
   },
 
   async getMyReview(productId: string, token: string): Promise<Review | null> {
