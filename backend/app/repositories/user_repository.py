@@ -177,6 +177,35 @@ def delete_saved_card(user_id: str, card_id: str) -> bool:
     return True
 
 
+# ── Admin helpers ─────────────────────────────────────────────────────────────
+
+def get_all_users() -> list[dict]:
+    db = _db()
+    docs = db.collection("users").stream()
+    result = []
+    for doc in docs:
+        data = doc.to_dict()
+        result.append({
+            "id": doc.id,
+            "email": data.get("email", ""),
+            "first_name": data.get("first_name", ""),
+            "last_name": data.get("last_name", ""),
+            "role": data.get("role", "customer"),
+            "created_at": data.get("created_at", ""),
+        })
+    return result
+
+
+def update_user_role(user_id: str, new_role: str) -> bool:
+    db = _db()
+    ref = db.collection("users").document(user_id)
+    doc = ref.get()
+    if not doc.exists:
+        return False
+    ref.update({"role": new_role})
+    return True
+
+
 def set_default_card(user_id: str, card_id: str) -> bool:
     db = _db()
     ref = db.collection("users").document(user_id)

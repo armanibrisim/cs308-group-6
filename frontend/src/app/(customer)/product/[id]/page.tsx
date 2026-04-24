@@ -641,8 +641,8 @@ export default function ProductDetailPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  paddingBottom: '1.5rem',
-                  paddingTop: '0.5rem',
+                  paddingBottom: '1.25rem',
+                  paddingTop: '1.25rem',
                   fontSize: '0.875rem',
                   fontFamily: 'Space Grotesk, sans-serif',
                   letterSpacing: '0.3em',

@@ -13,12 +13,12 @@ export default function SalesManagerLayout({ children }: { children: React.React
     if (isLoading) return
     if (!user) {
       router.replace('/login')
-    } else if (user.role !== 'sales_manager') {
+    } else if (user.role !== 'sales_manager' && user.role !== 'admin') {
       router.replace('/browse')
     }
   }, [user, isLoading, router])
 
-  if (isLoading || !user || user.role !== 'sales_manager') return null
+  if (isLoading || !user || (user.role !== 'sales_manager' && user.role !== 'admin')) return null
 
   return <>{children}</>
 }
