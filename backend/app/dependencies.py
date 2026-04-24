@@ -34,7 +34,7 @@ def require_role(*roles: str):
     """Dependency factory that enforces one of the given roles."""
 
     def checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in roles:
+        if current_user["role"] != "admin" and current_user["role"] not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",

@@ -68,6 +68,8 @@ export default function LoginPage() {
         router.push('/sales-dashboard')
       } else if (data.role === 'product_manager') {
         router.push('/products-dashboard')
+      } else if (data.role === 'admin') {
+        router.push('/admin-dashboard')
       } else {
         router.push('/browse')
       }

@@ -67,7 +67,7 @@ export default function SalesManagerInvoicesPage() {
   // ── auth guard ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return
-    if (!user || user.role !== 'sales_manager') router.replace('/login')
+    if (!user || user.role !== 'sales_manager' && user.role !== 'admin') router.replace('/login')
   }, [isLoading, router, user])
 
   // ── load data ──────────────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ export default function SalesManagerInvoicesPage() {
   }, [user?.token, startDate, endDate])
 
   useEffect(() => {
-    if (!isLoading && user?.role === 'sales_manager') loadData()
+    if (!isLoading && (user?.role === 'sales_manager' || user?.role === 'admin')) loadData()
   }, [isLoading, user, loadData])
 
   // ── filtered list ──────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export default function SalesManagerInvoicesPage() {
   if (isLoading) {
     return <main className="min-h-screen px-8 py-10 text-white/60">Loading…</main>
   }
-  if (!user || user.role !== 'sales_manager') return null
+  if (!user || user.role !== 'sales_manager' && user.role !== 'admin') return null
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">

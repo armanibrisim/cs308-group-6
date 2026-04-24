@@ -48,10 +48,10 @@ export default function SalesDashboardPage() {
   useEffect(() => {
     if (isLoading) return
     if (!user) router.replace('/login')
-    else if (user.role !== 'sales_manager') router.replace('/browse')
+    else if (user.role !== 'sales_manager' && user.role !== 'admin') router.replace('/browse')
   }, [user, isLoading, router])
 
-  if (isLoading || !user || user.role !== 'sales_manager') return null
+  if (isLoading || !user || user.role !== 'sales_manager' && user.role !== 'admin') return null
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">
