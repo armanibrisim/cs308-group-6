@@ -13,12 +13,12 @@ export default function ProductManagerLayout({ children }: { children: React.Rea
     if (isLoading) return
     if (!user) {
       router.replace('/login')
-    } else if (user.role !== 'product_manager') {
+    } else if (user.role !== 'product_manager' && user.role !== 'admin') {
       router.replace('/browse')
     }
   }, [user, isLoading, router])
 
-  if (isLoading || !user || user.role !== 'product_manager') return null
+  if (isLoading || !user || (user.role !== 'product_manager' && user.role !== 'admin')) return null
 
   return <>{children}</>
 }
