@@ -133,7 +133,6 @@ async def checkout(
             decremented.append((item["product_id"], item["quantity"]))
     except ValueError as exc:
         # Re-increment already-decremented items to restore consistency
-        from app.repositories.product_repository import increment_purchase_count  # noqa: local import for rollback
         import firebase_admin.firestore as _fs
         from app.firebase.client import get_firebase_app
         from app.repositories.product_repository import PRODUCTS_COLLECTION, _db as _pdb, _invalidate_product, _invalidate_products

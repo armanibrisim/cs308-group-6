@@ -477,6 +477,16 @@ export default function ProductDetailPage() {
                 )
               })()}
 
+              {/* Sold count */}
+              {(product?.purchase_count ?? 0) > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: NEON, opacity: 0.7 }}>shopping_bag</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em', color: 'rgba(var(--c-text-rgb), 0.5)' }}>
+                    <span style={{ color: NEON, fontWeight: 700 }}>{product!.purchase_count!.toLocaleString()}</span> SOLD
+                  </span>
+                </div>
+              )}
+
               {/* Price */}
               <div style={{ marginBottom: '3rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>

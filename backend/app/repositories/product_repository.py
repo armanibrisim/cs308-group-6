@@ -59,6 +59,7 @@ def create_product(data: dict) -> str:
     now = datetime.now(timezone.utc).isoformat()
     data["created_at"] = now
     data["updated_at"] = now
+    data.setdefault("purchase_count", 0)
 
     ref = db.collection(PRODUCTS_COLLECTION).document()
     data["id"] = ref.id
@@ -257,10 +258,13 @@ def remove_discount(product_id: str) -> None:
 
 
 def increment_purchase_count(product_id: str, quantity: int = 1) -> None:
-    """Atomically increment purchase_count by the purchased quantity."""
+    """Atomically increment (or decrement if negative) purchase_count.
+
+    Uses set+merge so it works even on existing products that have no purchase_count field.
+    """
     db = _db()
     ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
-    ref.update({"purchase_count": firestore_module.Increment(quantity)})
+    ref.set({"purchase_count": firestore_module.Increment(quantity)}, merge=True)
     _invalidate_product(product_id)
     _invalidate_products()
 
