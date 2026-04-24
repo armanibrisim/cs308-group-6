@@ -71,3 +71,20 @@ def set_invoice_id(order_id: str, invoice_id: str) -> None:
         "invoice_id": invoice_id,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
+
+
+def has_delivered_order_with_product(customer_id: str, product_id: str) -> bool:
+    """Return True if the customer has at least one delivered order containing this product."""
+    db = _db()
+    docs = (
+        db.collection(ORDERS_COLLECTION)
+        .where(filter=FieldFilter("customer_id", "==", customer_id))
+        .where(filter=FieldFilter("status", "==", "delivered"))
+        .stream()
+    )
+    for doc in docs:
+        order = doc.to_dict()
+        for item in order.get("items", []):
+            if item.get("product_id") == product_id:
+                return True
+    return False

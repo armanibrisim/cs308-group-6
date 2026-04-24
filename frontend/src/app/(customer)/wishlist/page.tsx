@@ -31,7 +31,7 @@ const WishlistCard = memo(function WishlistCard({
   }
   const img = product.image_url || product.imageUrl
   const inStock = (product.stock_quantity ?? product.stockQuantity ?? 0) > 0
-  const avg: number | null = product.average_rating ?? product.avg_rating ?? null
+  const avg: number | null = product.avg_rating ?? null
 
   return (
     <div

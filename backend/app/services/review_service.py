@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 
 from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, ReviewUpdate, VoteResponse
 from app.repositories import review_repository
+from app.repositories.order_repository import has_delivered_order_with_product
 from app.repositories.product_repository import (
     adjust_product_rating_counters,
     get_product_by_id,
@@ -27,6 +28,13 @@ def submit_review(payload: ReviewCreate, user_id: str) -> ReviewResponse:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found",
+        )
+
+    # Only customers who received a delivered order containing this product can review it
+    if not has_delivered_order_with_product(user_id, payload.product_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only review products from your delivered orders",
         )
 
     # Enforce one review per user per product
@@ -103,6 +111,10 @@ def reject_review(review_id: str) -> ReviewResponse:
 
     review_repository.update_review_status(review_id, "rejected")
     review["status"] = "rejected"
+
+    # Rejected ratings still count toward the product average — only the comment is hidden.
+    update_product_rating_counters(review["product_id"], review["rating"])
+
     return ReviewResponse(**review)
 
 
@@ -132,18 +144,19 @@ def edit_review(review_id: str, payload: ReviewUpdate, user_id: str) -> ReviewRe
         # Only rating changed (or nothing changed) → keep current status
         new_status = old_status
 
-    # Adjust product rating counters to stay consistent
-    was_approved = old_status == "approved"
-    becomes_approved = new_status == "approved"
+    # Both approved and rejected reviews count toward the rating average.
+    # Only pending reviews are excluded (awaiting decision).
+    was_counted = old_status in ("approved", "rejected")
+    becomes_counted = new_status in ("approved", "rejected")
 
-    if was_approved and not becomes_approved:
+    if was_counted and not becomes_counted:
         # Review going back to pending — remove its contribution from product stats
         adjust_product_rating_counters(review["product_id"], -old_rating, -1)
-    elif not was_approved and becomes_approved:
-        # Previously non-approved review is now auto-approved (comment cleared)
+    elif not was_counted and becomes_counted:
+        # Previously pending review is now counted (auto-approved via comment cleared)
         adjust_product_rating_counters(review["product_id"], new_rating, 1)
-    elif was_approved and becomes_approved and rating_changed:
-        # Stays approved, rating changed — adjust sum only (count unchanged)
+    elif was_counted and becomes_counted and rating_changed:
+        # Stays counted, rating changed — adjust sum only (count unchanged)
         adjust_product_rating_counters(review["product_id"], new_rating - old_rating, 0)
 
     review_repository.update_review(review_id, {
@@ -163,10 +176,22 @@ def remove_review(review_id: str, user_id: str) -> None:
     if review["user_id"] != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own reviews")
 
-    if review["status"] == "approved":
+    # Remove rating contribution for both approved and rejected reviews (both count toward the average).
+    if review["status"] in ("approved", "rejected"):
         adjust_product_rating_counters(review["product_id"], -review["rating"], -1)
 
     review_repository.delete_review(review_id)
+
+
+def check_can_review(product_id: str, user_id: str) -> dict:
+    """Return eligibility info: whether the user can submit a review for this product."""
+    has_delivered = has_delivered_order_with_product(user_id, product_id)
+    already_reviewed = review_repository.get_review_by_user_and_product(user_id, product_id) is not None
+    return {
+        "can_review": has_delivered and not already_reviewed,
+        "has_delivered_order": has_delivered,
+        "already_reviewed": already_reviewed,
+    }
 
 
 def fetch_my_review(product_id: str, user_id: str) -> ReviewResponse | None:

@@ -127,8 +127,8 @@ const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeart
           {product.name}
         </h3>
         {(() => {
-          const avg: number | null = product.average_rating ?? product.avg_rating ?? null
-          const count: number = product.review_count ?? 0
+          const avg: number | null = product.avg_rating ?? null
+          const count: number = product.rating_count ?? 0
           const hasRating = avg != null && avg > 0
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>

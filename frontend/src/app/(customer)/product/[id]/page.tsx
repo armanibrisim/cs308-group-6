@@ -4,7 +4,7 @@ import { useState, useRef, MouseEvent, useEffect, useMemo, useReducer, memo } fr
 import { useParams, useRouter } from 'next/navigation'
 import { productService } from '../../../../services/productService'
 import { cartService } from '../../../../services/cartService'
-import { reviewService, Review } from '../../../../services/reviewService'
+import { reviewService, Review, CanReviewStatus } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
 import { useWishlist } from '../../../../context/WishlistContext'
 import { SideNav } from '../../../../components/layout/SideNav'
@@ -99,20 +99,16 @@ export default function ProductDetailPage() {
   const [reviewError, setReviewError] = useState('')
   const [reviewVotes, dispatchVotes] = useReducer(votesReducer, new Map<string, VoteData>())
   const [reviewSort, setReviewSort] = useState<'default'|'most_liked'|'most_disliked'>('default')
+  const [canReviewStatus, setCanReviewStatus] = useState<CanReviewStatus | null>(null)
 
   // ── Memoized derived values ──
   const ratingStats = useMemo(() => {
-    const backendAvg = product?.average_rating ?? product?.rating ?? null
-    const backendCount = product?.review_count ?? 0
-    const totalCount = backendCount + localReviews.length
-    const localAvg = localReviews.length > 0
-      ? localReviews.reduce((s, r) => s + r.rating, 0) / localReviews.length
-      : null
-    const avg = localAvg != null && backendAvg != null
-      ? (backendAvg * backendCount + localAvg * localReviews.length) / totalCount
-      : localAvg ?? backendAvg
+    const backendAvg = product?.avg_rating ?? null
+    const backendCount = product?.rating_count ?? 0
+    const avg = backendAvg
+    const totalCount = backendCount
     return { avg, totalCount, backendCount }
-  }, [product, localReviews])
+  }, [product])
 
   const allReviews = useMemo(
     () => [...(product?.reviews || []), ...localReviews],
@@ -178,6 +174,8 @@ export default function ProductDetailPage() {
       setShowReviewForm(false)
       setIsEditMode(false)
       setNewReview({ rating: 5, comment: '' })
+      // Re-enable the review button — user had a delivered order (that's how they could review)
+      setCanReviewStatus({ can_review: true, has_delivered_order: true, already_reviewed: false })
     } catch {
       // silent — review stays visible
     }
@@ -197,6 +195,7 @@ export default function ProductDetailPage() {
         const submitted = await reviewService.submitReview(id, newReview.rating, newReview.comment.trim(), user.token)
         setLocalReviews(prev => [submitted, ...prev])
         setMyReview(submitted)
+        setCanReviewStatus({ can_review: false, has_delivered_order: true, already_reviewed: true })
         setReviewSuccessMsg(submitted.status === 'approved' ? 'RATING SUBMITTED!' : 'REVIEW SUBMITTED — PENDING APPROVAL')
       }
       setNewReview({ rating: 5, comment: '' })
@@ -208,6 +207,8 @@ export default function ProductDetailPage() {
       const msg = err?.message || ''
       if (msg.includes('409')) {
         setReviewError('You have already reviewed this product.')
+      } else if (msg.includes('403')) {
+        setReviewError('You can only review products from your delivered orders.')
       } else {
         setReviewError('Failed to submit review. Please try again.')
       }
@@ -223,13 +224,14 @@ export default function ProductDetailPage() {
     setReviewsReady(false)
 
     // Fire all independent requests in parallel
-    const productP    = productService.getProduct(id).catch(() => null)
-    const reviewsP    = reviewService.getApprovedReviews(id).catch(() => [] as Review[])
-    const myReviewP   = user?.token ? reviewService.getMyReview(id, user.token).catch(() => null) : Promise.resolve(null)
-    const myVotesP    = user?.token ? reviewService.getMyVotes(id, user.token).catch(() => ({})) : Promise.resolve({})
+    const productP       = productService.getProduct(id).catch(() => null)
+    const reviewsP       = reviewService.getApprovedReviews(id).catch(() => [] as Review[])
+    const myReviewP      = user?.token ? reviewService.getMyReview(id, user.token).catch(() => null) : Promise.resolve(null)
+    const myVotesP       = user?.token ? reviewService.getMyVotes(id, user.token).catch(() => ({})) : Promise.resolve({})
+    const canReviewP     = user?.token ? reviewService.canReview(id, user.token) : Promise.resolve(null)
 
-    Promise.all([productP, reviewsP, myReviewP, myVotesP])
-      .then(([data, reviews, ownReview, votes]) => {
+    Promise.all([productP, reviewsP, myReviewP, myVotesP, canReviewP])
+      .then(([data, reviews, ownReview, votes, canReview]) => {
         // ── Product ──
         if (data) {
           setProduct(data)
@@ -256,6 +258,7 @@ export default function ProductDetailPage() {
         const merged = ownReview && !alreadyIncluded ? [ownReview, ...reviews] : reviews
         setLocalReviews(merged)
         setMyReview(ownReview)
+        setCanReviewStatus(canReview)
         setReviewsReady(true)
 
         const voteMap = new Map<string, VoteData>()
@@ -473,6 +476,16 @@ export default function ProductDetailPage() {
                   </div>
                 )
               })()}
+
+              {/* Sold count */}
+              {(product?.purchase_count ?? 0) > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: NEON, opacity: 0.7 }}>shopping_bag</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.15em', color: 'rgba(var(--c-text-rgb), 0.5)' }}>
+                    <span style={{ color: NEON, fontWeight: 700 }}>{product!.purchase_count!.toLocaleString()}</span> SOLD
+                  </span>
+                </div>
+              )}
 
               {/* Price */}
               <div style={{ marginBottom: '3rem' }}>
@@ -710,22 +723,45 @@ export default function ProductDetailPage() {
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap' as const, gap: '1rem' }}>
                   <h3 style={{ fontSize: '1.875rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>USER REVIEWS</h3>
-                  {reviewsReady && !myReview && (
-                    <button
-                      onClick={() => {
-                        if (!user) { router.push('/login'); return; }
-                        setNewReview({ rating: 5, comment: '' })
-                        setIsEditMode(false)
-                        setReviewError('')
-                        setShowReviewForm(v => !v)
-                      }}
-                      style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
-                      onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
-                    >
-                      {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
-                    </button>
-                  )}
+                  {reviewsReady && !myReview && (() => {
+                    if (!user) {
+                      return (
+                        <button
+                          onClick={() => router.push('/login')}
+                          style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'none')}
+                        >
+                          LOG IN TO REVIEW
+                        </button>
+                      )
+                    }
+                    if (canReviewStatus?.can_review) {
+                      return (
+                        <button
+                          onClick={() => {
+                            setNewReview({ rating: 5, comment: '' })
+                            setIsEditMode(false)
+                            setReviewError('')
+                            setShowReviewForm(v => !v)
+                          }}
+                          style={{ padding: '0.5rem 1.5rem', border: `1px solid ${NEON}4D`, color: NEON, fontSize: '0.75rem', letterSpacing: '0.2em', background: showReviewForm ? `rgba(${NEON_RGB}, 0.10)` : 'none', cursor: 'pointer', borderRadius: '0.25rem', transition: 'background 0.2s ease' }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = `rgba(${NEON_RGB}, 0.10)`)}
+                          onMouseLeave={(e) => { if (!showReviewForm) (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+                        >
+                          {showReviewForm ? 'CANCEL' : 'WRITE A REVIEW'}
+                        </button>
+                      )
+                    }
+                    if (canReviewStatus && !canReviewStatus.has_delivered_order) {
+                      return (
+                        <span style={{ fontSize: '0.7rem', color: 'rgba(var(--c-text-rgb), 0.4)', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>
+                          PURCHASE &amp; RECEIVE THIS PRODUCT TO LEAVE A REVIEW
+                        </span>
+                      )
+                    }
+                    return null
+                  })()}
                 </div>
 
                 {/* Success Message */}

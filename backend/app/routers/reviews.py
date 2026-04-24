@@ -4,6 +4,7 @@ from app.dependencies import get_current_user, require_role
 from app.models.review import ReviewCreate, ReviewResponse, ReviewStatusUpdate, ReviewUpdate, VoteCreate, VoteResponse
 from app.services.review_service import (
     approve_review,
+    check_can_review,
     edit_review,
     fetch_all_reviews,
     fetch_approved_reviews,
@@ -95,6 +96,14 @@ async def reject_review_endpoint(
 
 
 # ── Vote endpoints (must come after static routes to avoid conflicts) ──────────
+
+@router.get("/can-review/{product_id}")
+async def can_review(
+    product_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    return check_can_review(product_id, current_user["user_id"])
+
 
 @router.get("/my-review/{product_id}", response_model=ReviewResponse | None)
 async def my_review(

@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 
 from app.models.order import OrderResponse, OrderStatusUpdate
 from app.repositories import order_repository
+from app.repositories.product_repository import increment_purchase_count
 
 
 def fetch_my_orders(customer_id: str) -> list[OrderResponse]:
@@ -25,6 +26,17 @@ def fetch_all_orders(order_status: str | None) -> list[OrderResponse]:
     return [OrderResponse(**o) for o in orders]
 
 
+def _adjust_purchase_counts(order: dict, old_status: str, new_status: str) -> None:
+    """Increment or decrement purchase_count for each item based on delivery status change."""
+    if old_status == new_status:
+        return
+    for item in order.get("items", []):
+        if new_status == "delivered":
+            increment_purchase_count(item["product_id"], item["quantity"])
+        elif old_status == "delivered":
+            increment_purchase_count(item["product_id"], -item["quantity"])
+
+
 def update_order_status(order_id: str, payload: OrderStatusUpdate) -> OrderResponse:
     """Product manager: advance order status (linear: processing → in-transit → delivered)."""
     order = order_repository.get_order_by_id(order_id)
@@ -33,8 +45,8 @@ def update_order_status(order_id: str, payload: OrderStatusUpdate) -> OrderRespo
 
     allowed_transitions = {
         "processing": {"in-transit"},
-        "in-transit": {"delivered"},
-        "delivered": set(),
+        "in-transit": {"delivered", "processing"},
+        "delivered": {"in-transit", "processing"},
     }
     current = order["status"]
     if payload.status not in allowed_transitions.get(current, set()):
@@ -43,6 +55,7 @@ def update_order_status(order_id: str, payload: OrderStatusUpdate) -> OrderRespo
             detail=f"Cannot transition from '{current}' to '{payload.status}'",
         )
 
+    _adjust_purchase_counts(order, current, payload.status)
     order_repository.update_order_status(order_id, payload.status)
     order["status"] = payload.status
     return OrderResponse(**order)
@@ -54,6 +67,7 @@ def update_order_status_free(order_id: str, payload: OrderStatusUpdate) -> Order
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
+    _adjust_purchase_counts(order, order["status"], payload.status)
     order_repository.update_order_status(order_id, payload.status)
     order["status"] = payload.status
     return OrderResponse(**order)

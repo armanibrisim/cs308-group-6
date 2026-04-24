@@ -184,13 +184,20 @@ def get_all_reviews(
     return [d.to_dict() for d in query.stream()]
 
 
-def get_approved_ratings_for_product(product_id: str) -> list[int]:
-    """Return list of ratings for all approved reviews of a product (for avg calculation)."""
+def get_counted_ratings_for_product(product_id: str) -> list[int]:
+    """Return ratings for all counted reviews (approved + rejected) of a product.
+
+    Used for recalculating rating_sum / rating_count from scratch if needed.
+    Pending reviews are excluded — they haven't been decided yet.
+    """
     db = _db()
     docs = (
         db.collection(REVIEWS_COLLECTION)
         .where(filter=FieldFilter("product_id", "==", product_id))
-        .where(filter=FieldFilter("status", "==", "approved"))
         .stream()
     )
-    return [d.to_dict().get("rating", 0) for d in docs]
+    return [
+        d.to_dict().get("rating", 0)
+        for d in docs
+        if d.to_dict().get("status") in ("approved", "rejected")
+    ]
