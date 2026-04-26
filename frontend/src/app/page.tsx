@@ -332,7 +332,7 @@ export default function HomePage() {
   const heroInStock = hero ? (hero.in_stock ?? (hero.stock_quantity ?? 0) > 0) : false
 
   return (
-    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)', position: 'relative', overflow: 'hidden' }}>
+    <div className="atmospheric-bg" style={{ minHeight: '100vh', color: 'var(--c-text)', position: 'relative' }}>
 
       {/* Subtle ambient orb — only one, very faint */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
