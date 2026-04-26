@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { cartService } from '../../services/cartService'
 import { notificationService } from '../../services/notificationService'
 
 const NAV_ITEMS = [
@@ -19,12 +20,27 @@ export function SideNav() {
   const pathname = usePathname()
   const { user } = useAuth()
   const [unread, setUnread] = useState(0)
+  const [cartCount, setCartCount] = useState(0)
 
   useEffect(() => {
     if (!user?.token) return
     notificationService.getNotifications(user.token)
       .then(data => setUnread(data.filter(n => !n.read).length))
       .catch(() => {})
+  }, [user?.token, pathname])
+
+  useEffect(() => {
+    if (!user?.token) {
+      setCartCount(0)
+      return
+    }
+    cartService
+      .getCart()
+      .then((cart) => {
+        const total = cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        setCartCount(total)
+      })
+      .catch(() => setCartCount(0))
   }, [user?.token, pathname])
 
   const isActive = (path: string) => {
@@ -57,6 +73,8 @@ export function SideNav() {
         return (
           <button
             key={path}
+            type="button"
+            className="sidenav-nav-btn"
             onClick={() => router.push(path)}
             title={label}
             style={{
@@ -67,10 +85,8 @@ export function SideNav() {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '4px',
-              transition: 'transform 0.2s',
+              position: 'relative',
             }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.15)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
           >
             <span
               className="material-symbols-outlined"
@@ -83,6 +99,26 @@ export function SideNav() {
             >
               {icon}
             </span>
+            {path === '/cart' && cartCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: 'var(--c-neon)',
+                color: '#022100',
+                fontSize: '8px',
+                fontWeight: 900,
+                borderRadius: '9999px',
+                minWidth: '16px',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+              }}>
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
             <span style={{
               fontSize: '8px',
               fontWeight: 900,
@@ -100,6 +136,8 @@ export function SideNav() {
       {/* Notification bell — only for logged-in customers */}
       {user && user.role === 'customer' && (
         <button
+          type="button"
+          className="sidenav-nav-btn"
           onClick={() => router.push('/notifications')}
           title="NOTIFICATIONS"
           style={{
@@ -111,10 +149,7 @@ export function SideNav() {
             alignItems: 'center',
             gap: '4px',
             position: 'relative',
-            transition: 'transform 0.2s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.15)')}
-          onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
         >
           <span
             className="material-symbols-outlined"
