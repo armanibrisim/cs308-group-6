@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SideNav } from '../../../components/layout/SideNav'
 import { useAuth } from '../../../context/AuthContext'
 import { cartService } from '../../../services/cartService'
+import { productService } from '../../../services/productService'
 import {
   checkoutService,
   CheckoutInvoice,
@@ -455,6 +456,8 @@ export default function CheckoutPage() {
     setProcessing(true)
     try {
       const checkoutResult = await checkoutService.placeOrder(payload)
+      // Invalidate frontend product cache so stock reflects the purchase
+      checkoutResult.order.items.forEach(item => productService.invalidateProduct(item.product_id))
       setResult(checkoutResult)
       window.scrollTo({ top: 0 })
     } catch (err) {

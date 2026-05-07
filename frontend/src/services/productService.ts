@@ -67,4 +67,13 @@ export const productService = {
   async searchProducts(query: string): Promise<Product[]> {
     return apiService.get<Product[]>(`/products/search?q=${encodeURIComponent(query)}`)
   },
+
+  // Invalidate specific product entries (called after checkout to show updated stock)
+  invalidateProduct(id: string): void {
+    _cache.delete(`/products/${id}`)
+    // Also clear any paginated list caches that may contain this product
+    for (const key of _cache.keys()) {
+      if (key.startsWith('/products?')) _cache.delete(key)
+    }
+  },
 }

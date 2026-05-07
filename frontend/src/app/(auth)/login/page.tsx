@@ -56,7 +56,9 @@ export default function LoginPage() {
       const data = await authService.login({ email, password })
       login(data)
       // Merge guest cart into authenticated cart (quantities are added server-side)
+      let hadGuestItems = false
       if (guestItems.length > 0) {
+        hadGuestItems = true
         clearGuestCart()
         await Promise.allSettled(
           guestItems.map((item: GuestCartItem) =>
@@ -70,6 +72,8 @@ export default function LoginPage() {
         router.push('/products-dashboard')
       } else if (data.role === 'admin') {
         router.push('/admin-dashboard')
+      } else if (hadGuestItems) {
+        router.push('/cart')
       } else {
         router.push('/browse')
       }
