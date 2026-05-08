@@ -7,6 +7,28 @@ import styles from '../../../components/auth/AuthLayout.module.css'
 import { AuthButton, AuthInput, AuthLayout, ImageSlider } from '../../../components/auth'
 import { useAuth } from '../../../context/AuthContext'
 import { authService } from '../../../services/authService'
+import { cartService } from '../../../services/cartService'
+
+const GUEST_CART_KEY = 'lumen_guest_cart'
+
+interface GuestCartItem {
+  id: string
+  quantity: number
+}
+
+function readGuestCart(): GuestCartItem[] {
+  try {
+    const raw = localStorage.getItem(GUEST_CART_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as GuestCartItem[]
+  } catch {
+    return []
+  }
+}
+
+function clearGuestCart(): void {
+  localStorage.removeItem(GUEST_CART_KEY)
+}
 
 const slides = [
   { url: '/4.webp', slogan: 'Seamless Power' },
@@ -43,6 +65,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      const guestItems = readGuestCart()
       const data = await authService.register({
         email,
         password,
@@ -50,7 +73,17 @@ export default function RegisterPage() {
         last_name: lastName,
       })
       login({ ...data, first_name: firstName, last_name: lastName })
-      router.push('/browse')
+      if (guestItems.length > 0) {
+        clearGuestCart()
+        await Promise.allSettled(
+          guestItems.map((item: GuestCartItem) =>
+            cartService.addItem({ product_id: item.id, quantity: item.quantity })
+          )
+        )
+        router.push('/cart')
+      } else {
+        router.push('/browse')
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('409')) {
         setError('This email is already registered.')
