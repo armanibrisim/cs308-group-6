@@ -364,3 +364,17 @@ def get_category_by_slug(slug: str) -> Optional[dict]:
     for doc in docs:
         return doc.to_dict()
     return None
+
+
+def get_category_by_name(name: str) -> Optional[dict]:
+    """Lookup a category by its name field (case-insensitive exact match not supported by Firestore; uses exact match)."""
+    db = _db()
+    docs = (
+        db.collection(CATEGORIES_COLLECTION)
+        .where(filter=FieldFilter("name", "==", name))
+        .limit(1)
+        .stream()
+    )
+    for doc in docs:
+        return doc.to_dict()
+    return None
