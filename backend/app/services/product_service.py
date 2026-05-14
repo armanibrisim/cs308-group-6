@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -16,6 +17,7 @@ from app.repositories.product_repository import (
     create_product,
     delete_product,
     get_category_by_id,
+    get_category_by_name,
     get_category_by_slug,
     get_product_by_id,
     list_categories,
@@ -218,8 +220,34 @@ def fetch_categories() -> list[CategoryResponse]:
     ]
 
 
+def _slugify(text: str) -> str:
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")
+
+
 def add_category(payload: CategoryCreate) -> CategoryResponse:
+    # Duplicate name check
+    if get_category_by_name(payload.name):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A category with this name already exists",
+        )
+
+    # Auto-generate slug if not provided
+    slug = payload.slug or _slugify(payload.name)
+
+    # Duplicate slug check
+    if get_category_by_slug(slug):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A category with this slug already exists",
+        )
+
     data = payload.model_dump()
+    data["slug"] = slug
     category_id = create_category(data)
     created = get_category_by_id(category_id)
     return CategoryResponse(

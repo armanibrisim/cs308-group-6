@@ -119,6 +119,6 @@ async def list_categories():
 @categories_router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     body: CategoryCreate,
-    current_user: dict = Depends(require_role("product_manager")),
+    current_user: dict = Depends(require_role("product_manager", "admin")),
 ):
     return add_category(body)
