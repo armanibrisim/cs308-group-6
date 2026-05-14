@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { productService } from '../services/productService'
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+
 export interface Category {
   id: string
   name: string
@@ -21,24 +23,40 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    productService.getProducts({ limit: 500, page: 1 })
-      .then(res => {
-        const counts: Record<string, number> = {}
-        for (const p of res.products) {
+    Promise.allSettled([
+      fetch(`${API}/categories`).then(r => r.json()),
+      productService.getProducts({ limit: 500, page: 1 }),
+    ]).then(([catsResult, prodsResult]) => {
+      const counts: Record<string, number> = {}
+      const names: Record<string, string> = {}
+
+      // Ürünlerden kategori sayılarını ve ID'den türetilmiş isimlerini hesapla
+      if (prodsResult.status === 'fulfilled') {
+        for (const p of prodsResult.value.products) {
           const cat = (p as any).category_id || p.categoryId
-          if (cat) counts[cat] = (counts[cat] || 0) + 1
+          if (cat) {
+            counts[cat] = (counts[cat] || 0) + 1
+            if (!names[cat]) {
+              names[cat] = cat.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+            }
+          }
         }
-        const derived: Category[] = Object.entries(counts)
-          .sort((a, b) => b[1] - a[1])
-          .map(([id, count]) => ({
-            id,
-            name: id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            count,
-          }))
-        setCategories(derived)
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false))
+      }
+
+      // API'den gelen formal kategorileri ekle / isimlerini güncelle
+      if (catsResult.status === 'fulfilled' && Array.isArray(catsResult.value)) {
+        for (const c of catsResult.value) {
+          names[c.id] = c.name          // Gerçek isim varsa üzerine yaz
+          if (counts[c.id] === undefined) counts[c.id] = 0  // Ürünü olmasa da göster
+        }
+      }
+
+      const derived: Category[] = Object.keys(names)
+        .map(id => ({ id, name: names[id], count: counts[id] ?? 0 }))
+        .sort((a, b) => b.count - a.count)
+
+      setCategories(derived)
+    }).finally(() => setIsLoading(false))
   }, [])
 
   return (
