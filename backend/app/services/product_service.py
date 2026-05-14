@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 
 from app.models.product import (
     CategoryCreate,
+    CategoryUpdate,
     CategoryResponse,
     ProductCreate,
     ProductListResponse,
@@ -15,6 +16,7 @@ from app.models.product import (
 from app.repositories.product_repository import (
     create_category,
     create_product,
+    delete_category,
     delete_product,
     get_category_by_id,
     get_category_by_name,
@@ -23,6 +25,7 @@ from app.repositories.product_repository import (
     list_categories,
     list_featured_products,
     list_products,
+    update_category,
     update_product,
 )
 
@@ -206,18 +209,19 @@ def remove_product(product_id: str) -> None:
 
 # ── Category service ──────────────────────────────────────────────────────────
 
+def _category_response(c: dict) -> CategoryResponse:
+    return CategoryResponse(
+        id=c["id"],
+        name=c["name"],
+        slug=c.get("slug"),
+        description=c.get("description"),
+        parent_category_id=c.get("parent_category_id"),
+        icon=c.get("icon"),
+    )
+
+
 def fetch_categories() -> list[CategoryResponse]:
-    categories = list_categories()
-    return [
-        CategoryResponse(
-            id=c["id"],
-            name=c["name"],
-            slug=c.get("slug"),
-            description=c.get("description"),
-            parent_category_id=c.get("parent_category_id"),
-        )
-        for c in categories
-    ]
+    return [_category_response(c) for c in list_categories()]
 
 
 def _slugify(text: str) -> str:
@@ -250,10 +254,23 @@ def add_category(payload: CategoryCreate) -> CategoryResponse:
     data["slug"] = slug
     category_id = create_category(data)
     created = get_category_by_id(category_id)
-    return CategoryResponse(
-        id=created["id"],
-        name=created["name"],
-        slug=created.get("slug"),
-        description=created.get("description"),
-        parent_category_id=created.get("parent_category_id"),
-    )
+    return _category_response(created)
+
+
+def edit_category(category_id: str, payload: CategoryUpdate) -> CategoryResponse:
+    existing = get_category_by_id(category_id)
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if updates:
+        update_category(category_id, updates)
+
+    updated = get_category_by_id(category_id)
+    return _category_response(updated)
+
+
+def remove_category(category_id: str) -> None:
+    if get_category_by_id(category_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+    delete_category(category_id)

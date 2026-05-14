@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.dependencies import require_role
 from app.models.product import (
     CategoryCreate,
+    CategoryUpdate,
     CategoryResponse,
     ProductCreate,
     ProductListResponse,
@@ -15,11 +16,13 @@ from app.models.product import (
 from app.services.product_service import (
     add_category,
     add_product,
+    edit_category,
     fetch_categories,
     fetch_featured_products,
     fetch_product,
     fetch_products,
     modify_product,
+    remove_category,
     remove_product,
     search_products,
     update_stock_quantity,
@@ -122,3 +125,20 @@ async def create_category(
     current_user: dict = Depends(require_role("product_manager", "admin")),
 ):
     return add_category(body)
+
+
+@categories_router.patch("/{category_id}", response_model=CategoryResponse)
+async def update_category(
+    category_id: str,
+    body: CategoryUpdate,
+    current_user: dict = Depends(require_role("product_manager", "admin")),
+):
+    return edit_category(category_id, body)
+
+
+@categories_router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category_endpoint(
+    category_id: str,
+    current_user: dict = Depends(require_role("product_manager", "admin")),
+):
+    remove_category(category_id)

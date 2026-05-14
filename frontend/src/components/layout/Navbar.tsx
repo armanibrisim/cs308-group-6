@@ -5,74 +5,8 @@ import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useCategories } from '../../context/CategoryContext';
+import { getCategoryIcon } from '../../constants/categoryIcons';
 
-// Slug → Material Symbol icon mapping (fallback: inventory_2)
-const ICON_MAP: Record<string, string> = {
-  smartphones:        'smartphone',
-  phones:             'smartphone',
-  mobile:             'smartphone',
-  laptop:             'laptop',
-  laptops:            'laptop',
-  computer:           'computer',
-  computers:          'computer',
-  desktop:            'desktop_windows',
-  tablet:             'tablet',
-  tablets:            'tablet',
-  headphone:          'headphones',
-  headphones:         'headphones',
-  audio:              'headphones',
-  camera:             'camera_alt',
-  cameras:            'camera_alt',
-  tv:                 'tv',
-  monitor:            'monitor',
-  monitors:           'monitor',
-  gaming:             'sports_esports',
-  console:            'sports_esports',
-  consoles:           'sports_esports',
-  keyboard:           'keyboard',
-  mouse:              'mouse',
-  storage:            'database',
-  ssd:                'database',
-  hdd:                'database',
-  memory:             'memory',
-  ram:                'memory',
-  processor:          'memory',
-  processors:         'memory',
-  cpu:                'memory',
-  gpu:                'monitor_heart',
-  graphics:           'monitor_heart',
-  accessory:          'cable',
-  accessories:        'cable',
-  'mobile-accessories': 'cable',
-  cable:              'cable',
-  charger:            'bolt',
-  power:              'bolt',
-  battery:            'battery_charging_full',
-  speaker:            'speaker',
-  speakers:           'speaker',
-  wearable:           'watch',
-  wearables:          'watch',
-  watch:              'watch',
-  smartwatch:         'watch',
-  printer:            'print',
-  printers:           'print',
-  network:            'router',
-  router:             'router',
-  security:           'shield',
-  smart:              'home',
-  smarthome:          'home',
-};
-
-function getCategoryIcon(id: string): string {
-  const lower = id.toLowerCase();
-  // exact match
-  if (ICON_MAP[lower]) return ICON_MAP[lower];
-  // partial match
-  for (const [key, icon] of Object.entries(ICON_MAP)) {
-    if (lower.includes(key) || key.includes(lower)) return icon;
-  }
-  return 'inventory_2';
-}
 
 const NAV_LINKS = [
   { label: 'HOME', href: '/' },
@@ -114,7 +48,7 @@ export function Navbar() {
   };
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { categories: rawCategories } = useCategories();
-  const categories: NavCategory[] = rawCategories.map(c => ({ ...c, icon: getCategoryIcon(c.id) }));
+  const categories: NavCategory[] = rawCategories.map(c => ({ ...c, icon: getCategoryIcon(c.id, (c as any).icon) }));
 
   const openDropdown = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
