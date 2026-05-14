@@ -81,7 +81,7 @@ function GlowCard({ children, className = '' }: { children: React.ReactNode; cla
 
 export default function CartPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
 
   const [items, setItems] = useState<DisplayItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -144,6 +144,7 @@ export default function CartPage() {
   // ── Load cart ─────────────────────────────────────────────────────────────
 
   const loadCart = useCallback(async () => {
+    if (authLoading) return
     setLoading(true)
     setError(null)
     try {
@@ -167,7 +168,7 @@ export default function CartPage() {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, authLoading])
 
   useEffect(() => {
     loadCart()
@@ -285,7 +286,7 @@ export default function CartPage() {
                   onClick={() => router.push('/login')}
                   style={{ color: 'var(--c-neon)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
                 >
-                  Sign in
+                  Log in
                 </button>
                 {' '}to save your cart and proceed to checkout.
               </div>
@@ -522,7 +523,7 @@ export default function CartPage() {
                       onMouseDown={e => { if (items.length > 0) e.currentTarget.style.transform = 'scale(0.98)' }}
                       onMouseUp={e => (e.currentTarget.style.transform = '')}
                     >
-                      {user ? 'Proceed to Checkout' : 'Sign In to Checkout'}
+                      {user ? 'Proceed to Checkout' : 'Log In to Checkout'}
                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
                     </button>
 
