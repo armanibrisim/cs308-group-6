@@ -39,6 +39,14 @@ const MODULES = [
     accent: 'text-violet-300',
     border: 'hover:border-violet-500/40',
   },
+  {
+    href: '/sales-dashboard/refunds',
+    title: 'Refund Requests',
+    description: 'Review customer return & refund requests. Approve to trigger a refund and restock, or reject with a reason.',
+    icon: 'assignment_return',
+    accent: 'text-orange-300',
+    border: 'hover:border-orange-500/40',
+  },
 ]
 
 export default function SalesDashboardPage() {

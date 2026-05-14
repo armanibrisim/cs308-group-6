@@ -4,8 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext'
 import { reviewService, Review } from '../../../services/reviewService'
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+
 type TabType = 'COMMENTS' | 'PRODUCTS' | 'STOCK' | 'DELIVERIES'
 type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
+type DeliveryFilter = 'ALL' | 'PENDING' | 'COMPLETED'
+
+interface Delivery {
+  id: string
+  customer_id: string
+  product_id: string
+  product_name: string | null
+  quantity: number
+  total_price: number
+  delivery_address: string
+  is_completed: boolean
+  order_id: string | null
+  created_at: string
+}
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -32,6 +48,249 @@ function PlaceholderView({ title }: { title: string }) {
       <h2 className="text-2xl font-bold tracking-tight text-white/30 uppercase mb-2">{title}</h2>
       <p className="text-xs text-white/20 font-mono tracking-widest uppercase">Coming soon</p>
     </section>
+  )
+}
+
+function DeliveriesView({ token }: { token: string }) {
+  const [deliveries, setDeliveries] = useState<Delivery[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState<DeliveryFilter>('ALL')
+  const [search, setSearch] = useState('')
+  const [completing, setCompleting] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+
+  const fetchDeliveries = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    setError(null)
+    try {
+      const params = filter === 'COMPLETED' ? '?is_completed=true' : filter === 'PENDING' ? '?is_completed=false' : ''
+      const res = await fetch(`${API}/deliveries${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setDeliveries(data)
+    } catch {
+      setError('Failed to load deliveries.')
+    } finally {
+      setLoading(false)
+    }
+  }, [token, filter])
+
+  useEffect(() => { fetchDeliveries() }, [fetchDeliveries])
+
+  const showToast = (msg: string, ok: boolean) => {
+    setToast({ msg, ok })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const handleComplete = async (id: string) => {
+    setCompleting(id)
+    try {
+      const res = await fetch(`${API}/deliveries/${id}/complete`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error()
+      setDeliveries(prev => prev.map(d => d.id === id ? { ...d, is_completed: true } : d))
+      showToast('Delivery marked as completed.', true)
+    } catch {
+      showToast('Failed to update delivery.', false)
+    } finally {
+      setCompleting(null)
+    }
+  }
+
+  const filtered = deliveries.filter(d => {
+    const matchSearch = (d.product_name || d.product_id).toLowerCase().includes(search.toLowerCase()) ||
+      d.delivery_address.toLowerCase().includes(search.toLowerCase()) ||
+      d.customer_id.toLowerCase().includes(search.toLowerCase())
+    return matchSearch
+  })
+
+  const pendingCount = deliveries.filter(d => !d.is_completed).length
+  const completedCount = deliveries.filter(d => d.is_completed).length
+
+  return (
+    <div className="space-y-6">
+      {/* Stats + Search */}
+      <section className="glass-panel rounded-3xl border border-white/10 p-6 flex flex-col md:flex-row items-center gap-4">
+        <div className="relative w-full md:flex-1">
+          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" style={{ fontSize: '1.1rem' }}>search</span>
+          <input
+            type="text"
+            placeholder="Search by product, address or customer..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full text-xs py-3 pl-10 pr-4 rounded-xl outline-none"
+            style={{ background: 'rgba(var(--c-text-rgb), 0.05)', border: '1px solid rgba(var(--c-text-rgb), 0.10)', color: 'var(--c-text)', fontFamily: 'Inter, sans-serif' }}
+          />
+        </div>
+        <div className="flex gap-2">
+          {(['ALL', 'PENDING', 'COMPLETED'] as DeliveryFilter[]).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all duration-200"
+              style={{
+                background: filter === f ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.04)',
+                color: filter === f ? '#000' : 'rgba(var(--c-text-rgb), 0.45)',
+                border: `1px solid ${filter === f ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.08)'}`,
+              }}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-6 shrink-0">
+          <div className="text-center">
+            <p className="text-xl font-bold" style={{ color: '#f59e0b' }}>{pendingCount}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--c-text-rgb), 0.4)' }}>Pending</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold" style={{ color: 'var(--c-neon)' }}>{completedCount}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--c-text-rgb), 0.4)' }}>Completed</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex justify-center py-20">
+          <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(var(--c-neon-rgb),0.25)', borderTopColor: 'var(--c-neon)' }} />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !loading && (
+        <section className="glass-panel rounded-3xl border border-red-500/20 p-8 text-center">
+          <p className="text-xs font-mono tracking-widest" style={{ color: '#ef4444' }}>{error}</p>
+        </section>
+      )}
+
+      {/* Table */}
+      {!loading && !error && (
+        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
+          {/* Header */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr', gap: '1rem', padding: '1rem 2rem', borderBottom: '1px solid rgba(var(--c-text-rgb), 0.07)', background: 'rgba(var(--c-text-rgb), 0.02)' }}>
+            {['Product', 'Address', 'Qty', 'Total', 'Status', 'Action'].map(col => (
+              <span key={col} style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>{col}</span>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(var(--c-text-rgb), 0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.75rem' }}>
+              NO DELIVERIES FOUND
+            </div>
+          ) : (
+            filtered.map((d, idx) => {
+              const isCompleting = completing === d.id
+              return (
+                <div
+                  key={d.id}
+                  style={{
+                    display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr', gap: '1rem',
+                    padding: '1.1rem 2rem', alignItems: 'center',
+                    borderBottom: idx < filtered.length - 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
+                    opacity: d.is_completed ? 0.6 : 1,
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(var(--c-text-rgb), 0.02)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+                >
+                  {/* Product */}
+                  <div>
+                    <p style={{ fontSize: '0.825rem', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-text)' }}>
+                      {d.product_name || d.product_id}
+                    </p>
+                    {d.order_id && (
+                      <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.35)', marginTop: '0.2rem' }}>
+                        ORDER #{d.order_id.slice(-8).toUpperCase()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Address */}
+                  <p style={{ fontSize: '0.72rem', fontFamily: 'Inter, sans-serif', color: 'rgba(var(--c-text-rgb), 0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.delivery_address}
+                  </p>
+
+                  {/* Qty */}
+                  <p style={{ fontSize: '0.825rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.7)', fontWeight: 600 }}>
+                    {String(d.quantity).padStart(2, '0')}
+                  </p>
+
+                  {/* Total */}
+                  <p style={{ fontSize: '0.825rem', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-neon)', fontWeight: 600 }}>
+                    ${d.total_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+
+                  {/* Status */}
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.65rem', borderRadius: '9999px',
+                    background: d.is_completed ? 'rgba(var(--c-neon-rgb), 0.10)' : 'rgba(245,158,11,0.10)',
+                    color: d.is_completed ? 'var(--c-neon)' : '#f59e0b',
+                    fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
+                    border: `1px solid ${d.is_completed ? 'rgba(var(--c-neon-rgb), 0.20)' : 'rgba(245,158,11,0.25)'}`,
+                    width: 'fit-content',
+                  }}>
+                    {d.is_completed ? 'Delivered' : 'Pending'}
+                  </span>
+
+                  {/* Action */}
+                  {!d.is_completed ? (
+                    <button
+                      onClick={() => handleComplete(d.id)}
+                      disabled={isCompleting}
+                      style={{
+                        padding: '0.4rem 0.9rem', borderRadius: '0.5rem', border: '1px solid var(--c-neon)',
+                        background: 'transparent', color: 'var(--c-neon)', fontSize: '0.65rem',
+                        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.1em',
+                        cursor: isCompleting ? 'not-allowed' : 'pointer', opacity: isCompleting ? 0.5 : 1,
+                        textTransform: 'uppercase',
+                      }}
+                      onMouseEnter={e => { if (!isCompleting) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(var(--c-neon-rgb), 0.10)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    >
+                      {isCompleting ? '...' : 'Mark Done'}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(var(--c-text-rgb), 0.25)', fontFamily: 'monospace' }}>—</span>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && filtered.length === 0 && deliveries.length === 0 && (
+        <section className="glass-panel rounded-3xl border border-white/10 p-16 flex flex-col items-center justify-center text-center">
+          <span className="material-symbols-outlined text-5xl mb-4" style={{ color: 'rgba(var(--c-text-rgb), 0.15)' }}>local_shipping</span>
+          <p className="text-sm font-mono tracking-widest uppercase" style={{ color: 'rgba(var(--c-text-rgb), 0.3)' }}>No deliveries found</p>
+        </section>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '2rem', right: '2rem',
+          padding: '0.875rem 1.5rem', borderRadius: '0.75rem',
+          background: toast.ok ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+          border: `1px solid ${toast.ok ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)'}`,
+          color: toast.ok ? '#22c55e' : '#ef4444',
+          fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 9999,
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>{toast.ok ? 'check_circle' : 'error'}</span>
+          {toast.msg}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -130,7 +389,9 @@ export default function ProductManagerDashboard() {
         </div>
 
         {/* ── Content ── */}
-        {activeTab !== 'COMMENTS' ? (
+        {activeTab === 'DELIVERIES' ? (
+          <DeliveriesView token={token} />
+        ) : activeTab !== 'COMMENTS' ? (
           <PlaceholderView title={activeTab} />
         ) : (
           <>
