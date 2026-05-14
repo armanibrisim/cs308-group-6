@@ -219,6 +219,7 @@ function CategoriesView({ token }: { token: string }) {
   // ── Create ──
   const handleCreate = async () => {
     if (!newName.trim()) { setCreateError('Name is required.'); return }
+    if (newName.trim().length < 2) { setCreateError('Name must be at least 2 characters.'); return }
     setCreating(true); setCreateError(null)
     try {
       const body: Record<string, string> = { name: newName.trim() }
@@ -319,18 +320,34 @@ function CategoriesView({ token }: { token: string }) {
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr auto', gap: '0.75rem', alignItems: 'start' }}>
             <div>
               <input
-                type="text" value={newName} onChange={e => setNewName(e.target.value)}
+                type="text" value={newName} onChange={e => setNewName(e.target.value.slice(0, 50))}
                 placeholder="Category name *"
+                maxLength={50}
                 style={{ ...inputStyle, borderColor: createError && !newName.trim() ? 'rgba(239,68,68,0.5)' : 'rgba(var(--c-text-rgb), 0.15)' }}
                 onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
               />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                {createError && !newName.trim()
+                  ? <span style={{ fontSize: '0.6rem', color: '#ef4444', fontFamily: 'monospace' }}>Name is required</span>
+                  : <span />
+                }
+                <span style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: newName.length >= 45 ? '#f59e0b' : 'rgba(var(--c-text-rgb), 0.25)' }}>
+                  {newName.length}/50
+                </span>
+              </div>
             </div>
             <div>
               <input
-                type="text" value={newDesc} onChange={e => setNewDesc(e.target.value)}
+                type="text" value={newDesc} onChange={e => setNewDesc(e.target.value.slice(0, 200))}
                 placeholder="Description (optional)"
+                maxLength={200}
                 style={inputStyle}
               />
+              <div style={{ textAlign: 'right', marginTop: '0.25rem' }}>
+                <span style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: newDesc.length >= 180 ? '#f59e0b' : 'rgba(var(--c-text-rgb), 0.25)' }}>
+                  {newDesc.length}/200
+                </span>
+              </div>
             </div>
             <CustomSelect
               value={newParent}
@@ -475,8 +492,6 @@ function CategoriesView({ token }: { token: string }) {
                       {deleting ? '...' : 'Yes'}
                     </button>
                   </div>
-                ) : !c.managed ? (
-                  <span style={{ fontSize: '0.62rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.2)' }}>—</span>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <button onClick={() => { startEdit(c); setDeleteId(null) }}
