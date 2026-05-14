@@ -57,6 +57,14 @@ class CategoryCreate(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     parent_category_id: Optional[str] = None
+    icon: Optional[str] = None
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    parent_category_id: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class CategoryResponse(BaseModel):
@@ -65,6 +73,7 @@ class CategoryResponse(BaseModel):
     slug: Optional[str] = None
     description: Optional[str] = None
     parent_category_id: Optional[str] = None
+    icon: Optional[str] = None
 
 
 class ProductListResponse(BaseModel):

@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { reviewService, Review } from '../../../services/reviewService'
+import { AVAILABLE_ICONS, getCategoryIcon } from '../../../constants/categoryIcons'
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
@@ -72,11 +74,83 @@ interface Category {
   slug?: string | null
   description?: string | null
   parent_category_id?: string | null
+  icon?: string | null
   managed: boolean      // true = formal API kaydı var (edit/delete yapılabilir)
   productCount: number  // bu kategoriyi kullanan ürün sayısı
 }
 
 // ── Categories view ───────────────────────────────────────────────────────────
+
+function calcPickerPos(btn: HTMLButtonElement): { top: number; left: number } {
+  const rect = btn.getBoundingClientRect()
+  const dropW = 270
+  let left = rect.left
+  if (left + dropW > window.innerWidth - 8) left = rect.right - dropW
+  return { top: rect.bottom + 6, left: Math.max(8, left) }
+}
+
+function IconPickerDropdown({
+  open,
+  pos,
+  selectedIcon,
+  onSelect,
+  onClose,
+}: {
+  open: boolean
+  pos: { top: number; left: number }
+  selectedIcon: string
+  onSelect: (icon: string) => void
+  onClose: () => void
+}) {
+  const dropRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open, onClose])
+
+  if (!open || typeof document === 'undefined') return null
+
+  return createPortal(
+    <div
+      ref={dropRef}
+      style={{
+        position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999,
+        background: 'var(--c-surface, #1a1a1a)',
+        border: '1px solid rgba(var(--c-neon-rgb),0.2)',
+        borderRadius: '0.75rem', padding: '0.75rem', width: '270px',
+        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+      }}
+    >
+      {AVAILABLE_ICONS.map(({ icon, label }) => (
+        <button
+          key={icon}
+          type="button"
+          title={label}
+          onClick={() => { onSelect(icon); onClose() }}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem',
+            padding: '0.45rem 0.25rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+            background: selectedIcon === icon ? 'rgba(var(--c-neon-rgb),0.15)' : 'rgba(var(--c-text-rgb),0.04)',
+            outline: selectedIcon === icon ? '1px solid var(--c-neon)' : '1px solid transparent',
+            transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => { if (selectedIcon !== icon) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(var(--c-text-rgb),0.09)' }}
+          onMouseLeave={e => { if (selectedIcon !== icon) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(var(--c-text-rgb),0.04)' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem', color: selectedIcon === icon ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb),0.7)', fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+          <span style={{ fontSize: '0.42rem', color: 'rgba(var(--c-text-rgb),0.4)', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+        </button>
+      ))}
+    </div>,
+    document.body
+  )
+}
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box', padding: '0.55rem 0.75rem',
@@ -187,6 +261,9 @@ function CategoriesView({ token }: { token: string }) {
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newParent, setNewParent] = useState('')
+  const [newIcon, setNewIcon] = useState('')
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
+  const [newIconPos, setNewIconPos] = useState({ top: 0, left: 0 })
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -195,6 +272,9 @@ function CategoriesView({ token }: { token: string }) {
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editParent, setEditParent] = useState('')
+  const [editIcon, setEditIcon] = useState('')
+  const [editIconPickerOpen, setEditIconPickerOpen] = useState(false)
+  const [editIconPos, setEditIconPos] = useState({ top: 0, left: 0 })
   const [saving, setSaving] = useState(false)
 
   // Delete confirmation state
@@ -261,6 +341,7 @@ function CategoriesView({ token }: { token: string }) {
       const body: Record<string, string> = { name: newName.trim() }
       if (newDesc.trim()) body.description = newDesc.trim()
       if (newParent) body.parent_category_id = newParent
+      if (newIcon) body.icon = newIcon
       const res = await fetch(`${API}/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -269,7 +350,7 @@ function CategoriesView({ token }: { token: string }) {
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d?.detail || 'Error') }
       const created: Category = { ...(await res.json()), managed: true, productCount: 0 }
       setCategories(prev => [...prev, created])
-      setNewName(''); setNewDesc(''); setNewParent('')
+      setNewName(''); setNewDesc(''); setNewParent(''); setNewIcon(''); setIconPickerOpen(false)
       showToast(`"${created.name}" created.`, true)
     } catch (err) { setCreateError(err instanceof Error ? err.message : 'Failed.') }
     finally { setCreating(false) }
@@ -293,7 +374,7 @@ function CategoriesView({ token }: { token: string }) {
 
   // ── Edit ──
   const startEdit = (c: Category) => {
-    setEditId(c.id); setEditName(c.name); setEditDesc(c.description ?? ''); setEditParent(c.parent_category_id ?? '')
+    setEditId(c.id); setEditName(c.name); setEditDesc(c.description ?? ''); setEditParent(c.parent_category_id ?? ''); setEditIcon(c.icon ?? ''); setEditIconPickerOpen(false)
   }
   const cancelEdit = () => setEditId(null)
 
@@ -304,6 +385,7 @@ function CategoriesView({ token }: { token: string }) {
       const body: Record<string, string> = { name: editName.trim() }
       if (editDesc.trim()) body.description = editDesc.trim()
       if (editParent) body.parent_category_id = editParent
+      if (editIcon) body.icon = editIcon
       const res = await fetch(`${API}/categories/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -313,7 +395,7 @@ function CategoriesView({ token }: { token: string }) {
       const raw = await res.json()
       const updated: Category = { ...raw, managed: true, productCount: categories.find(c => c.id === id)?.productCount ?? 0 }
       setCategories(prev => prev.map(c => c.id === id ? updated : c))
-      setEditId(null)
+      setEditId(null); setEditIconPickerOpen(false)
       showToast(`"${updated.name}" updated.`, true)
     } catch { showToast('Failed to update.', false) }
     finally { setSaving(false) }
@@ -353,7 +435,7 @@ function CategoriesView({ token }: { token: string }) {
           <p style={{ fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--c-neon)', marginBottom: '0.75rem', opacity: 0.8 }}>
             + New Category
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr auto', gap: '0.75rem', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr auto auto', gap: '0.75rem', alignItems: 'start' }}>
             <div>
               <input
                 type="text" value={newName} onChange={e => setNewName(e.target.value.slice(0, 50))}
@@ -391,6 +473,35 @@ function CategoriesView({ token }: { token: string }) {
               options={categories.filter(c => c.managed).map(c => ({ value: c.id, label: c.name }))}
               placeholder="No parent"
             />
+            {/* ── Icon picker button ── */}
+            <div>
+              <button
+                type="button"
+                onClick={e => {
+                  setNewIconPos(calcPickerPos(e.currentTarget))
+                  setIconPickerOpen(o => !o)
+                }}
+                title="Select icon"
+                style={{
+                  ...inputStyle, width: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  cursor: 'pointer', whiteSpace: 'nowrap', padding: '0.55rem 0.75rem',
+                  borderColor: iconPickerOpen ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.15)',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: newIcon ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb),0.4)', fontVariationSettings: "'FILL' 1" }}>
+                  {newIcon || getCategoryIcon(newName)}
+                </span>
+                <span style={{ fontSize: '0.72rem', color: 'rgba(var(--c-text-rgb),0.5)' }}>Icon</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: 'rgba(var(--c-text-rgb),0.3)' }}>expand_more</span>
+              </button>
+              <IconPickerDropdown
+                open={iconPickerOpen}
+                pos={newIconPos}
+                selectedIcon={newIcon}
+                onSelect={setNewIcon}
+                onClose={() => setIconPickerOpen(false)}
+              />
+            </div>
             <button
               onClick={handleCreate} disabled={creating}
               style={{
@@ -436,7 +547,7 @@ function CategoriesView({ token }: { token: string }) {
               <div
                 key={c.id}
                 style={{
-                  display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 140px', gap: '1rem',
+                  display: 'grid', gridTemplateColumns: isEditing ? '2fr 2fr 1fr auto 140px' : '2fr 2fr 1fr 140px', gap: '1rem',
                   padding: isEditing ? '1rem 2rem' : '0.9rem 2rem', alignItems: 'center',
                   borderBottom: idx < filtered.length - 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
                   background: isEditing ? 'rgba(var(--c-neon-rgb), 0.03)' : 'transparent',
@@ -450,6 +561,9 @@ function CategoriesView({ token }: { token: string }) {
                   <input value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} autoFocus />
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: 'var(--c-neon)', fontVariationSettings: "'FILL' 1", opacity: 0.8, flexShrink: 0 }}>
+                      {getCategoryIcon(c.id, c.icon)}
+                    </span>
                     {c.parent_category_id && <span className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: 'rgba(var(--c-text-rgb), 0.3)' }}>subdirectory_arrow_right</span>}
                     <div>
                       <p style={{ fontSize: '0.82rem', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-text)' }}>{c.name}</p>
@@ -465,6 +579,37 @@ function CategoriesView({ token }: { token: string }) {
                   <p style={{ fontSize: '0.75rem', fontFamily: 'Inter, sans-serif', color: 'rgba(var(--c-text-rgb), 0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {c.description || <span style={{ color: 'rgba(var(--c-text-rgb), 0.2)', fontStyle: 'italic' }}>No description</span>}
                   </p>
+                )}
+
+                {/* Icon picker col — only visible when editing */}
+                {isEditing && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        setEditIconPos(calcPickerPos(e.currentTarget))
+                        setEditIconPickerOpen(o => !o)
+                      }}
+                      title="Select icon"
+                      style={{
+                        ...inputStyle, width: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        cursor: 'pointer', padding: '0.55rem 0.75rem',
+                        borderColor: editIconPickerOpen ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.15)',
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--c-neon)', fontVariationSettings: "'FILL' 1" }}>
+                        {editIcon || getCategoryIcon(c.id, c.icon)}
+                      </span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: 'rgba(var(--c-text-rgb),0.3)' }}>expand_more</span>
+                    </button>
+                    <IconPickerDropdown
+                      open={editIconPickerOpen}
+                      pos={editIconPos}
+                      selectedIcon={editIcon}
+                      onSelect={setEditIcon}
+                      onClose={() => setEditIconPickerOpen(false)}
+                    />
+                  </div>
                 )}
 
                 {/* Type / Parent col */}

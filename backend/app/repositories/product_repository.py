@@ -378,3 +378,13 @@ def get_category_by_name(name: str) -> Optional[dict]:
     for doc in docs:
         return doc.to_dict()
     return None
+
+
+def update_category(category_id: str, updates: dict) -> None:
+    db = _db()
+    db.collection(CATEGORIES_COLLECTION).document(category_id).update(updates)
+
+
+def delete_category(category_id: str) -> None:
+    db = _db()
+    db.collection(CATEGORIES_COLLECTION).document(category_id).delete()
