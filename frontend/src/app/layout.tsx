@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WishlistProvider>
             <CategoryProvider>
               <Navbar />
-              <div style={{ paddingTop: '8rem' }}>{children}</div>
+              <div style={{ paddingTop: '8rem', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>{children}</div>
             </CategoryProvider>
           </WishlistProvider>
         </AuthProvider>

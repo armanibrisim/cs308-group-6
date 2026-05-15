@@ -71,7 +71,14 @@ body {
   background-size: auto, cover;
   background-repeat: no-repeat, no-repeat;
   background-position: top left, center;
-  background-attachment: fixed, fixed;
+  /* scroll (not fixed) — fixed backgrounds are a common cause of layout/paint
+     not updating correctly after the viewport is resized wider again (Chromium). */
+  background-attachment: scroll, scroll;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
 }
 
 .font-wide {
@@ -95,6 +102,18 @@ body {
 .atmospheric-bg {
   background: transparent;
   position: relative;
+  /* Avoid full overflow:hidden on page shells; clip X only so reflow after resize stays correct. */
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+.sidenav-nav-btn {
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .sidenav-nav-btn:hover {
+    transform: scale(1.15);
+  }
 }
 
 /* Dynamic glow — kept subtle */
