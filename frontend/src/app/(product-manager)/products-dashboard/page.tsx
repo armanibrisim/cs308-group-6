@@ -81,12 +81,16 @@ interface Category {
 
 // ── Categories view ───────────────────────────────────────────────────────────
 
-function calcPickerPos(btn: HTMLButtonElement): { top: number; left: number } {
+function calcPickerPos(btn: HTMLButtonElement): { top: number; left: number; openUp: boolean } {
   const rect = btn.getBoundingClientRect()
-  const dropW = 270
+  const dropW = 300
+  const dropH = 320
   let left = rect.left
   if (left + dropW > window.innerWidth - 8) left = rect.right - dropW
-  return { top: rect.bottom + 6, left: Math.max(8, left) }
+  const spaceBelow = window.innerHeight - rect.bottom - 8
+  const openUp = spaceBelow < dropH && rect.top > dropH
+  const top = openUp ? rect.top - dropH - 6 : rect.bottom + 6
+  return { top, left: Math.max(8, left), openUp }
 }
 
 function IconPickerDropdown({
@@ -97,7 +101,7 @@ function IconPickerDropdown({
   onClose,
 }: {
   open: boolean
-  pos: { top: number; left: number }
+  pos: { top: number; left: number; openUp?: boolean }
   selectedIcon: string
   onSelect: (icon: string) => void
   onClose: () => void
@@ -120,11 +124,12 @@ function IconPickerDropdown({
       ref={dropRef}
       style={{
         position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999,
-        background: 'var(--c-surface, #1a1a1a)',
+        background: 'var(--c-surface, #111)',
         border: '1px solid rgba(var(--c-neon-rgb),0.2)',
-        borderRadius: '0.75rem', padding: '0.75rem', width: '270px',
-        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+        borderRadius: '0.75rem', padding: '0.75rem', width: '300px',
+        boxShadow: '0 20px 48px rgba(0,0,0,0.7)',
+        maxHeight: '320px', overflowY: 'auto',
+        display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.3rem',
       }}
     >
       {AVAILABLE_ICONS.map(({ icon, label }) => (
@@ -181,11 +186,16 @@ function CustomSelect({ value, onChange, options, placeholder }: {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const onMouse = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const onScroll = () => setOpen(false)
+    document.addEventListener('mousedown', onMouse)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', onMouse)
+      window.removeEventListener('scroll', onScroll, true)
+    }
   }, [])
 
   const handleToggle = () => {
@@ -470,7 +480,7 @@ function CategoriesView({ token }: { token: string }) {
             <CustomSelect
               value={newParent}
               onChange={setNewParent}
-              options={categories.filter(c => c.managed).map(c => ({ value: c.id, label: c.name }))}
+              options={categories.map(c => ({ value: c.id, label: c.name }))}
               placeholder="No parent"
             />
             {/* ── Icon picker button ── */}
@@ -617,7 +627,7 @@ function CategoriesView({ token }: { token: string }) {
                   <CustomSelect
                     value={editParent}
                     onChange={setEditParent}
-                    options={categories.filter(x => x.managed && x.id !== c.id).map(x => ({ value: x.id, label: x.name }))}
+                    options={categories.filter(x => x.id !== c.id).map(x => ({ value: x.id, label: x.name }))}
                     placeholder="No parent"
                   />
                 ) : c.managed ? (
@@ -1109,7 +1119,7 @@ function ProductsView({ token }: { token: string }) {
                   </div>
                   <div>
                     <label style={labelStyle}>Category *</label>
-                    <CustomSelect value={form.category_id} onChange={v => setField('category_id', v)} options={catList.map(c => ({ value: c.id, label: c.name }))} placeholder="Select" />
+                    <CustomSelect value={form.category_id} onChange={v => setField('category_id', v)} options={allCatOptions.map(c => ({ value: c.id, label: c.name }))} placeholder="Select" />
                     {formErrors.category_id && <p style={errStyle}>{formErrors.category_id}</p>}
                   </div>
                 </div>
