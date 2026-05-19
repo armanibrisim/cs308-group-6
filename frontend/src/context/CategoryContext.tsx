@@ -10,6 +10,7 @@ export interface Category {
   name: string
   count: number
   icon?: string | null
+  parent_category_id?: string | null
 }
 
 interface CategoryContextValue {
@@ -53,14 +54,16 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
       }
 
       const icons: Record<string, string | null> = {}
+      const parents: Record<string, string | null> = {}
       if (catsResult.status === 'fulfilled' && Array.isArray(catsResult.value)) {
         for (const c of catsResult.value) {
           if (c.icon) icons[c.id] = c.icon
+          parents[c.id] = c.parent_category_id ?? null
         }
       }
 
       const derived: Category[] = Object.keys(names)
-        .map(id => ({ id, name: names[id], count: counts[id] ?? 0, icon: icons[id] ?? null }))
+        .map(id => ({ id, name: names[id], count: counts[id] ?? 0, icon: icons[id] ?? null, parent_category_id: parents[id] ?? null }))
         .sort((a, b) => b.count - a.count)
 
       setCategories(derived)
