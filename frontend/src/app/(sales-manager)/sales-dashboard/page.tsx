@@ -16,14 +16,6 @@ const MODULES = [
     border: 'hover:border-emerald-500/40',
   },
   {
-    href: '/sales-dashboard/orders',
-    title: 'All Orders',
-    description: 'Browse every customer order, filter by status, and drill down into line items.',
-    icon: 'package_2',
-    accent: 'text-sky-300',
-    border: 'hover:border-sky-500/40',
-  },
-  {
     href: '/sales-dashboard/discounts',
     title: 'Product Discounts',
     description: 'Apply or remove discount percentages on products. Wishlist owners are automatically notified.',
@@ -63,7 +55,7 @@ export default function SalesDashboardPage() {
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">
-      <div className="mx-auto w-full max-w-[1100px] space-y-8">
+      <div className="mx-auto w-full max-w-[1200px] space-y-8">
 
         {/* ── Header ── */}
         <section className="glass-panel rounded-3xl border border-white/10 p-8">

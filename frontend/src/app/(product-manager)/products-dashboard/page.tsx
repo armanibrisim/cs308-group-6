@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { reviewService, Review } from '../../../services/reviewService'
@@ -10,19 +10,32 @@ const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
 type TabType = 'COMMENTS' | 'PRODUCTS' | 'CATEGORIES' | 'STOCK' | 'DELIVERIES'
 type FilterType = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
-type DeliveryFilter = 'ALL' | 'PENDING' | 'COMPLETED'
+type PMOrderStatus = 'processing' | 'in-transit' | 'delivered'
+type PMOrderStatusFilter = PMOrderStatus | 'all'
 
-interface Delivery {
+interface PMOrderItem {
+  product_id: string
+  product_name: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+}
+
+interface PMOrder {
   id: string
   customer_id: string
-  product_id: string
-  product_name: string | null
-  quantity: number
-  total_price: number
+  customer_email: string
+  customer_name: string
   delivery_address: string
-  is_completed: boolean
-  order_id: string | null
+  items: PMOrderItem[]
+  subtotal: number
+  tax: number
+  shipping: number
+  total_amount: number
+  status: PMOrderStatus
+  invoice_id?: string
   created_at: string
+  updated_at: string
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -1239,245 +1252,255 @@ function PlaceholderView({ title }: { title: string }) {
   )
 }
 
+const PM_STATUS_BADGE: Record<PMOrderStatus, string> = {
+  processing: 'bg-sky-500/10 text-sky-300 border border-sky-500/30',
+  'in-transit': 'bg-violet-500/10 text-violet-300 border border-violet-500/30',
+  delivered: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30',
+}
+
+
+function fmtMoney(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function DeliveriesView({ token }: { token: string }) {
-  const [deliveries, setDeliveries] = useState<Delivery[]>([])
+  const [orders, setOrders] = useState<PMOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<DeliveryFilter>('ALL')
+  const [statusFilter, setStatusFilter] = useState<PMOrderStatusFilter>('all')
   const [search, setSearch] = useState('')
-  const [completing, setCompleting] = useState<string | null>(null)
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [updateError, setUpdateError] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const fetchDeliveries = useCallback(async () => {
+  const loadOrders = useCallback(async () => {
     if (!token) return
     setLoading(true)
     setError(null)
     try {
-      const params = filter === 'COMPLETED' ? '?is_completed=true' : filter === 'PENDING' ? '?is_completed=false' : ''
-      const res = await fetch(`${API}/deliveries${params}`, {
+      const res = await fetch(`${API}/orders/all`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setDeliveries(data)
-    } catch {
-      setError('Failed to load deliveries.')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setOrders(await res.json())
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load orders.')
     } finally {
       setLoading(false)
     }
-  }, [token, filter])
+  }, [token])
 
-  useEffect(() => { fetchDeliveries() }, [fetchDeliveries])
+  useEffect(() => { loadOrders() }, [loadOrders])
 
-  const showToast = (msg: string, ok: boolean) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  const handleComplete = async (id: string) => {
-    setCompleting(id)
+  const handleStatusChange = useCallback(async (orderId: string, newStatus: PMOrderStatus) => {
+    if (!token) return
+    setUpdatingId(orderId)
+    setUpdateError(null)
     try {
-      const res = await fetch(`${API}/deliveries/${id}/complete`, {
+      const res = await fetch(`${API}/orders/${orderId}/status`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
       })
-      if (!res.ok) throw new Error()
-      setDeliveries(prev => prev.map(d => d.id === id ? { ...d, is_completed: true } : d))
-      showToast('Delivery marked as completed.', true)
-    } catch {
-      showToast('Failed to update delivery.', false)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const updated: PMOrder = await res.json()
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: updated.status } : o))
+    } catch (err: unknown) {
+      setUpdateError(err instanceof Error ? err.message : 'Failed to update status.')
     } finally {
-      setCompleting(null)
+      setUpdatingId(null)
     }
-  }
+  }, [token])
 
-  const filtered = deliveries.filter(d => {
-    const matchSearch = (d.product_name || d.product_id).toLowerCase().includes(search.toLowerCase()) ||
-      d.delivery_address.toLowerCase().includes(search.toLowerCase()) ||
-      d.customer_id.toLowerCase().includes(search.toLowerCase())
-    return matchSearch
-  })
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return orders.filter(o => {
+      const matchQ = !q ||
+        o.id.toLowerCase().includes(q) ||
+        o.customer_name.toLowerCase().includes(q) ||
+        o.customer_email.toLowerCase().includes(q)
+      const matchS = statusFilter === 'all' || o.status === statusFilter
+      return matchQ && matchS
+    })
+  }, [orders, search, statusFilter])
 
-  const pendingCount = deliveries.filter(d => !d.is_completed).length
-  const completedCount = deliveries.filter(d => d.is_completed).length
+  const kpis = useMemo(() => ({
+    count: orders.length,
+    processing: orders.filter(o => o.status === 'processing').length,
+    inTransit: orders.filter(o => o.status === 'in-transit').length,
+    revenue: orders.reduce((s, o) => s + o.total_amount, 0),
+  }), [orders])
 
   return (
-    <div className="space-y-6">
-      {/* Stats + Search */}
-      <section className="glass-panel rounded-3xl border border-white/10 p-6 flex flex-col md:flex-row items-center gap-4">
-        <div className="relative w-full md:flex-1">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" style={{ fontSize: '1.1rem' }}>search</span>
+    <div className="space-y-8">
+
+      {/* ── KPI cards ── */}
+      {!loading && !error && (
+        <section className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+          {[
+            { label: 'Total Orders', value: String(kpis.count), color: 'text-white' },
+            { label: 'Processing', value: String(kpis.processing), color: 'text-sky-300' },
+            { label: 'In Transit', value: String(kpis.inTransit), color: 'text-violet-300' },
+            { label: 'Revenue', value: `$${fmtMoney(kpis.revenue)}`, color: 'text-emerald-300' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="glass-panel rounded-2xl border border-white/10 p-6">
+              <p className="text-xs uppercase tracking-widest text-white/40">{label}</p>
+              <p className={`mt-3 text-3xl font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* ── Filters ── */}
+      <section className="glass-panel rounded-3xl border border-white/10 px-6 py-5">
+        <div className="flex flex-wrap items-center gap-4">
           <input
             type="text"
-            placeholder="Search by product, address or customer..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full text-xs py-3 pl-10 pr-4 rounded-xl outline-none"
-            style={{ background: 'rgba(var(--c-text-rgb), 0.05)', border: '1px solid rgba(var(--c-text-rgb), 0.10)', color: 'var(--c-text)', fontFamily: 'Inter, sans-serif' }}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by order ID, customer name or email…"
+            className="min-w-[240px] flex-1 rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-primary/40"
           />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as PMOrderStatusFilter)}
+            className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none transition focus:border-primary/40"
+          >
+            <option value="all">All statuses</option>
+            <option value="processing">Processing</option>
+            <option value="in-transit">In Transit</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <button
+            type="button"
+            onClick={loadOrders}
+            disabled={loading}
+            className="rounded-xl border border-white/20 px-5 py-2.5 text-sm text-white/70 transition hover:border-primary/40 hover:text-primary disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
         </div>
-        <div className="flex gap-2">
-          {(['ALL', 'PENDING', 'COMPLETED'] as DeliveryFilter[]).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all duration-200"
-              style={{
-                background: filter === f ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.04)',
-                color: filter === f ? '#000' : 'rgba(var(--c-text-rgb), 0.45)',
-                border: `1px solid ${filter === f ? 'var(--c-neon)' : 'rgba(var(--c-text-rgb), 0.08)'}`,
-              }}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-6 shrink-0">
-          <div className="text-center">
-            <p className="text-xl font-bold" style={{ color: '#f59e0b' }}>{pendingCount}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--c-text-rgb), 0.4)' }}>Pending</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-bold" style={{ color: 'var(--c-neon)' }}>{completedCount}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(var(--c-text-rgb), 0.4)' }}>Completed</p>
-          </div>
-        </div>
+        {updateError && (
+          <p className="mt-4 text-xs text-rose-400">
+            ⚠ {updateError}{' '}
+            <button onClick={() => setUpdateError(null)} className="underline hover:text-white">Dismiss</button>
+          </p>
+        )}
       </section>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex justify-center py-20">
-          <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(var(--c-neon-rgb),0.25)', borderTopColor: 'var(--c-neon)' }} />
-        </div>
-      )}
-
-      {/* Error */}
-      {error && !loading && (
-        <section className="glass-panel rounded-3xl border border-red-500/20 p-8 text-center">
-          <p className="text-xs font-mono tracking-widest" style={{ color: '#ef4444' }}>{error}</p>
-        </section>
-      )}
-
-      {/* Table */}
-      {!loading && !error && (
-        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
-          {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr', gap: '1rem', padding: '1rem 2rem', borderBottom: '1px solid rgba(var(--c-text-rgb), 0.07)', background: 'rgba(var(--c-text-rgb), 0.02)' }}>
-            {['Product', 'Address', 'Qty', 'Total', 'Status', 'Action'].map(col => (
-              <span key={col} style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>{col}</span>
-            ))}
+      {/* ── Table ── */}
+      <section className="glass-panel rounded-3xl border border-white/10 p-6">
+        {error ? (
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-8 text-center text-sm text-rose-300">
+            {error}{' '}
+            <button onClick={loadOrders} className="underline hover:text-white">Retry</button>
           </div>
+        ) : loading ? (
+          <div className="py-20 text-center text-white/40 text-sm">Loading orders…</div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/20 py-16 text-center text-white/50">
+            {orders.length === 0 ? 'No orders found.' : 'No orders match your filters.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.14em] text-white/50">
+                <tr className="border-b border-white/10">
+                  <th className="px-4 py-4">Order ID</th>
+                  <th className="px-4 py-4">Customer</th>
+                  <th className="px-4 py-4">Items</th>
+                  <th className="px-4 py-4">Total</th>
+                  <th className="px-4 py-4">Placed</th>
+                  <th className="px-4 py-4">Status</th>
+                  <th className="px-4 py-4">Invoice</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((order) => {
+                  const expanded = expandedId === order.id
+                  return (
+                    <React.Fragment key={order.id}>
+                      <tr
+                        className="border-b border-white/5 cursor-pointer transition hover:bg-white/[0.02]"
+                        onClick={() => setExpandedId(expanded ? null : order.id)}
+                      >
+                        <td className="px-4 py-4 font-medium text-white">{order.id}</td>
+                        <td className="px-4 py-4">
+                          <p className="text-white/90">{order.customer_name}</p>
+                          <p className="text-xs text-white/45">{order.customer_email}</p>
+                        </td>
+                        <td className="px-4 py-4 text-white/70">
+                          {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                        </td>
+                        <td className="px-4 py-4 font-semibold text-white">${fmtMoney(order.total_amount)}</td>
+                        <td className="px-4 py-4 text-white/65">{order.created_at.slice(0, 10)}</td>
+                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                          {updatingId === order.id ? (
+                            <span className="text-xs text-white/40">Saving…</span>
+                          ) : (
+                            <select
+                              value={order.status}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                handleStatusChange(order.id, e.target.value as PMOrderStatus)
+                              }}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition bg-transparent hover:opacity-80 ${PM_STATUS_BADGE[order.status]}`}
+                            >
+                              {(['processing', 'in-transit', 'delivered'] as PMOrderStatus[]).map((s) => (
+                                <option key={s} value={s}>
+                                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-xs text-white/40">
+                          {order.invoice_id ?? '—'}
+                        </td>
+                      </tr>
+                      {expanded && (
+                        <tr className="border-b border-white/5 bg-white/[0.015]">
+                          <td colSpan={7} className="px-8 py-6">
+                            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/40">
+                              Line Items
+                            </p>
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-white/40 border-b border-white/5">
+                                  <th className="pb-2 text-left font-normal">Product</th>
+                                  <th className="pb-2 text-right font-normal">Qty</th>
+                                  <th className="pb-2 text-right font-normal">Unit Price</th>
+                                  <th className="pb-2 text-right font-normal">Subtotal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {order.items.map((item, i) => (
+                                  <tr key={i} className="border-t border-white/5">
+                                    <td className="py-2.5 text-white/80">{item.product_name}</td>
+                                    <td className="py-2.5 text-right text-white/60">{item.quantity}</td>
+                                    <td className="py-2.5 text-right text-white/60">${fmtMoney(item.unit_price)}</td>
+                                    <td className="py-2.5 text-right text-white/80">${fmtMoney(item.subtotal)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <div className="mt-5 flex gap-8 text-xs text-white/40">
+                              <span>📍 {order.delivery_address}</span>
+                              <span>Updated: {order.updated_at.slice(0, 10)}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-          {filtered.length === 0 ? (
-            <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(var(--c-text-rgb), 0.3)', fontFamily: 'Space Grotesk, sans-serif', letterSpacing: '0.2em', fontSize: '0.75rem' }}>
-              NO DELIVERIES FOUND
-            </div>
-          ) : (
-            filtered.map((d, idx) => {
-              const isCompleting = completing === d.id
-              return (
-                <div
-                  key={d.id}
-                  style={{
-                    display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr', gap: '1rem',
-                    padding: '1.1rem 2rem', alignItems: 'center',
-                    borderBottom: idx < filtered.length - 1 ? '1px solid rgba(var(--c-text-rgb), 0.05)' : 'none',
-                    opacity: d.is_completed ? 0.6 : 1,
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(var(--c-text-rgb), 0.02)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-                >
-                  {/* Product */}
-                  <div>
-                    <p style={{ fontSize: '0.825rem', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-text)' }}>
-                      {d.product_name || d.product_id}
-                    </p>
-                    {d.order_id && (
-                      <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.35)', marginTop: '0.2rem' }}>
-                        ORDER #{d.order_id.slice(-8).toUpperCase()}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Address */}
-                  <p style={{ fontSize: '0.72rem', fontFamily: 'Inter, sans-serif', color: 'rgba(var(--c-text-rgb), 0.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {d.delivery_address}
-                  </p>
-
-                  {/* Qty */}
-                  <p style={{ fontSize: '0.825rem', fontFamily: 'Space Grotesk, sans-serif', color: 'rgba(var(--c-text-rgb), 0.7)', fontWeight: 600 }}>
-                    {String(d.quantity).padStart(2, '0')}
-                  </p>
-
-                  {/* Total */}
-                  <p style={{ fontSize: '0.825rem', fontFamily: 'Space Grotesk, sans-serif', color: 'var(--c-neon)', fontWeight: 600 }}>
-                    ${d.total_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </p>
-
-                  {/* Status */}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.65rem', borderRadius: '9999px',
-                    background: d.is_completed ? 'rgba(var(--c-neon-rgb), 0.10)' : 'rgba(245,158,11,0.10)',
-                    color: d.is_completed ? 'var(--c-neon)' : '#f59e0b',
-                    fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
-                    border: `1px solid ${d.is_completed ? 'rgba(var(--c-neon-rgb), 0.20)' : 'rgba(245,158,11,0.25)'}`,
-                    width: 'fit-content',
-                  }}>
-                    {d.is_completed ? 'Delivered' : 'Pending'}
-                  </span>
-
-                  {/* Action */}
-                  {!d.is_completed ? (
-                    <button
-                      onClick={() => handleComplete(d.id)}
-                      disabled={isCompleting}
-                      style={{
-                        padding: '0.4rem 0.9rem', borderRadius: '0.5rem', border: '1px solid var(--c-neon)',
-                        background: 'transparent', color: 'var(--c-neon)', fontSize: '0.65rem',
-                        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.1em',
-                        cursor: isCompleting ? 'not-allowed' : 'pointer', opacity: isCompleting ? 0.5 : 1,
-                        textTransform: 'uppercase',
-                      }}
-                      onMouseEnter={e => { if (!isCompleting) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(var(--c-neon-rgb), 0.10)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-                    >
-                      {isCompleting ? '...' : 'Mark Done'}
-                    </button>
-                  ) : (
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(var(--c-text-rgb), 0.25)', fontFamily: 'monospace' }}>—</span>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && !error && filtered.length === 0 && deliveries.length === 0 && (
-        <section className="glass-panel rounded-3xl border border-white/10 p-16 flex flex-col items-center justify-center text-center">
-          <span className="material-symbols-outlined text-5xl mb-4" style={{ color: 'rgba(var(--c-text-rgb), 0.15)' }}>local_shipping</span>
-          <p className="text-sm font-mono tracking-widest uppercase" style={{ color: 'rgba(var(--c-text-rgb), 0.3)' }}>No deliveries found</p>
-        </section>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '2rem', right: '2rem',
-          padding: '0.875rem 1.5rem', borderRadius: '0.75rem',
-          background: toast.ok ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-          border: `1px solid ${toast.ok ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)'}`,
-          color: toast.ok ? '#22c55e' : '#ef4444',
-          fontSize: '0.78rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600,
-          display: 'flex', alignItems: 'center', gap: '0.5rem',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 9999,
-        }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>{toast.ok ? 'check_circle' : 'error'}</span>
-          {toast.msg}
-        </div>
-      )}
     </div>
   )
 }
@@ -1540,7 +1563,7 @@ export default function ProductManagerDashboard() {
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">
-      <div className="mx-auto w-full max-w-[1100px] space-y-8">
+      <div className="mx-auto w-full max-w-[1200px] space-y-8">
 
         {/* ── Header ── */}
         <section className="glass-panel rounded-3xl border border-white/10 p-8">
