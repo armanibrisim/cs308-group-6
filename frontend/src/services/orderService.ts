@@ -23,6 +23,8 @@ export interface Order {
   invoice_id: string | null
   created_at: string
   updated_at: string
+  /** ISO time when order became delivered (30-day return window); may be absent on old orders */
+  delivered_at?: string | null
 }
 
 export interface ReturnRequest {

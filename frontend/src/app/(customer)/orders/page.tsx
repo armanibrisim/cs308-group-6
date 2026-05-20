@@ -18,12 +18,16 @@ function fmt(n: number) {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
 }
+/** Return reference time for 30-day policy: teslim anı (delivered_at) veya son güncelleme */
+function returnWindowStart(order: Order): string {
+  return (order.delivered_at && order.delivered_at.trim()) || order.updated_at || order.created_at
+}
 function isOrderReturnable(order: Order) {
   if (order.status !== 'delivered') return false
-  return Date.now() - new Date(order.created_at).getTime() <= RETURN_WINDOW_DAYS * 864e5
+  return Date.now() - new Date(returnWindowStart(order)).getTime() <= RETURN_WINDOW_DAYS * 864e5
 }
 function daysLeft(order: Order) {
-  const ms = RETURN_WINDOW_DAYS * 864e5 - (Date.now() - new Date(order.created_at).getTime())
+  const ms = RETURN_WINDOW_DAYS * 864e5 - (Date.now() - new Date(returnWindowStart(order)).getTime())
   return Math.max(0, Math.ceil(ms / 864e5))
 }
 
@@ -37,9 +41,9 @@ const STATUS_CONFIG: Record<Order['status'], { label: string; color: string; ste
 
 function ReturnBadge({ status }: { status: string }) {
   const cfg =
-    status === 'approved'  ? { label: 'Refunded',       color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
-    status === 'rejected'  ? { label: 'Rejected',        color: '#ef4444', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'   } :
-                             { label: 'Pending Review',  color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
+    status === 'approved'  ? { label: 'İade onaylandı',    color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
+    status === 'rejected'  ? { label: 'Reddedildi',         color: '#ef4444', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'   } :
+                             { label: 'İncelemede',         color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -95,7 +99,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
         {/* Heading */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
-            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>RETURN &amp; REFUND</p>
+            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>İADE VE PARA İADESİ</p>
             <h2 style={{ fontSize: '1.2rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', letterSpacing: '-0.01em' }}>
               {item.product_name}
             </h2>
@@ -119,24 +123,24 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
           background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)',
           marginBottom: '1.25rem',
         }}>
-          <p style={{ fontSize: '9px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.15em', marginBottom: '0.4rem' }}>REFUND AMOUNT</p>
+          <p style={{ fontSize: '9px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.15em', marginBottom: '0.4rem' }}>İADE TUTARI</p>
           <p style={{ fontSize: '1.75rem', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', color: '#f59e0b', letterSpacing: '-0.02em' }}>
             {fmt(item.subtotal)}
           </p>
           <p style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.4)', marginTop: '0.4rem', lineHeight: 1.6 }}>
-            Reflects original purchase price including any discounts applied at the time of purchase.
+            Sipariş sırasında uygulanan indirimler dahil, ödediğiniz tutarı yansıtır.
           </p>
         </div>
 
         {/* Reason */}
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ display: 'block', fontSize: '9px', fontFamily: 'monospace', letterSpacing: '0.15em', color: MUTED, marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-            Reason (optional)
+            Sebep (isteğe bağlı)
           </label>
           <textarea
             value={reason}
             onChange={e => setReason(e.target.value)}
-            placeholder="Tell us why you want to return this item..."
+            placeholder="İade nedeninizi kısaca yazın…"
             rows={3}
             style={{
               width: '100%', boxSizing: 'border-box', padding: '0.75rem',
@@ -159,7 +163,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em',
             }}
           >
-            Cancel
+            Vazgeç
           </button>
           <button
             onClick={() => onConfirm(item.product_id, reason)}
@@ -180,12 +184,12 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
             {isSubmitting ? (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>
-                Submitting...
+                Gönderiliyor…
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>assignment_return</span>
-                Confirm Return
+                Talebi gönder
               </>
             )}
           </button>
@@ -266,6 +270,13 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       .map(r => [r.product_id, r])
   )
 
+  const openReturnSlots = returnable
+    ? order.items.filter(it => {
+        const r = returnMap[it.product_id]
+        return !r || (r.status !== 'pending' && r.status !== 'approved')
+      }).length
+    : 0
+
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 3500)
@@ -277,13 +288,13 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       const req = await orderService.requestReturn(order.id, productId, token, reason)
       onReturnSuccess(req)
       setModalItem(null)
-      showToast('Return request submitted. The sales team will review it shortly.', true)
+      showToast('İade talebiniz alındı. Satış ekibi en kısa sürede inceleyecek.', true)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : ''
       setModalItem(null)
-      if (msg.includes('409')) showToast('A return request for this item already exists.', false)
-      else if (msg.includes('400')) showToast('This item is no longer eligible for return.', false)
-      else showToast('Failed to submit return request.', false)
+      if (msg.includes('409')) showToast('Bu ürün için zaten bir iade talebi var.', false)
+      else if (msg.includes('400')) showToast('Bu ürün için iade süresi dolmuş veya sipariş uygun değil.', false)
+      else showToast('İade talebi gönderilemedi. Bağlantınızı kontrol edin.', false)
     } finally {
       setSubmitting(false)
     }
@@ -339,6 +350,45 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
 
           <StatusStepper status={order.status} />
 
+          {returnable && !expanded && openReturnSlots > 0 && (
+            <div style={{
+              marginTop: '1.25rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '0.65rem',
+              background: 'rgba(245,158,11,0.06)',
+              border: '1px solid rgba(245,158,11,0.22)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.75rem',
+              justifyContent: 'space-between',
+            }}>
+              <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', margin: 0, letterSpacing: '0.04em', lineHeight: 1.55 }}>
+                Teslimattan itibaren <strong>{days} gün</strong> içinde iade hakkınız var. Ürün satırından <strong>İade Talebi Oluştur</strong> ile devam edin.
+              </p>
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                style={{
+                  flexShrink: 0,
+                  fontSize: '9px',
+                  fontFamily: 'Space Grotesk, sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  padding: '8px 14px',
+                  borderRadius: '0.4rem',
+                  background: 'rgba(245,158,11,0.12)',
+                  border: '1px solid rgba(245,158,11,0.45)',
+                  color: '#f59e0b',
+                  cursor: 'pointer',
+                }}
+              >
+                Detayları aç
+              </button>
+            </div>
+          )}
+
           {/* Items preview */}
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {order.items.slice(0, 3).map((item, i) => (
@@ -392,7 +442,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', color: '#f59e0b', flexShrink: 0 }}>assignment_return</span>
                   <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.05em' }}>
-                    Items eligible for return &amp; refund — <strong>{days} day{days !== 1 ? 's' : ''}</strong> remaining in your return window.
+                    Teslimattan itibaren iade penceresi: <strong>{days} gün</strong> kaldı. Aşağıdaki tabloda ürün bazında «İade Talebi Oluştur» kullanın.
                   </p>
                 </div>
               )}
@@ -401,7 +451,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
               <table style={{ width: '100%', fontFamily: 'Inter, sans-serif', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--c-panel-border)' }}>
-                    {['Product', 'Qty', 'Unit Price', 'Subtotal', ...(returnable ? ['Return Status'] : [])].map(h => (
+                    {['Ürün', 'Adet', 'Birim fiyat', 'Ara toplam', ...(returnable ? ['İade durumu'] : [])].map(h => (
                       <th key={h} style={{
                         padding: '0.5rem 0', fontSize: '9px', textTransform: 'uppercase',
                         color: MUTED, fontWeight: 500,
@@ -421,7 +471,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                         <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: 'var(--c-text)' }}>{fmt(item.subtotal)}</td>
                         {returnable && (
                           <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
-                            {existingReq ? (
+                            {existingReq && existingReq.status !== 'rejected' ? (
                               <ReturnBadge status={existingReq.status} />
                             ) : (
                               <button
@@ -436,7 +486,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.08)' }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                               >
-                                Return
+                                İade talebi oluştur
                               </button>
                             )}
                           </td>
@@ -523,7 +573,7 @@ export default function OrdersPage() {
           <div>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', color: 'var(--c-neon)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.4rem' }}>ACCOUNT</p>
             <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--c-text)' }}>
-              My Orders
+              Siparişlerim
             </h1>
           </div>
           <button
@@ -533,7 +583,7 @@ export default function OrdersPage() {
             onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
-            Refresh
+            Yenile
           </button>
         </div>
 

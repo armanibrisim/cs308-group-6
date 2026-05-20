@@ -59,10 +59,14 @@ def list_all_orders(status: Optional[str] = None) -> list[dict]:
 
 def update_order_status(order_id: str, new_status: str) -> None:
     db = _db()
-    db.collection(ORDERS_COLLECTION).document(order_id).update({
+    now = datetime.now(timezone.utc).isoformat()
+    updates: dict = {
         "status": new_status,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    })
+        "updated_at": now,
+    }
+    if new_status == "delivered":
+        updates["delivered_at"] = now
+    db.collection(ORDERS_COLLECTION).document(order_id).update(updates)
 
 
 def set_invoice_id(order_id: str, invoice_id: str) -> None:
