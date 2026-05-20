@@ -20,6 +20,7 @@ interface Product {
   distributor: string
   category_id: string
   image_url?: string | null
+  all_images?: string[] | null
   purchase_count?: number | null
   avg_rating?: number | null
 }
@@ -35,10 +36,12 @@ interface Category {
   productCount: number
 }
 
+const MAX_IMAGES = 12
+
 const EMPTY_FORM = {
   name: '', model: '', serial_number: '', description: '',
   price: '', stock_quantity: '', warranty: '', distributor: '',
-  category_id: '', image_url: '',
+  category_id: '', image_urls: [''] as string[],
 }
 
 const inputStyle: React.CSSProperties = {
@@ -210,14 +213,37 @@ export default function ProductsPage() {
   }, [])
 
   // Modal helpers
-  const openCreate = () => { setEditProduct(null); setForm({ ...EMPTY_FORM }); setFormErrors({}); setShowModal(true) }
+  const openCreate = () => { setEditProduct(null); setForm({ ...EMPTY_FORM, image_urls: [''] }); setFormErrors({}); setShowModal(true) }
   const openEdit = (p: Product) => {
     setEditProduct(p)
-    setForm({ name: p.name, model: p.model, serial_number: p.serial_number, description: p.description, price: String(p.price), stock_quantity: String(p.stock_quantity), warranty: p.warranty, distributor: p.distributor, category_id: p.category_id, image_url: p.image_url ?? '' })
+    // Populate image_urls from all_images (if exists) or fallback to [image_url]
+    const imgs: string[] = p.all_images && p.all_images.length > 0
+      ? p.all_images
+      : p.image_url ? [p.image_url] : ['']
+    setForm({ name: p.name, model: p.model, serial_number: p.serial_number, description: p.description, price: String(p.price), stock_quantity: String(p.stock_quantity), warranty: p.warranty, distributor: p.distributor, category_id: p.category_id, image_urls: imgs })
     setFormErrors({}); setShowModal(true)
   }
   const closeModal = () => { setShowModal(false); setEditProduct(null) }
   const setField = (key: string, val: string) => { setForm(prev => ({ ...prev, [key]: val })); setFormErrors(prev => ({ ...prev, [key]: '' })) }
+  const setImageUrl = (idx: number, val: string) => {
+    setForm(prev => {
+      const urls = [...prev.image_urls]
+      urls[idx] = val
+      return { ...prev, image_urls: urls }
+    })
+  }
+  const addImageSlot = () => {
+    setForm(prev => {
+      if (prev.image_urls.length >= MAX_IMAGES) return prev
+      return { ...prev, image_urls: [...prev.image_urls, ''] }
+    })
+  }
+  const removeImageSlot = (idx: number) => {
+    setForm(prev => {
+      const urls = prev.image_urls.filter((_, i) => i !== idx)
+      return { ...prev, image_urls: urls.length === 0 ? [''] : urls }
+    })
+  }
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -238,7 +264,9 @@ export default function ProductsPage() {
     if (Object.keys(errs).length > 0) { setFormErrors(errs); return }
     setSubmitting(true)
     try {
-      const body = { name: form.name.trim(), model: form.model.trim(), serial_number: form.serial_number.trim(), description: form.description.trim(), price: Number(form.price), stock_quantity: Number(form.stock_quantity), warranty: form.warranty.trim(), distributor: form.distributor.trim(), category_id: form.category_id, image_url: form.image_url.trim() || null }
+      const validUrls = form.image_urls.map(u => u.trim()).filter(Boolean)
+      const primaryImage = validUrls[0] || null
+      const body = { name: form.name.trim(), model: form.model.trim(), serial_number: form.serial_number.trim(), description: form.description.trim(), price: Number(form.price), stock_quantity: Number(form.stock_quantity), warranty: form.warranty.trim(), distributor: form.distributor.trim(), category_id: form.category_id, image_url: primaryImage, all_images: validUrls.length > 0 ? validUrls : null }
       const url = editProduct ? `${API}/products/${editProduct.id}` : `${API}/products`
       const method = editProduct ? 'PUT' : 'POST'
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
@@ -430,9 +458,9 @@ export default function ProductsPage() {
 
                 {/* Name */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, paddingRight: '0.75rem' }}>
-                  {p.image_url ? (
+                  {((p.all_images && p.all_images[0]) || p.image_url) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.image_url} alt={p.name} style={{ width: '2.25rem', height: '2.25rem', objectFit: 'contain', borderRadius: '0.4rem', background: 'rgba(var(--c-text-rgb), 0.05)', flexShrink: 0 }} />
+                    <img src={(p.all_images && p.all_images[0]) || p.image_url!} alt={p.name} style={{ width: '2.25rem', height: '2.25rem', objectFit: 'contain', borderRadius: '0.4rem', background: 'rgba(var(--c-text-rgb), 0.05)', flexShrink: 0 }} />
                   ) : (
                     <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.4rem', background: 'rgba(var(--c-text-rgb), 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', color: 'rgba(var(--c-text-rgb), 0.2)' }}>image</span>
@@ -599,22 +627,81 @@ export default function ProductsPage() {
 
                   {/* Section: Media */}
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                      <div style={{ width: '3px', height: '14px', borderRadius: '2px', background: '#ec4899' }} />
-                      <span style={{ fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>Media <span style={{ opacity: 0.5, fontWeight: 400, letterSpacing: 0, textTransform: 'none' }}>(optional)</span></span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                      {form.image_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={form.image_url} alt="preview" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                          style={{ width: '5rem', height: '5rem', objectFit: 'contain', borderRadius: '0.75rem', background: 'rgba(var(--c-text-rgb), 0.05)', border: '1px solid rgba(var(--c-text-rgb), 0.10)', flexShrink: 0 }} />
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <label style={labelStyle}>Image URL</label>
-                        <input value={form.image_url} onChange={e => setField('image_url', e.target.value)} placeholder="https://example.com/image.jpg" style={inputStyle} />
-                        <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.25)', marginTop: '0.3rem' }}>Preview appears automatically when URL is valid</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '3px', height: '14px', borderRadius: '2px', background: '#ec4899' }} />
+                        <span style={{ fontSize: '0.58rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(var(--c-text-rgb), 0.4)' }}>
+                          Media <span style={{ opacity: 0.5, fontWeight: 400, letterSpacing: 0, textTransform: 'none' }}>(optional)</span>
+                        </span>
+                        <span style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.3)' }}>
+                          {form.image_urls.filter(u => u.trim()).length}/{MAX_IMAGES}
+                        </span>
                       </div>
+                      {form.image_urls.length < MAX_IMAGES && (
+                        <button
+                          type="button"
+                          onClick={addImageSlot}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.25)', borderRadius: '0.5rem', padding: '0.3rem 0.7rem', fontSize: '0.62rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#ec4899', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(236,72,153,0.15)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(236,72,153,0.08)' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>add_photo_alternate</span>
+                          Add Image
+                        </button>
+                      )}
                     </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                      {form.image_urls.map((url, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                          {/* Thumbnail preview */}
+                          <div style={{ width: '3.25rem', height: '3.25rem', flexShrink: 0, borderRadius: '0.6rem', background: 'rgba(var(--c-text-rgb), 0.05)', border: '1px solid rgba(var(--c-text-rgb), 0.10)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {url.trim() ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={url}
+                                alt={`image ${idx + 1}`}
+                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget as HTMLImageElement).nextElementSibling?.removeAttribute('style') }}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                              />
+                            ) : null}
+                            <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: 'rgba(var(--c-text-rgb), 0.2)', display: url.trim() ? 'none' : 'block' }}>image</span>
+                          </div>
+
+                          {/* Index badge + input */}
+                          <div style={{ flex: 1, position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.58rem', fontFamily: 'monospace', fontWeight: 700, color: idx === 0 ? '#ec4899' : 'rgba(var(--c-text-rgb), 0.25)', pointerEvents: 'none', zIndex: 1 }}>
+                              {idx + 1}
+                            </div>
+                            <input
+                              value={url}
+                              onChange={e => setImageUrl(idx, e.target.value)}
+                              placeholder={idx === 0 ? 'Primary image URL' : `Image ${idx + 1} URL`}
+                              style={{ ...inputStyle, paddingLeft: '1.75rem' }}
+                            />
+                          </div>
+
+                          {/* Remove button */}
+                          {(form.image_urls.length > 1 || url.trim()) && (
+                            <button
+                              type="button"
+                              onClick={() => form.image_urls.length === 1 ? setImageUrl(0, '') : removeImageSlot(idx)}
+                              style={{ flexShrink: 0, background: 'transparent', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '0.5rem', padding: '0.35rem', cursor: 'pointer', color: 'rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.5)'; (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.2)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(239,68,68,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>close</span>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {form.image_urls.length < MAX_IMAGES && (
+                      <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.2)', marginTop: '0.5rem' }}>
+                        Up to {MAX_IMAGES} images • First image is the primary thumbnail
+                      </p>
+                    )}
                   </div>
 
                 </div>
