@@ -277,6 +277,10 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       }).length
     : 0
 
+  const allItemsApproved =
+    order.items.length > 0 &&
+    order.items.every(it => returnMap[it.product_id]?.status === 'approved')
+
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 3500)
@@ -434,7 +438,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
             <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--c-panel-border)' }}>
 
               {/* Return eligibility banner */}
-              {returnable && (
+              {returnable && !allItemsApproved && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.6rem',
                   padding: '0.65rem 1rem', borderRadius: '0.625rem', marginBottom: '1.25rem',
