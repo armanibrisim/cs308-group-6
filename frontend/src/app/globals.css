@@ -73,7 +73,7 @@ body {
   background-position: top left, center;
   /* scroll (not fixed) — fixed backgrounds are a common cause of layout/paint
      not updating correctly after the viewport is resized wider again (Chromium). */
-  background-attachment: scroll, scroll;
+  background-attachment: fixed, fixed;
 }
 
 html {
