@@ -41,9 +41,9 @@ const STATUS_CONFIG: Record<Order['status'], { label: string; color: string; ste
 
 function ReturnBadge({ status }: { status: string }) {
   const cfg =
-    status === 'approved'  ? { label: 'İade onaylandı',    color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
-    status === 'rejected'  ? { label: 'Reddedildi',         color: '#ef4444', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'   } :
-                             { label: 'İncelemede',         color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
+    status === 'approved'  ? { label: 'Return approved', color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
+    status === 'rejected'  ? { label: 'Rejected',        color: '#ef4444', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'   } :
+                             { label: 'Under review',    color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -99,7 +99,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
         {/* Heading */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
-            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>İADE VE PARA İADESİ</p>
+            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>RETURN & REFUND</p>
             <h2 style={{ fontSize: '1.2rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', letterSpacing: '-0.01em' }}>
               {item.product_name}
             </h2>
@@ -123,24 +123,24 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
           background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)',
           marginBottom: '1.25rem',
         }}>
-          <p style={{ fontSize: '9px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.15em', marginBottom: '0.4rem' }}>İADE TUTARI</p>
+          <p style={{ fontSize: '9px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.15em', marginBottom: '0.4rem' }}>REFUND AMOUNT</p>
           <p style={{ fontSize: '1.75rem', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', color: '#f59e0b', letterSpacing: '-0.02em' }}>
             {fmt(item.subtotal)}
           </p>
           <p style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.4)', marginTop: '0.4rem', lineHeight: 1.6 }}>
-            Sipariş sırasında uygulanan indirimler dahil, ödediğiniz tutarı yansıtır.
+            Reflects the amount you paid, including any discounts applied at checkout.
           </p>
         </div>
 
         {/* Reason */}
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ display: 'block', fontSize: '9px', fontFamily: 'monospace', letterSpacing: '0.15em', color: MUTED, marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-            Sebep (isteğe bağlı)
+            Reason (optional)
           </label>
           <textarea
             value={reason}
             onChange={e => setReason(e.target.value)}
-            placeholder="İade nedeninizi kısaca yazın…"
+            placeholder="Briefly describe why you are returning this item…"
             rows={3}
             style={{
               width: '100%', boxSizing: 'border-box', padding: '0.75rem',
@@ -163,7 +163,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em',
             }}
           >
-            Vazgeç
+            Cancel
           </button>
           <button
             onClick={() => onConfirm(item.product_id, reason)}
@@ -184,12 +184,12 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
             {isSubmitting ? (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>
-                Gönderiliyor…
+                Submitting…
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>assignment_return</span>
-                Talebi gönder
+                Submit request
               </>
             )}
           </button>
@@ -288,13 +288,13 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       const req = await orderService.requestReturn(order.id, productId, token, reason)
       onReturnSuccess(req)
       setModalItem(null)
-      showToast('İade talebiniz alındı. Satış ekibi en kısa sürede inceleyecek.', true)
+      showToast('Return request submitted. Our sales team will review it shortly.', true)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : ''
       setModalItem(null)
-      if (msg.includes('409')) showToast('Bu ürün için zaten bir iade talebi var.', false)
-      else if (msg.includes('400')) showToast('Bu ürün için iade süresi dolmuş veya sipariş uygun değil.', false)
-      else showToast('İade talebi gönderilemedi. Bağlantınızı kontrol edin.', false)
+      if (msg.includes('409')) showToast('A return request for this item already exists.', false)
+      else if (msg.includes('400')) showToast('This item is not eligible for return or the return window has expired.', false)
+      else showToast('Could not submit return request. Please check your connection.', false)
     } finally {
       setSubmitting(false)
     }
@@ -364,7 +364,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
               justifyContent: 'space-between',
             }}>
               <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', margin: 0, letterSpacing: '0.04em', lineHeight: 1.55 }}>
-                Teslimattan itibaren <strong>{days} gün</strong> içinde iade hakkınız var. Ürün satırından <strong>İade Talebi Oluştur</strong> ile devam edin.
+                You have <strong>{days} days</strong> left to return items from delivery. Use <strong>Create Return Request</strong> on each product row.
               </p>
               <button
                 type="button"
@@ -384,7 +384,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                   cursor: 'pointer',
                 }}
               >
-                Detayları aç
+                View details
               </button>
             </div>
           )}
@@ -442,7 +442,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', color: '#f59e0b', flexShrink: 0 }}>assignment_return</span>
                   <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.05em' }}>
-                    Teslimattan itibaren iade penceresi: <strong>{days} gün</strong> kaldı. Aşağıdaki tabloda ürün bazında «İade Talebi Oluştur» kullanın.
+                    Return window from delivery: <strong>{days} days</strong> remaining. Use <strong>Create Return Request</strong> per product in the table below.
                   </p>
                 </div>
               )}
@@ -451,7 +451,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
               <table style={{ width: '100%', fontFamily: 'Inter, sans-serif', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--c-panel-border)' }}>
-                    {['Ürün', 'Adet', 'Birim fiyat', 'Ara toplam', ...(returnable ? ['İade durumu'] : [])].map(h => (
+                    {['Product', 'Qty', 'Unit Price', 'Subtotal', ...(returnable ? ['Return Status'] : [])].map(h => (
                       <th key={h} style={{
                         padding: '0.5rem 0', fontSize: '9px', textTransform: 'uppercase',
                         color: MUTED, fontWeight: 500,
@@ -486,7 +486,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.08)' }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                               >
-                                İade talebi oluştur
+                                Create return request
                               </button>
                             )}
                           </td>
@@ -573,7 +573,7 @@ export default function OrdersPage() {
           <div>
             <p style={{ fontSize: '0.65rem', letterSpacing: '0.35em', color: 'var(--c-neon)', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, marginBottom: '0.4rem' }}>ACCOUNT</p>
             <h1 style={{ fontSize: '2.5rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--c-text)' }}>
-              Siparişlerim
+              My Orders
             </h1>
           </div>
           <button
@@ -583,7 +583,7 @@ export default function OrdersPage() {
             onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
-            Yenile
+            Refresh
           </button>
         </div>
 
