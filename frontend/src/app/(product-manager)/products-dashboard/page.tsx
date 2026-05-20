@@ -184,12 +184,17 @@ function CustomSelect({ value, onChange, options, placeholder }: {
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 })
   const btnRef = useRef<HTMLButtonElement>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onMouse = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    const onScroll = () => setOpen(false)
+    const onScroll = (e: Event) => {
+      if (listRef.current && listRef.current.contains(e.target as Node)) return
+      if (listRef.current === e.target) return
+      setOpen(false)
+    }
     document.addEventListener('mousedown', onMouse)
     window.addEventListener('scroll', onScroll, true)
     return () => {
@@ -229,7 +234,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
       </button>
 
       {open && (
-        <div style={{
+        <div ref={listRef} style={{
           position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999,
           background: 'rgba(14,14,14,0.97)', backdropFilter: 'blur(24px)',
           border: '1px solid rgba(var(--c-text-rgb), 0.15)', borderRadius: '0.5rem',
@@ -330,8 +335,24 @@ function CategoriesView({ token }: { token: string }) {
           productCount: count,
         }))
 
-      const all = [...apiCats, ...derivedCats].sort((a, b) => b.productCount - a.productCount)
-      setCategories(all)
+      const flat = [...apiCats, ...derivedCats]
+      const mainSorted = flat.filter(c => !c.parent_category_id).sort((a, b) => b.productCount - a.productCount)
+      const subMap: Record<string, Category[]> = {}
+      for (const c of flat) {
+        if (c.parent_category_id) {
+          if (!subMap[c.parent_category_id]) subMap[c.parent_category_id] = []
+          subMap[c.parent_category_id].push(c)
+        }
+      }
+      const ordered: Category[] = []
+      for (const main of mainSorted) {
+        ordered.push(main)
+        if (subMap[main.id]) ordered.push(...subMap[main.id].sort((a, b) => a.name.localeCompare(b.name)))
+      }
+      for (const c of flat) {
+        if (c.parent_category_id && !ordered.find(o => o.id === c.id)) ordered.push(c)
+      }
+      setCategories(ordered)
     } catch { setError('Failed to load categories.') }
     finally { setLoading(false) }
   }, [])
