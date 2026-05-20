@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { cartService } from '../../services/cartService'
 import { notificationService } from '../../services/notificationService'
+import { localNotificationService } from '../../services/localNotificationService'
 
 const NAV_ITEMS = [
   { icon: 'home',           label: 'HOME',     path: '/',         authOnly: false },
@@ -23,11 +24,12 @@ export function SideNav() {
   const [cartCount, setCartCount] = useState(0)
 
   useEffect(() => {
-    if (!user?.token) return
+    if (!user?.token || !user?.doc_id) return
+    const localUnread = localNotificationService.getUnreadCount(user.doc_id)
     notificationService.getNotifications(user.token)
-      .then(data => setUnread(data.filter(n => !n.read).length))
-      .catch(() => {})
-  }, [user?.token, pathname])
+      .then(data => setUnread(data.filter(n => !n.read).length + localUnread))
+      .catch(() => setUnread(localUnread))
+  }, [user?.token, user?.doc_id, pathname])
 
   useEffect(() => {
     if (!user?.token) {

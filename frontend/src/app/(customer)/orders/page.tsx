@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { SideNav } from '../../../components/layout/SideNav'
 import { useAuth } from '../../../context/AuthContext'
 import { Order, OrderItem, ReturnRequest, orderService } from '../../../services/orderService'
+import { localNotificationService } from '../../../services/localNotificationService'
 
 // ── Constants & helpers ───────────────────────────────────────────────────────
 
@@ -249,11 +250,12 @@ function StatusStepper({ status }: { status: Order['status'] }) {
 interface OrderCardProps {
   order: Order
   token: string
+  userId: string
   returnRequests: ReturnRequest[]
   onReturnSuccess: (req: ReturnRequest) => void
 }
 
-function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardProps) {
+function OrderCard({ order, token, userId, returnRequests, onReturnSuccess }: OrderCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modalItem, setModalItem] = useState<OrderItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -289,6 +291,18 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       onReturnSuccess(req)
       setModalItem(null)
       showToast('Return request submitted. Our sales team will review it shortly.', true)
+      // Local notification for return submitted
+      if (userId) {
+        const item = order.items.find(i => i.product_id === productId)
+        if (item) {
+          localNotificationService.add(userId, {
+            type: 'return_submitted',
+            message: `Your return request for "${item.product_name}" has been submitted. The sales team will review it shortly.`,
+            product_id: productId,
+            product_name: item.product_name,
+          })
+        }
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : ''
       setModalItem(null)
@@ -550,14 +564,19 @@ export default function OrdersPage() {
         orderService.getMyReturnRequests(user.token),
       ])
       setOrders(ordersData.status === 'fulfilled' ? ordersData.value : [])
-      setReturnRequests(returnData.status === 'fulfilled' ? returnData.value : [])
+      const fetchedReturns = returnData.status === 'fulfilled' ? returnData.value : []
+      setReturnRequests(fetchedReturns)
+      // Check if any return request status changed (pending→approved/rejected) and notify
+      if (user?.doc_id && fetchedReturns.length > 0) {
+        localNotificationService.checkReturnStatusChanges(user.doc_id, fetchedReturns)
+      }
       if (ordersData.status === 'rejected') throw ordersData.reason
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load orders.')
     } finally {
       setLoading(false)
     }
-  }, [user?.token])
+  }, [user?.token, user?.doc_id])
 
   useEffect(() => { if (!authLoading && !user) router.push('/login') }, [authLoading, user, router])
   useEffect(() => { if (!authLoading && user) loadOrders() }, [authLoading, user, loadOrders])
@@ -613,6 +632,7 @@ export default function OrdersPage() {
                 key={order.id}
                 order={order}
                 token={token}
+                userId={user?.doc_id ?? ''}
                 returnRequests={returnRequests}
                 onReturnSuccess={req => setReturnRequests(prev => [...prev, req])}
               />

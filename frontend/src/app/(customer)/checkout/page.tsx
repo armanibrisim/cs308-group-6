@@ -16,6 +16,7 @@ import {
 import { Address, addressService } from '../../../services/addressService'
 import { SavedCard, cardService } from '../../../services/cardService'
 import { CartItem } from '../../../types/cart'
+import { localNotificationService } from '../../../services/localNotificationService'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -458,6 +459,22 @@ export default function CheckoutPage() {
       const checkoutResult = await checkoutService.placeOrder(payload)
       // Invalidate frontend product cache so stock reflects the purchase
       checkoutResult.order.items.forEach(item => productService.invalidateProduct(item.product_id))
+
+      // Create a local notification per item with 30-day return deadline
+      if (user?.doc_id) {
+        const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        const deadlineStr = deadline.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        for (const item of checkoutResult.order.items) {
+          localNotificationService.add(user.doc_id, {
+            type: 'purchase',
+            message: `You have 30 days to return "${item.product_name}". Return window closes on ${deadlineStr}.`,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            return_deadline: deadline.toISOString(),
+          })
+        }
+      }
+
       setResult(checkoutResult)
       window.scrollTo({ top: 0 })
     } catch (err) {
