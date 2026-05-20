@@ -77,6 +77,24 @@ def set_invoice_id(order_id: str, invoice_id: str) -> None:
     })
 
 
+def mark_item_refunded(order_id: str, product_id: str, refund_amount: float) -> None:
+    """Append a refunded item entry to the order and refresh updated_at."""
+    db = _db()
+    now = datetime.now(timezone.utc).isoformat()
+    ref = db.collection(ORDERS_COLLECTION).document(order_id)
+    doc = ref.get()
+    if not doc.exists:
+        return
+    data = doc.to_dict()
+    refunded_items = data.get("refunded_items", [])
+    refunded_items.append({
+        "product_id": product_id,
+        "refund_amount": refund_amount,
+        "refunded_at": now,
+    })
+    ref.update({"refunded_items": refunded_items, "updated_at": now})
+
+
 def has_delivered_order_with_product(customer_id: str, product_id: str) -> bool:
     """Return True if the customer has at least one delivered order containing this product."""
     db = _db()

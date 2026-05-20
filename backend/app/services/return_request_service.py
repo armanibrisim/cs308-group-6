@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 
 from app.models.return_request import ReturnRequestResponse
-from app.repositories import order_repository, return_request_repository
+from app.repositories import notification_repository, order_repository, return_request_repository
 from app.repositories.product_repository import increment_stock
 
 RETURN_WINDOW_DAYS = 30
@@ -122,8 +122,23 @@ def approve_return(return_id: str) -> ReturnRequestResponse:
     if row.get("status") != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Request is not pending")
 
+    refund_amount = float(row.get("total_price", 0))
+
     increment_stock(row["product_id"], int(row.get("quantity", 1)))
     return_request_repository.update_return_status(return_id, "approved")
+
+    order_repository.mark_item_refunded(row["order_id"], row["product_id"], refund_amount)
+
+    notification_repository.create_notification(
+        user_id=row["customer_id"],
+        message=(
+            f"Your return request for '{row['product_name']}' has been approved. "
+            f"A refund of ${refund_amount:.2f} will be processed to your original payment method."
+        ),
+        product_id=row["product_id"],
+        product_name=row["product_name"],
+    )
+
     row["status"] = "approved"
     return _to_response(row)
 
