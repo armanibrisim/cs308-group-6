@@ -107,7 +107,7 @@ export default function RefundsPage() {
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">
-      <div className="mx-auto w-full max-w-[1100px] space-y-6">
+      <div className="mx-auto w-full max-w-[1200px] space-y-6">
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>

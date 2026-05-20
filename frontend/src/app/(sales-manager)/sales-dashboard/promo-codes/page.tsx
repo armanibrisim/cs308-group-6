@@ -149,7 +149,7 @@ export default function PromoCodesPage() {
 
   return (
     <main className="min-h-screen px-8 py-10 text-white">
-      <div className="mx-auto w-full max-w-[1100px] space-y-6">
+      <div className="mx-auto w-full max-w-[1200px] space-y-6">
 
         {/* ── Header ── */}
         <section className="glass-panel rounded-3xl border border-white/10 p-7">
