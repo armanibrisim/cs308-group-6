@@ -16,14 +16,6 @@ const MODULES = [
     border: 'hover:border-emerald-500/40',
   },
   {
-    href: '/sales-dashboard/orders',
-    title: 'All Orders',
-    description: 'Browse every customer order, filter by status, and drill down into line items.',
-    icon: 'package_2',
-    accent: 'text-sky-300',
-    border: 'hover:border-sky-500/40',
-  },
-  {
     href: '/sales-dashboard/discounts',
     title: 'Product Discounts',
     description: 'Apply or remove discount percentages on products. Wishlist owners are automatically notified.',
