@@ -30,6 +30,7 @@ class OrderResponse(BaseModel):
     invoice_id: Optional[str] = None
     created_at: str
     updated_at: str
+    delivered_at: Optional[str] = None  # set when status becomes delivered (30-day return window)
 
 
 class OrderStatusUpdate(BaseModel):

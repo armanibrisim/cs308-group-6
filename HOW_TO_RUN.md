@@ -126,4 +126,9 @@ To create `sales_manager` or `product_manager` accounts, manually update the `ro
 | `sales_manager`   | `/sales-dashboard`    |
 | `product_manager` | `/products-dashboard` |
 
+### Returns (iade)
+
+- Müşteri **teslim edilmiş** siparişlerde, teslimattan (`delivered_at`, yoksa `updated_at`) itibaren **30 gün** içinde `/orders` üzerinden iade talebi oluşturabilir.
+- API: `POST /orders/{order_id}/items/{product_id}/return`, `GET /return-requests/my` (müşteri); satış: `GET /return-requests`, `PATCH .../approve|reject`.
+
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_current_user, require_role
 from app.models.order import OrderResponse, OrderStatusUpdate
+from app.models.return_request import CreateReturnBody, ReturnRequestResponse
 from app.services.order_service import (
     fetch_all_orders,
     fetch_my_orders,
@@ -11,6 +12,7 @@ from app.services.order_service import (
     update_order_status,
     update_order_status_free,
 )
+from app.services.return_request_service import create_return_for_line
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -28,6 +30,26 @@ async def list_all_orders(
 ):
     """Product manager: list all orders with optional status filter."""
     return fetch_all_orders(status)
+
+
+@router.post(
+    "/{order_id}/items/{product_id}/return",
+    response_model=ReturnRequestResponse,
+    status_code=201,
+)
+async def create_return_request(
+    order_id: str,
+    product_id: str,
+    body: CreateReturnBody,
+    current_user: dict = Depends(get_current_user),
+):
+    """Customer: request a return for one line item (30 days from delivery, delivered only)."""
+    return create_return_for_line(
+        current_user["user_id"],
+        order_id,
+        product_id,
+        body.reason,
+    )
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

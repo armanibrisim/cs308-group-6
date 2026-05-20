@@ -328,6 +328,27 @@ def decrement_stock(product_id: str, quantity: int) -> None:
     _invalidate_products()
 
 
+def increment_stock(product_id: str, quantity: int) -> None:
+    """Add quantity back to stock (e.g. approved return)."""
+    if quantity <= 0:
+        return
+    db = _db()
+    ref = db.collection(PRODUCTS_COLLECTION).document(product_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        snapshot = ref.get(transaction=transaction)
+        current_stock = snapshot.get("stock_quantity") or 0
+        transaction.update(ref, {
+            "stock_quantity": int(current_stock) + quantity,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    _txn(db.transaction())
+    _invalidate_product(product_id)
+    _invalidate_products()
+
+
 # ── Category helpers ──────────────────────────────────────────────────────────
 
 def create_category(data: dict) -> str:

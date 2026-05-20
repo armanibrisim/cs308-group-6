@@ -18,12 +18,16 @@ function fmt(n: number) {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
 }
+/** Return reference time for 30-day policy: teslim anı (delivered_at) veya son güncelleme */
+function returnWindowStart(order: Order): string {
+  return (order.delivered_at && order.delivered_at.trim()) || order.updated_at || order.created_at
+}
 function isOrderReturnable(order: Order) {
   if (order.status !== 'delivered') return false
-  return Date.now() - new Date(order.created_at).getTime() <= RETURN_WINDOW_DAYS * 864e5
+  return Date.now() - new Date(returnWindowStart(order)).getTime() <= RETURN_WINDOW_DAYS * 864e5
 }
 function daysLeft(order: Order) {
-  const ms = RETURN_WINDOW_DAYS * 864e5 - (Date.now() - new Date(order.created_at).getTime())
+  const ms = RETURN_WINDOW_DAYS * 864e5 - (Date.now() - new Date(returnWindowStart(order)).getTime())
   return Math.max(0, Math.ceil(ms / 864e5))
 }
 
@@ -37,9 +41,9 @@ const STATUS_CONFIG: Record<Order['status'], { label: string; color: string; ste
 
 function ReturnBadge({ status }: { status: string }) {
   const cfg =
-    status === 'approved'  ? { label: 'Refunded',       color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
+    status === 'approved'  ? { label: 'Return approved', color: '#22c55e', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)'   } :
     status === 'rejected'  ? { label: 'Rejected',        color: '#ef4444', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)'   } :
-                             { label: 'Pending Review',  color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
+                             { label: 'Under review',    color: '#f59e0b', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)'  }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -95,7 +99,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
         {/* Heading */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <div>
-            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>RETURN &amp; REFUND</p>
+            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', color: '#f59e0b', marginBottom: '0.3rem' }}>RETURN & REFUND</p>
             <h2 style={{ fontSize: '1.2rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', letterSpacing: '-0.01em' }}>
               {item.product_name}
             </h2>
@@ -124,7 +128,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
             {fmt(item.subtotal)}
           </p>
           <p style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.4)', marginTop: '0.4rem', lineHeight: 1.6 }}>
-            Reflects original purchase price including any discounts applied at the time of purchase.
+            Reflects the amount you paid, including any discounts applied at checkout.
           </p>
         </div>
 
@@ -136,7 +140,7 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
           <textarea
             value={reason}
             onChange={e => setReason(e.target.value)}
-            placeholder="Tell us why you want to return this item..."
+            placeholder="Briefly describe why you are returning this item…"
             rows={3}
             style={{
               width: '100%', boxSizing: 'border-box', padding: '0.75rem',
@@ -180,12 +184,12 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
             {isSubmitting ? (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px', animation: 'spin 1s linear infinite' }}>progress_activity</span>
-                Submitting...
+                Submitting…
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>assignment_return</span>
-                Confirm Return
+                Submit request
               </>
             )}
           </button>
@@ -266,6 +270,13 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       .map(r => [r.product_id, r])
   )
 
+  const openReturnSlots = returnable
+    ? order.items.filter(it => {
+        const r = returnMap[it.product_id]
+        return !r || (r.status !== 'pending' && r.status !== 'approved')
+      }).length
+    : 0
+
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 3500)
@@ -277,13 +288,13 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
       const req = await orderService.requestReturn(order.id, productId, token, reason)
       onReturnSuccess(req)
       setModalItem(null)
-      showToast('Return request submitted. The sales team will review it shortly.', true)
+      showToast('Return request submitted. Our sales team will review it shortly.', true)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : ''
       setModalItem(null)
       if (msg.includes('409')) showToast('A return request for this item already exists.', false)
-      else if (msg.includes('400')) showToast('This item is no longer eligible for return.', false)
-      else showToast('Failed to submit return request.', false)
+      else if (msg.includes('400')) showToast('This item is not eligible for return or the return window has expired.', false)
+      else showToast('Could not submit return request. Please check your connection.', false)
     } finally {
       setSubmitting(false)
     }
@@ -339,6 +350,45 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
 
           <StatusStepper status={order.status} />
 
+          {returnable && !expanded && openReturnSlots > 0 && (
+            <div style={{
+              marginTop: '1.25rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '0.65rem',
+              background: 'rgba(245,158,11,0.06)',
+              border: '1px solid rgba(245,158,11,0.22)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '0.75rem',
+              justifyContent: 'space-between',
+            }}>
+              <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', margin: 0, letterSpacing: '0.04em', lineHeight: 1.55 }}>
+                You have <strong>{days} days</strong> left to return items from delivery. Use <strong>Create Return Request</strong> on each product row.
+              </p>
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                style={{
+                  flexShrink: 0,
+                  fontSize: '9px',
+                  fontFamily: 'Space Grotesk, sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  padding: '8px 14px',
+                  borderRadius: '0.4rem',
+                  background: 'rgba(245,158,11,0.12)',
+                  border: '1px solid rgba(245,158,11,0.45)',
+                  color: '#f59e0b',
+                  cursor: 'pointer',
+                }}
+              >
+                View details
+              </button>
+            </div>
+          )}
+
           {/* Items preview */}
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {order.items.slice(0, 3).map((item, i) => (
@@ -392,7 +442,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '0.95rem', color: '#f59e0b', flexShrink: 0 }}>assignment_return</span>
                   <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#f59e0b', letterSpacing: '0.05em' }}>
-                    Items eligible for return &amp; refund — <strong>{days} day{days !== 1 ? 's' : ''}</strong> remaining in your return window.
+                    Return window from delivery: <strong>{days} days</strong> remaining. Use <strong>Create Return Request</strong> per product in the table below.
                   </p>
                 </div>
               )}
@@ -421,7 +471,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                         <td style={{ padding: '0.75rem 0', textAlign: 'right', fontSize: '11px', color: 'var(--c-text)' }}>{fmt(item.subtotal)}</td>
                         {returnable && (
                           <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
-                            {existingReq ? (
+                            {existingReq && existingReq.status !== 'rejected' ? (
                               <ReturnBadge status={existingReq.status} />
                             ) : (
                               <button
@@ -436,7 +486,7 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
                                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.08)' }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                               >
-                                Return
+                                Create return request
                               </button>
                             )}
                           </td>

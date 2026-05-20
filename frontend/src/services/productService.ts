@@ -16,6 +16,13 @@ function getCached<T>(key: string): T | null {
 function setCached<T>(key: string, data: T): void {
   _cache.set(key, { data, expires: Date.now() + CACHE_TTL })
 }
+
+function invalidateProductCache(id: string): void {
+  _cache.delete(`/products/${id}`)
+  for (const key of _cache.keys()) {
+    if (key.startsWith('/products?')) _cache.delete(key)
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const productService = {
@@ -68,12 +75,19 @@ export const productService = {
     return apiService.get<Product[]>(`/products/search?q=${encodeURIComponent(query)}`)
   },
 
+  /** Product manager: set absolute stock (backend PATCH /products/{id}/stock). */
+  async updateStock(productId: string, stock_quantity: number, token: string): Promise<Product & { stock_quantity?: number }> {
+    const data = await apiService.patch<Product & { stock_quantity?: number }>(
+      `/products/${productId}/stock`,
+      { stock_quantity },
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    invalidateProductCache(productId)
+    return data
+  },
+
   // Invalidate specific product entries (called after checkout to show updated stock)
   invalidateProduct(id: string): void {
-    _cache.delete(`/products/${id}`)
-    // Also clear any paginated list caches that may contain this product
-    for (const key of _cache.keys()) {
-      if (key.startsWith('/products?')) _cache.delete(key)
-    }
+    invalidateProductCache(id)
   },
 }
