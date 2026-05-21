@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class ProductCreate(BaseModel):
     name: str
     model: str
-    serial_number: str
+    serial_number: Optional[str] = None
     description: str
     stock_quantity: int = Field(ge=0)
     price: float = Field(gt=0)
@@ -13,12 +13,12 @@ class ProductCreate(BaseModel):
     distributor: str
     category_id: str
     image_url: Optional[str] = None
+    all_images: Optional[list[str]] = None
 
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     model: Optional[str] = None
-    serial_number: Optional[str] = None
     description: Optional[str] = None
     stock_quantity: Optional[int] = Field(default=None, ge=0)
     price: Optional[float] = Field(default=None, gt=0)
@@ -26,6 +26,7 @@ class ProductUpdate(BaseModel):
     distributor: Optional[str] = None
     category_id: Optional[str] = None
     image_url: Optional[str] = None
+    all_images: Optional[list[str]] = None
 
 
 class ProductResponse(BaseModel):
