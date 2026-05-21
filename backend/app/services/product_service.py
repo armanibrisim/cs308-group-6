@@ -1,4 +1,5 @@
 import re
+import uuid
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -170,6 +171,8 @@ def fetch_product(product_id: str) -> ProductResponse:
 
 def add_product(payload: ProductCreate) -> ProductResponse:
     data = payload.model_dump()
+    if not data.get("serial_number"):
+        data["serial_number"] = str(uuid.uuid4())
     product_id = create_product(data)
     created = get_product_by_id(product_id)
     return _to_product_response(created)

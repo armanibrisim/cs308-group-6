@@ -39,7 +39,7 @@ interface Category {
 const MAX_IMAGES = 12
 
 const EMPTY_FORM = {
-  name: '', model: '', serial_number: '', description: '',
+  name: '', model: '', description: '',
   price: '', stock_quantity: '', warranty: '', distributor: '',
   category_id: '', image_urls: [''] as string[],
 }
@@ -166,6 +166,7 @@ export default function ProductsPage() {
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [pendingSerial, setPendingSerial] = useState('')
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -213,14 +214,15 @@ export default function ProductsPage() {
   }, [])
 
   // Modal helpers
-  const openCreate = () => { setEditProduct(null); setForm({ ...EMPTY_FORM, image_urls: [''] }); setFormErrors({}); setShowModal(true) }
+  const openCreate = () => { setEditProduct(null); setPendingSerial(crypto.randomUUID()); setForm({ ...EMPTY_FORM, image_urls: [''] }); setFormErrors({}); setShowModal(true) }
   const openEdit = (p: Product) => {
     setEditProduct(p)
+    setPendingSerial(p.serial_number)
     // Populate image_urls from all_images (if exists) or fallback to [image_url]
     const imgs: string[] = p.all_images && p.all_images.length > 0
       ? p.all_images
       : p.image_url ? [p.image_url] : ['']
-    setForm({ name: p.name, model: p.model, serial_number: p.serial_number, description: p.description, price: String(p.price), stock_quantity: String(p.stock_quantity), warranty: p.warranty, distributor: p.distributor, category_id: p.category_id, image_urls: imgs })
+    setForm({ name: p.name, model: p.model, description: p.description, price: String(p.price), stock_quantity: String(p.stock_quantity), warranty: p.warranty, distributor: p.distributor, category_id: p.category_id, image_urls: imgs })
     setFormErrors({}); setShowModal(true)
   }
   const closeModal = () => { setShowModal(false); setEditProduct(null) }
@@ -249,7 +251,6 @@ export default function ProductsPage() {
     const e: Record<string, string> = {}
     if (!form.name.trim()) e.name = 'Required'
     if (!form.model.trim()) e.model = 'Required'
-    if (!form.serial_number.trim()) e.serial_number = 'Required'
     if (!form.description.trim()) e.description = 'Required'
     if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) e.price = 'Must be > 0'
     if (form.stock_quantity === '' || isNaN(Number(form.stock_quantity)) || Number(form.stock_quantity) < 0) e.stock_quantity = 'Must be ≥ 0'
@@ -266,7 +267,7 @@ export default function ProductsPage() {
     try {
       const validUrls = form.image_urls.map(u => u.trim()).filter(Boolean)
       const primaryImage = validUrls[0] || null
-      const body = { name: form.name.trim(), model: form.model.trim(), serial_number: form.serial_number.trim(), description: form.description.trim(), price: Number(form.price), stock_quantity: Number(form.stock_quantity), warranty: form.warranty.trim(), distributor: form.distributor.trim(), category_id: form.category_id, image_url: primaryImage, all_images: validUrls.length > 0 ? validUrls : null }
+      const body = { name: form.name.trim(), model: form.model.trim(), serial_number: pendingSerial, description: form.description.trim(), price: Number(form.price), stock_quantity: Number(form.stock_quantity), warranty: form.warranty.trim(), distributor: form.distributor.trim(), category_id: form.category_id, image_url: primaryImage, all_images: validUrls.length > 0 ? validUrls : null }
       const url = editProduct ? `${API}/products/${editProduct.id}` : `${API}/products`
       const method = editProduct ? 'PUT' : 'POST'
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
@@ -568,9 +569,13 @@ export default function ProductsPage() {
                         {formErrors.model && <p style={errStyle}>{formErrors.model}</p>}
                       </div>
                       <div>
-                        <label style={labelStyle}>Serial Number *</label>
-                        <input value={form.serial_number} onChange={e => setField('serial_number', e.target.value)} placeholder="e.g. SN-001" style={{ ...inputStyle, borderColor: formErrors.serial_number ? 'rgba(239,68,68,0.5)' : 'rgba(var(--c-text-rgb), 0.15)' }} />
-                        {formErrors.serial_number && <p style={errStyle}>{formErrors.serial_number}</p>}
+                        <label style={labelStyle}>Serial Number</label>
+                        <input
+                          readOnly
+                          value={pendingSerial}
+                          placeholder="Auto-generated on save"
+                          style={{ ...inputStyle, opacity: 0.5, cursor: 'default', borderColor: 'rgba(var(--c-text-rgb), 0.08)', fontFamily: 'monospace', fontSize: '0.72rem' }}
+                        />
                       </div>
                     </div>
                   </div>
