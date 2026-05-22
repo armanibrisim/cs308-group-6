@@ -47,6 +47,11 @@ function GlowBox({ children, className = '', style, onClick }: {
 const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeartClick }: { product: any; onClick: () => void; saved?: boolean; onHeartClick?: (e: MouseEvent) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
+  const { categories } = useCategories()
+  const rawCatId: string | undefined = product.category_id || product.categoryId
+  const categoryLabel = rawCatId
+    ? (categories.find(c => c.id === rawCatId)?.name ?? rawCatId)
+    : 'Product'
   const [cartState, setCartState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
 
   const handleAddToCart = async (e: MouseEvent) => {
@@ -121,7 +126,7 @@ const ProductCard = memo(function ProductCard({ product, onClick, saved, onHeart
       {/* Info */}
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
         <p style={{ fontSize: '0.6rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase' }}>
-          {product.category_id || product.categoryId || 'PRODUCT'}
+          {categoryLabel}
         </p>
         <h3 style={{ fontSize: '1rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--c-text)', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {product.name}
