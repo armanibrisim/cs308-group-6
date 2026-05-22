@@ -4,6 +4,7 @@ import firebase_admin.firestore as firestore_module
 from google.cloud.firestore_v1 import FieldFilter
 
 from app.firebase.client import get_firebase_app
+from app.services.email_service import send_notification_email
 from app.utils.encryption import decrypt_json, encrypt_json, make_hash
 
 NOTIFICATIONS_COLLECTION = "notifications"
@@ -32,7 +33,13 @@ def _decrypt_notification(doc: dict) -> dict:
     return result
 
 
-def create_notification(user_id: str, message: str, product_id: str, product_name: str) -> str:
+def create_notification(
+    user_id: str,
+    message: str,
+    product_id: str,
+    product_name: str,
+    user_email: str = "",
+) -> str:
     db = _db()
     ref = db.collection(NOTIFICATIONS_COLLECTION).document()
     data = {
@@ -46,6 +53,8 @@ def create_notification(user_id: str, message: str, product_id: str, product_nam
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     ref.set(_encrypt_notification(data))
+    if user_email:
+        send_notification_email(user_email, message, product_name)
     return ref.id
 
 
