@@ -9,6 +9,7 @@ from firebase_admin import firestore
 
 from app.firebase.client import get_firebase_app
 from app.utils.security import hash_password
+from app.utils.encryption import decrypt_json, encrypt_json
 
 
 def _db():
@@ -16,17 +17,33 @@ def _db():
     return firestore.client()
 
 
+# Fields encrypted at rest. "password" is bcrypt-hashed and left as-is.
+_USER_ENC = {"first_name", "last_name", "email", "role", "tax_id", "created_at",
+             "addresses", "saved_cards"}
+
+
+def _encrypt_user(doc: dict) -> dict:
+    result = dict(doc)
+    for field in _USER_ENC:
+        if field in result:
+            result[field] = encrypt_json(result[field])
+    return result
+
+
+def _decrypt_user(doc: dict) -> dict:
+    result = dict(doc)
+    for field in _USER_ENC:
+        if field in result:
+            result[field] = decrypt_json(result[field])
+    return result
+
+
 def get_user_by_email(email: str) -> tuple[str, dict] | None:
-    db = _db()
-    results = (
-        db.collection("users")
-        .where("email", "==", email)
-        .limit(1)
-        .stream()
-    )
-    for doc in results:
-        return doc.id, doc.to_dict()
-    return None
+    # Email is the document ID — use direct lookup instead of a query.
+    user = get_user_by_id(email)
+    if user is None:
+        return None
+    return email, user
 
 
 def get_user_by_id(user_id: str) -> dict | None:
@@ -34,7 +51,7 @@ def get_user_by_id(user_id: str) -> dict | None:
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
         return None
-    return doc.to_dict()
+    return _decrypt_user(doc.to_dict())
 
 
 def _generate_tax_id() -> str:
@@ -44,16 +61,18 @@ def _generate_tax_id() -> str:
 def create_user(email: str, password: str, first_name: str, last_name: str) -> str:
     db = _db()
     doc_id = email
-    db.collection("users").document(doc_id).set({
+    doc = {
         "email": email,
         "password": hash_password(password),
         "first_name": first_name,
         "last_name": last_name,
         "role": "customer",
         "addresses": [],
+        "saved_cards": [],
         "tax_id": _generate_tax_id(),
         "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    db.collection("users").document(doc_id).set(_encrypt_user(doc))
     return doc_id
 
 
@@ -63,7 +82,7 @@ def get_addresses(user_id: str) -> list[dict]:
     user = get_user_by_id(user_id)
     if not user:
         return []
-    return user.get("addresses", [])
+    return user.get("addresses") or []
 
 
 def add_address(user_id: str, label: str, full_address: str, is_default: bool) -> dict:
@@ -72,7 +91,6 @@ def add_address(user_id: str, label: str, full_address: str, is_default: bool) -
 
     existing = get_addresses(user_id)
 
-    # If this is the first address or explicitly set as default, clear other defaults
     if is_default or len(existing) == 0:
         is_default = True
         for addr in existing:
@@ -85,31 +103,28 @@ def add_address(user_id: str, label: str, full_address: str, is_default: bool) -
         "is_default": is_default,
     }
     existing.append(new_addr)
-    ref.update({"addresses": existing})
+    ref.update({"addresses": encrypt_json(existing)})
     return new_addr
 
 
 def delete_address(user_id: str, address_id: str) -> bool:
-    """Delete address by id. Returns True if found and deleted."""
     db = _db()
     ref = db.collection("users").document(user_id)
     existing = get_addresses(user_id)
 
     new_list = [a for a in existing if a["id"] != address_id]
     if len(new_list) == len(existing):
-        return False  # not found
+        return False
 
-    # If deleted address was the default, promote the first remaining one
     was_default = any(a["id"] == address_id and a.get("is_default") for a in existing)
     if was_default and new_list:
         new_list[0]["is_default"] = True
 
-    ref.update({"addresses": new_list})
+    ref.update({"addresses": encrypt_json(new_list)})
     return True
 
 
 def set_default_address(user_id: str, address_id: str) -> bool:
-    """Mark one address as default, clearing others. Returns True if found."""
     db = _db()
     ref = db.collection("users").document(user_id)
     existing = get_addresses(user_id)
@@ -122,7 +137,7 @@ def set_default_address(user_id: str, address_id: str) -> bool:
 
     if not found:
         return False
-    ref.update({"addresses": existing})
+    ref.update({"addresses": encrypt_json(existing)})
     return True
 
 
@@ -132,7 +147,7 @@ def get_saved_cards(user_id: str) -> list[dict]:
     user = get_user_by_id(user_id)
     if not user:
         return []
-    return user.get("saved_cards", [])
+    return user.get("saved_cards") or []
 
 
 def add_saved_card(
@@ -156,7 +171,7 @@ def add_saved_card(
         "is_default": is_default,
     }
     existing.append(new_card)
-    ref.update({"saved_cards": existing})
+    ref.update({"saved_cards": encrypt_json(existing)})
     return new_card
 
 
@@ -173,7 +188,7 @@ def delete_saved_card(user_id: str, card_id: str) -> bool:
     if was_default and new_list:
         new_list[0]["is_default"] = True
 
-    ref.update({"saved_cards": new_list})
+    ref.update({"saved_cards": encrypt_json(new_list)})
     return True
 
 
@@ -184,7 +199,7 @@ def get_all_users() -> list[dict]:
     docs = db.collection("users").stream()
     result = []
     for doc in docs:
-        data = doc.to_dict()
+        data = _decrypt_user(doc.to_dict())
         result.append({
             "id": doc.id,
             "email": data.get("email", ""),
@@ -202,7 +217,7 @@ def update_user_role(user_id: str, new_role: str) -> bool:
     doc = ref.get()
     if not doc.exists:
         return False
-    ref.update({"role": new_role})
+    ref.update({"role": encrypt_json(new_role)})
     return True
 
 
@@ -219,5 +234,5 @@ def set_default_card(user_id: str, card_id: str) -> bool:
 
     if not found:
         return False
-    ref.update({"saved_cards": existing})
+    ref.update({"saved_cards": encrypt_json(existing)})
     return True

@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from app.firebase.client import get_firebase_app
 import firebase_admin.firestore as firestore_module
+
+from app.utils.encryption import decrypt_json, encrypt_json
 
 CARTS_COLLECTION = "carts"
 
@@ -16,15 +17,31 @@ def _cart_ref(user_id: str):
     return _db().collection(CARTS_COLLECTION).document(user_id)
 
 
+def _encrypt_cart(doc: dict) -> dict:
+    result = dict(doc)
+    if "items" in result:
+        result["items"] = encrypt_json(result["items"])
+    if "updated_at" in result:
+        result["updated_at"] = encrypt_json(result["updated_at"])
+    return result
+
+
+def _decrypt_cart(doc: dict) -> dict:
+    result = dict(doc)
+    if "items" in result:
+        result["items"] = decrypt_json(result["items"]) or []
+    if "updated_at" in result:
+        result["updated_at"] = decrypt_json(result["updated_at"])
+    return result
+
+
 def get_cart(user_id: str) -> dict:
     """Return the cart document for a user. Creates an empty one if absent."""
     ref = _cart_ref(user_id)
     doc = ref.get()
     if not doc.exists:
         return {"user_id": user_id, "items": []}
-    data = doc.to_dict()
-    data.setdefault("items", [])
-    return data
+    return _decrypt_cart(doc.to_dict())
 
 
 def add_or_update_item(user_id: str, product_id: str, quantity: int) -> None:
@@ -36,11 +53,10 @@ def add_or_update_item(user_id: str, product_id: str, quantity: int) -> None:
     def _txn(transaction):
         snapshot = ref.get(transaction=transaction)
         if snapshot.exists:
-            items: list = snapshot.get("items") or []
+            items: list = decrypt_json(snapshot.get("items")) or []
         else:
             items = []
 
-        # Check if item already in cart
         for item in items:
             if item["product_id"] == product_id:
                 item["quantity"] = quantity
@@ -52,11 +68,11 @@ def add_or_update_item(user_id: str, product_id: str, quantity: int) -> None:
                 "added_at": datetime.now(timezone.utc).isoformat(),
             })
 
-        transaction.set(ref, {
+        transaction.set(ref, _encrypt_cart({
             "user_id": user_id,
             "items": items,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        })
+        }))
 
     _txn(db.transaction())
 
@@ -71,20 +87,23 @@ def remove_item(user_id: str, product_id: str) -> None:
         snapshot = ref.get(transaction=transaction)
         if not snapshot.exists:
             return
-        items = [i for i in (snapshot.get("items") or []) if i["product_id"] != product_id]
-        transaction.set(ref, {
+        items = [
+            i for i in (decrypt_json(snapshot.get("items")) or [])
+            if i["product_id"] != product_id
+        ]
+        transaction.set(ref, _encrypt_cart({
             "user_id": user_id,
             "items": items,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        })
+        }))
 
     _txn(db.transaction())
 
 
 def clear_cart(user_id: str) -> None:
     """Remove all items from the cart."""
-    _cart_ref(user_id).set({
+    _cart_ref(user_id).set(_encrypt_cart({
         "user_id": user_id,
         "items": [],
         "updated_at": datetime.now(timezone.utc).isoformat(),
-    })
+    }))
