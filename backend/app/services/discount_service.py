@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 
 from app.models.product import DiscountApply, DiscountApplyResponse
 from app.repositories import product_repository, wishlist_repository, notification_repository
+from app.repositories.user_repository import get_user_by_id
 
 
 def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
@@ -33,6 +34,7 @@ def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
             user_id = wl.get("user_id")
             if user_id and user_id not in notified_user_ids:
                 notified_user_ids.add(user_id)
+                user = get_user_by_id(user_id)
                 notification_repository.create_notification(
                     user_id=user_id,
                     message=(
@@ -42,6 +44,7 @@ def apply_discount_to_products(payload: DiscountApply) -> DiscountApplyResponse:
                     ),
                     product_id=product_id,
                     product_name=product_data["name"],
+                    user_email=user.get("email", "") if user else "",
                 )
 
     from app.services.product_service import _to_product_response  # local import avoids circular
@@ -69,6 +72,7 @@ def set_product_price_directly(product_id: str, new_price: float) -> dict:
         user_id = wl.get("user_id")
         if user_id and user_id not in notified:
             notified.add(user_id)
+            user = get_user_by_id(user_id)
             notification_repository.create_notification(
                 user_id=user_id,
                 message=(
@@ -77,6 +81,7 @@ def set_product_price_directly(product_id: str, new_price: float) -> dict:
                 ),
                 product_id=product_id,
                 product_name=data["name"],
+                user_email=user.get("email", "") if user else "",
             )
 
     return updated
@@ -102,6 +107,7 @@ def remove_discount_from_product(product_id: str) -> dict:
         user_id = wl.get("user_id")
         if user_id and user_id not in notified:
             notified.add(user_id)
+            user = get_user_by_id(user_id)
             notification_repository.create_notification(
                 user_id=user_id,
                 message=(
@@ -110,6 +116,7 @@ def remove_discount_from_product(product_id: str) -> dict:
                 ),
                 product_id=product_id,
                 product_name=data["name"],
+                user_email=user.get("email", "") if user else "",
             )
 
     return _to_product_response(refreshed)

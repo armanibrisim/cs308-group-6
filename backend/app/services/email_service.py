@@ -32,6 +32,32 @@ def _smtp_configured() -> bool:
     return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
 
 
+def send_notification_email(to_email: str, message: str, product_name: str) -> None:
+    """Send a plain-text notification email to a user.
+
+    Silently skips if SMTP is not configured.
+    """
+    if not _smtp_configured() or not to_email:
+        return
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = SMTP_FROM
+    msg["To"] = to_email
+    msg["Subject"] = f"LUMEN — Update on {product_name}"
+
+    body = f"{message}\n\n— The LUMEN Team\nsupport@lumen-store.com"
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM, to_email, msg.as_string())
+        logger.info("Notification email sent to %s", to_email)
+    except Exception:
+        logger.exception("Failed to send notification email to %s", to_email)
+
+
 def send_invoice_email(invoice: "InvoiceResponse", pdf_bytes: bytes) -> None:
     """Send the invoice PDF to the customer's email address.
 

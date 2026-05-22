@@ -139,6 +139,7 @@ def approve_return(return_id: str) -> ReturnRequestResponse:
         ),
         product_id=row["product_id"],
         product_name=row["product_name"],
+        user_email=row.get("customer_email", ""),
     )
 
     row["status"] = "approved"
