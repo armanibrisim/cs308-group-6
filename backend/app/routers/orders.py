@@ -6,6 +6,7 @@ from app.dependencies import get_current_user, require_role
 from app.models.order import OrderResponse, OrderStatusUpdate
 from app.models.return_request import CreateReturnBody, ReturnRequestResponse
 from app.services.order_service import (
+    cancel_order,
     fetch_all_orders,
     fetch_my_orders,
     fetch_order,
@@ -25,7 +26,7 @@ async def list_my_orders(current_user: dict = Depends(get_current_user)):
 
 @router.get("/all", response_model=list[OrderResponse])
 async def list_all_orders(
-    status: Optional[str] = Query(default=None, pattern="^(processing|in-transit|delivered)$"),
+    status: Optional[str] = Query(default=None, pattern="^(processing|in-transit|delivered|cancelled)$"),
     _: dict = Depends(require_role("product_manager", "sales_manager")),
 ):
     """Product manager: list all orders with optional status filter."""
@@ -50,6 +51,15 @@ async def create_return_request(
         product_id,
         body.reason,
     )
+
+
+@router.post("/{order_id}/cancel", response_model=OrderResponse)
+async def cancel_my_order(
+    order_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Customer: cancel a processing order and restore stock."""
+    return cancel_order(order_id, current_user["user_id"])
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

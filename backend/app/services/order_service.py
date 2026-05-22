@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 
 from app.models.order import OrderResponse, OrderStatusUpdate
 from app.repositories import order_repository
-from app.repositories.product_repository import increment_purchase_count
+from app.repositories.product_repository import increment_purchase_count, increment_stock
 
 
 def fetch_my_orders(customer_id: str) -> list[OrderResponse]:
@@ -58,6 +58,27 @@ def update_order_status(order_id: str, payload: OrderStatusUpdate) -> OrderRespo
     _adjust_purchase_counts(order, current, payload.status)
     order_repository.update_order_status(order_id, payload.status)
     order["status"] = payload.status
+    return OrderResponse(**order)
+
+
+def cancel_order(order_id: str, customer_id: str) -> OrderResponse:
+    """Customer: cancel a processing order and restore stock."""
+    order = order_repository.get_order_by_id(order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if order["customer_id"] != customer_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    if order["status"] != "processing":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only orders in 'processing' status can be cancelled",
+        )
+
+    for item in order.get("items", []):
+        increment_stock(item["product_id"], item["quantity"])
+
+    order_repository.update_order_status(order_id, "cancelled")
+    order["status"] = "cancelled"
     return OrderResponse(**order)
 
 

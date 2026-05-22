@@ -19,7 +19,7 @@ export interface Order {
   tax: number
   shipping: number
   total_amount: number
-  status: 'processing' | 'in-transit' | 'delivered'
+  status: 'processing' | 'in-transit' | 'delivered' | 'cancelled'
   invoice_id: string | null
   created_at: string
   updated_at: string
@@ -57,6 +57,14 @@ export const orderService = {
     return apiService.post<ReturnRequest>(
       `/orders/${orderId}/items/${productId}/return`,
       { reason },
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+  },
+
+  async cancelOrder(orderId: string, token: string): Promise<Order> {
+    return apiService.post<Order>(
+      `/orders/${orderId}/cancel`,
+      {},
       { headers: { Authorization: `Bearer ${token}` } },
     )
   },

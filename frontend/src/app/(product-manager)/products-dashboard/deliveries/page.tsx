@@ -7,8 +7,8 @@ import { useAuth } from '../../../../context/AuthContext'
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
-type PMOrderStatus = 'processing' | 'in-transit' | 'delivered'
-type PMOrderStatusFilter = PMOrderStatus | 'all'
+type PMOrderStatus = 'processing' | 'in-transit' | 'delivered' | 'cancelled'
+type PMOrderStatusFilter = PMOrderStatus | 'all' | 'refunded'
 
 interface PMOrderItem {
   product_id: string
@@ -33,12 +33,14 @@ interface PMOrder {
   invoice_id?: string
   created_at: string
   updated_at: string
+  refunded_items?: Array<{ product_id: string; refund_amount: number; refunded_at: string }> | null
 }
 
 const PM_STATUS_BADGE: Record<PMOrderStatus, string> = {
   processing: 'bg-sky-500/10 text-sky-300 border border-sky-500/30',
   'in-transit': 'bg-violet-500/10 text-violet-300 border border-violet-500/30',
   delivered: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30',
+  cancelled: 'bg-rose-500/10 text-rose-300 border border-rose-500/30',
 }
 
 function fmtMoney(n: number) {
@@ -116,7 +118,11 @@ export default function DeliveriesPage() {
         o.id.toLowerCase().includes(q) ||
         o.customer_name.toLowerCase().includes(q) ||
         o.customer_email.toLowerCase().includes(q)
-      const matchS = statusFilter === 'all' || o.status === statusFilter
+      const hasRefunds = (o.refunded_items?.length ?? 0) > 0
+      const matchS =
+        statusFilter === 'all' ? true :
+        statusFilter === 'refunded' ? hasRefunds :
+        o.status === statusFilter
       return matchQ && matchS
     })
   }, [orders, search, statusFilter])
@@ -194,6 +200,8 @@ export default function DeliveriesPage() {
               <option value="processing">Processing</option>
               <option value="in-transit">In Transit</option>
               <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="refunded">Has Refunds</option>
             </select>
             <button
               type="button"
@@ -259,25 +267,47 @@ export default function DeliveriesPage() {
                           <td className="px-3 py-3 font-semibold text-white">${fmtMoney(order.total_amount)}</td>
                           <td className="px-3 py-3 text-white/65">{order.created_at.slice(0, 10)}</td>
                           <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                            {updatingId === order.id ? (
-                              <span className="text-xs text-white/40">Saving…</span>
-                            ) : (
-                              <select
-                                value={order.status}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  e.stopPropagation()
-                                  handleStatusChange(order.id, e.target.value as PMOrderStatus)
-                                }}
-                                className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition bg-transparent hover:opacity-80 ${PM_STATUS_BADGE[order.status]}`}
-                              >
-                                {(['processing', 'in-transit', 'delivered'] as PMOrderStatus[]).map((s) => (
-                                  <option key={s} value={s}>
-                                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
+                            {(() => {
+                              const hasRefunds = (order.refunded_items?.length ?? 0) > 0
+                              const isLocked = order.status === 'cancelled' || hasRefunds
+
+                              if (updatingId === order.id) {
+                                return <span className="text-xs text-white/40">Saving…</span>
+                              }
+
+                              if (isLocked) {
+                                return (
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${PM_STATUS_BADGE[order.status]}`}>
+                                      {order.status === 'cancelled' ? 'Cancelled' : 'Delivered'}
+                                    </span>
+                                    {hasRefunds && (
+                                      <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                                        Refunded
+                                      </span>
+                                    )}
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <select
+                                  value={order.status}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation()
+                                    handleStatusChange(order.id, e.target.value as PMOrderStatus)
+                                  }}
+                                  className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize outline-none cursor-pointer transition bg-transparent hover:opacity-80 ${PM_STATUS_BADGE[order.status]}`}
+                                >
+                                  {(['processing', 'in-transit', 'delivered'] as PMOrderStatus[]).map((s) => (
+                                    <option key={s} value={s}>
+                                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                                    </option>
+                                  ))}
+                                </select>
+                              )
+                            })()}
                           </td>
                           <td className="px-3 py-3 text-xs text-white/40">
                             {order.invoice_id ?? '—'}
