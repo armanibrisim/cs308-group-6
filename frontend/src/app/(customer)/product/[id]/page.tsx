@@ -7,6 +7,7 @@ import { cartService } from '../../../../services/cartService'
 import { reviewService, Review, CanReviewStatus } from '../../../../services/reviewService'
 import { useAuth } from '../../../../context/AuthContext'
 import { useWishlist } from '../../../../context/WishlistContext'
+import { useCategories } from '../../../../context/CategoryContext'
 import { SideNav } from '../../../../components/layout/SideNav'
 
 const NEON = 'var(--c-neon)'
@@ -68,6 +69,9 @@ export default function ProductDetailPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { isSaved, toggle: toggleWishlist } = useWishlist()
+  const { categories } = useCategories()
+  const resolveCat = (id?: string) =>
+    id ? (categories.find(c => c.id === id)?.name ?? id) : 'N/A'
 
   const [activeTab, setActiveTab] = useState('desc')
   const [showCatalogue, setShowCatalogue] = useState(false)
@@ -436,7 +440,7 @@ export default function ProductDetailPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' as const }}>
                 {(product?.category_id || product?.categoryId) && (
                   <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: `rgba(${NEON_RGB}, 0.13)`, color: NEON, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {(product?.category_id || product?.categoryId).replace(/-/g, ' ')}
+                    {resolveCat(product?.category_id || product?.categoryId)}
                   </span>
                 )}
                 <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', background: inStock ? `rgba(var(--c-neon-rgb), 0.1)` : 'rgba(220,38,38,0.15)', color: inStock ? NEON : '#ef4444', fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, border: inStock ? 'none' : '1px solid rgba(220,38,38,0.35)' }}>
@@ -702,7 +706,7 @@ export default function ProductDetailPage() {
                   { label: 'PRODUCT ID', value: product?.id || 'N/A' },
                   { label: 'MODEL', value: product?.model || 'N/A' },
                   { label: 'SERIAL NUMBER', value: product?.serial_number || product?.serialNumber || 'N/A' },
-                  { label: 'CATEGORY', value: (product?.category_id || product?.categoryId || 'N/A').replace(/-/g, ' ').toUpperCase() },
+                  { label: 'CATEGORY', value: resolveCat(product?.category_id || product?.categoryId).toUpperCase() },
                   { label: 'PRICE', value: `$${(product?.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
                   { label: 'STOCK QUANTITY', value: `${stockQty} units` },
                   { label: 'WARRANTY', value: product?.warranty || 'N/A' },
@@ -1110,6 +1114,7 @@ const ReviewCard = memo(function ReviewCard({ user, text, rating, likes, dislike
 const RelatedCard = memo(function RelatedCard({ product, onClick }: { product: any; onClick: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
+  const { categories } = useCategories()
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!ref.current) return
     const rect = ref.current.getBoundingClientRect()
@@ -1117,7 +1122,8 @@ const RelatedCard = memo(function RelatedCard({ product, onClick }: { product: a
     ref.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
   }
   const imgSrc = product.all_images?.[0] || product.image_url || product.imageUrl
-  const cat = (product.category_id || product.categoryId || 'PRODUCT').replace(/-/g, ' ').toUpperCase()
+  const rawCatId: string | undefined = product.category_id || product.categoryId
+  const cat = (rawCatId ? (categories.find(c => c.id === rawCatId)?.name ?? rawCatId) : 'Product').toUpperCase()
   const ratingAvg = product.rating_count > 0 ? (product.rating_sum / product.rating_count) : null
 
   return (

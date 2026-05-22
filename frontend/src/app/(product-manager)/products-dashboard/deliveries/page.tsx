@@ -132,7 +132,7 @@ export default function DeliveriesPage() {
     count: orders.length,
     processing: orders.filter(o => o.status === 'processing').length,
     inTransit: orders.filter(o => o.status === 'in-transit').length,
-    revenue: orders.reduce((s, o) => s + o.total_amount, 0),
+    revenue: orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total_amount, 0),
   }), [orders])
 
   // ── render guards ─────────────────────────────────────────────────────────────

@@ -27,13 +27,11 @@ def fetch_all_orders(order_status: str | None) -> list[OrderResponse]:
 
 
 def _adjust_purchase_counts(order: dict, old_status: str, new_status: str) -> None:
-    """Increment or decrement purchase_count for each item based on delivery status change."""
+    """Decrement purchase_count if a delivered order is moved back (manager override)."""
     if old_status == new_status:
         return
-    for item in order.get("items", []):
-        if new_status == "delivered":
-            increment_purchase_count(item["product_id"], item["quantity"])
-        elif old_status == "delivered":
+    if old_status == "delivered":
+        for item in order.get("items", []):
             increment_purchase_count(item["product_id"], -item["quantity"])
 
 
@@ -76,6 +74,7 @@ def cancel_order(order_id: str, customer_id: str) -> OrderResponse:
 
     for item in order.get("items", []):
         increment_stock(item["product_id"], item["quantity"])
+        increment_purchase_count(item["product_id"], -item["quantity"])
 
     order_repository.update_order_status(order_id, "cancelled")
     order["status"] = "cancelled"
@@ -87,6 +86,11 @@ def update_order_status_free(order_id: str, payload: OrderStatusUpdate) -> Order
     order = order_repository.get_order_by_id(order_id)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if order["status"] == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update status of a cancelled order",
+        )
 
     _adjust_purchase_counts(order, order["status"], payload.status)
     order_repository.update_order_status(order_id, payload.status)

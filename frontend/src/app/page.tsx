@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, MouseEvent, useCallback, memo } from 'react'
 import { productService } from '../services/productService'
 import { SideNav } from '../components/layout/SideNav'
+import { useCategories } from '../context/CategoryContext'
 
 const NEON = 'var(--c-neon)'
 const NEON_RGB = 'var(--c-neon-rgb)'
@@ -92,6 +93,7 @@ const GlowCard = memo(function GlowCard({
 const ProductCard = memo(function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
+  const { categories } = useCategories()
   const avg = avgRating(product)
   const hasRating = avg != null && avg > 0
   const inStock = product.in_stock ?? (product.stock_quantity ?? 0) > 0
@@ -156,7 +158,7 @@ const ProductCard = memo(function ProductCard({ product, onClick }: { product: P
       {/* Info */}
       <div style={{ padding: '1rem 1.125rem 1.125rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
         <p style={{ fontSize: '0.58rem', color: NEON, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', opacity: 0.8 }}>
-          {(product.category_id || 'PRODUCT').replace(/-/g, ' ')}
+          {product.category_id ? (categories.find(c => c.id === product.category_id)?.name ?? product.category_id) : 'Product'}
         </p>
         <h3 style={{ fontSize: '0.9rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, color: 'var(--c-text)', lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: 'calc(0.9rem * 1.35 * 2)' }}>
           {product.name}
@@ -280,6 +282,8 @@ const TRUST = [
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const router = useRouter()
+  const { categories } = useCategories()
+  const resolveCat = (id?: string) => id ? (categories.find(c => c.id === id)?.name ?? id) : ''
 
   const [heroProducts, setHeroProducts] = useState<Product[]>([])
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
@@ -402,7 +406,7 @@ export default function HomePage() {
                   <span style={{ fontSize: '0.58rem', letterSpacing: '0.4em', fontWeight: 700, color: NEON, fontFamily: 'Space Grotesk, sans-serif' }}>NEW ARRIVAL</span>
                   {hero.category_id && (
                     <span className="hero-cat" style={{ fontSize: '0.58rem', letterSpacing: '0.2em', fontWeight: 600, color: 'rgba(var(--c-text-rgb), 0.35)', fontFamily: 'Space Grotesk, sans-serif', textTransform: 'uppercase' }}>
-                      / {hero.category_id.replace(/-/g, ' ')}
+                      / {resolveCat(hero.category_id)}
                     </span>
                   )}
                 </div>

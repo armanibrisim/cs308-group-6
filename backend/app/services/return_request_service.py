@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from app.models.return_request import ReturnRequestResponse
 from app.repositories import notification_repository, order_repository, return_request_repository
-from app.repositories.product_repository import increment_stock
+from app.repositories.product_repository import increment_purchase_count, increment_stock
 
 RETURN_WINDOW_DAYS = 30
 
@@ -124,7 +124,9 @@ def approve_return(return_id: str) -> ReturnRequestResponse:
 
     refund_amount = float(row.get("total_price", 0))
 
-    increment_stock(row["product_id"], int(row.get("quantity", 1)))
+    qty = int(row.get("quantity", 1))
+    increment_stock(row["product_id"], qty)
+    increment_purchase_count(row["product_id"], -qty)
     return_request_repository.update_return_status(return_id, "approved")
 
     order_repository.mark_item_refunded(row["order_id"], row["product_id"], refund_amount)

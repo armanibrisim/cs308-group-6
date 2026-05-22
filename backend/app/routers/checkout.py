@@ -19,7 +19,7 @@ from app.models.invoice import InvoiceCreate, InvoiceItem, InvoiceResponse
 from app.models.order import CheckoutRequest, OrderResponse
 from app.repositories import delivery_repository, invoice_repository, order_repository
 from app.repositories.cart_repository import clear_cart, get_cart
-from app.repositories.product_repository import decrement_stock, get_product_by_id
+from app.repositories.product_repository import decrement_stock, get_product_by_id, increment_purchase_count
 from app.repositories.promo_code_repository import increment_uses, validate_promo_code
 from app.repositories.user_repository import get_user_by_id
 from app.services.email_service import send_invoice_email
@@ -147,6 +147,10 @@ async def checkout(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         )
+
+    # ── 5b. Increment sold count ──────────────────────────────────────────────
+    for item in enriched_items:
+        increment_purchase_count(item["product_id"], item["quantity"])
 
     # ── 6. Create Order ───────────────────────────────────────────────────────
     order_data = {
