@@ -35,6 +35,7 @@ const STATUS_CONFIG: Record<Order['status'], { label: string; color: string; ste
   processing:   { label: 'Processing',  color: '#d97706', step: 1 },
   'in-transit': { label: 'In Transit',  color: '#3b82f6', step: 2 },
   delivered:    { label: 'Delivered',   color: '#16a34a', step: 3 },
+  cancelled:    { label: 'Cancelled',   color: '#6b7280', step: 0 },
 }
 
 // ── Return status badge ───────────────────────────────────────────────────────
@@ -202,6 +203,21 @@ function ReturnModal({ item, orderId, onClose, onConfirm, isSubmitting }: Return
 // ── Status stepper ────────────────────────────────────────────────────────────
 
 function StatusStepper({ status }: { status: Order['status'] }) {
+  if (status === 'cancelled') {
+    return (
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        marginTop: '1.5rem', padding: '6px 14px', borderRadius: '9999px',
+        background: 'rgba(107,114,128,0.12)', border: '1px solid rgba(107,114,128,0.30)',
+        color: '#6b7280', fontSize: '11px', fontFamily: 'Space Grotesk, sans-serif',
+        fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+      }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>cancel</span>
+        Order Cancelled
+      </div>
+    )
+  }
+
   const steps = ['processing', 'in-transit', 'delivered'] as const
   const currentStep = STATUS_CONFIG[status].step
   return (
@@ -251,13 +267,16 @@ interface OrderCardProps {
   token: string
   returnRequests: ReturnRequest[]
   onReturnSuccess: (req: ReturnRequest) => void
+  onCancelSuccess: (orderId: string) => void
 }
 
-function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardProps) {
+function OrderCard({ order, token, returnRequests, onReturnSuccess, onCancelSuccess }: OrderCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [modalItem, setModalItem] = useState<OrderItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const cfg = STATUS_CONFIG[order.status]
   const returnable = isOrderReturnable(order)
@@ -284,6 +303,22 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 3500)
+  }
+
+  const cancellable = order.status === 'processing'
+
+  const handleCancelOrder = async () => {
+    setCancelling(true)
+    try {
+      await orderService.cancelOrder(order.id, token)
+      onCancelSuccess(order.id)
+      showToast('Order cancelled. Stock has been restored.', true)
+    } catch {
+      showToast('Could not cancel order. Please try again.', false)
+    } finally {
+      setCancelling(false)
+      setCancelConfirm(false)
+    }
   }
 
   const handleConfirmReturn = async (productId: string, reason: string) => {
@@ -353,6 +388,74 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess }: OrderCardP
           </div>
 
           <StatusStepper status={order.status} />
+
+          {/* Cancel order */}
+          {cancellable && (
+            <div style={{ marginTop: '1.25rem' }}>
+              {!cancelConfirm ? (
+                <button
+                  onClick={() => setCancelConfirm(true)}
+                  style={{
+                    background: 'none', border: '1px solid rgba(239,68,68,0.30)',
+                    borderRadius: '0.4rem', padding: '5px 14px',
+                    color: 'rgba(239,68,68,0.70)', cursor: 'pointer',
+                    fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif',
+                    fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    transition: 'border-color 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.30)'; e.currentTarget.style.color = 'rgba(239,68,68,0.70)' }}
+                >
+                  Cancel Order
+                </button>
+              ) : (
+                <div style={{
+                  padding: '0.875rem 1rem', borderRadius: '0.65rem',
+                  background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)',
+                  display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+                  gap: '0.75rem', justifyContent: 'space-between',
+                }}>
+                  <p style={{ fontSize: '10px', fontFamily: 'monospace', color: '#ef4444', margin: 0, letterSpacing: '0.04em' }}>
+                    Are you sure? This will cancel your order and restore stock.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setCancelConfirm(false)}
+                      disabled={cancelling}
+                      style={{
+                        fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700,
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        padding: '6px 14px', borderRadius: '0.4rem',
+                        background: 'rgba(var(--c-text-rgb), 0.05)',
+                        border: '1px solid rgba(var(--c-text-rgb), 0.12)',
+                        color: MUTED, cursor: 'pointer',
+                      }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleCancelOrder}
+                      disabled={cancelling}
+                      style={{
+                        fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700,
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        padding: '6px 14px', borderRadius: '0.4rem',
+                        background: cancelling ? 'rgba(239,68,68,0.4)' : '#ef4444',
+                        border: 'none', color: '#fff',
+                        cursor: cancelling ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                      }}
+                    >
+                      {cancelling && (
+                        <span className="material-symbols-outlined" style={{ fontSize: '11px', animation: 'spin 1s linear infinite' }}>progress_activity</span>
+                      )}
+                      {cancelling ? 'Cancelling…' : 'Confirm Cancel'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {returnable && !expanded && openReturnSlots > 0 && (
             <div style={{
@@ -619,6 +722,7 @@ export default function OrdersPage() {
                 token={token}
                 returnRequests={returnRequests}
                 onReturnSuccess={req => setReturnRequests(prev => [...prev, req])}
+                onCancelSuccess={id => setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' } : o))}
               />
             ))}
           </div>

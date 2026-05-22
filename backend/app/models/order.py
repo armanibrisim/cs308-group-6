@@ -31,6 +31,7 @@ class OrderResponse(BaseModel):
     created_at: str
     updated_at: str
     delivered_at: Optional[str] = None  # set when status becomes delivered (30-day return window)
+    refunded_items: Optional[list] = None  # populated by approved return requests
 
 
 class OrderStatusUpdate(BaseModel):
