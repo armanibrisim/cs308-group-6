@@ -171,6 +171,12 @@ export default function ProductsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
+  // Image upload
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadSlotRef = useRef<number>(-1)
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -245,6 +251,34 @@ export default function ProductsPage() {
       const urls = prev.image_urls.filter((_, i) => i !== idx)
       return { ...prev, image_urls: urls.length === 0 ? [''] : urls }
     })
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const idx = uploadSlotRef.current
+    setUploadingSlot(idx)
+    setUploadError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`${API}/upload/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `HTTP ${res.status}`)
+      }
+      const data = await res.json()
+      setImageUrl(idx, data.url)
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploadingSlot(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   const validate = () => {
@@ -656,6 +690,15 @@ export default function ProductsPage() {
                       )}
                     </div>
 
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      style={{ display: 'none' }}
+                      onChange={handleFileUpload}
+                    />
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                       {form.image_urls.map((url, idx) => (
                         <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -681,10 +724,25 @@ export default function ProductsPage() {
                             <input
                               value={url}
                               onChange={e => setImageUrl(idx, e.target.value)}
-                              placeholder={idx === 0 ? 'Primary image URL' : `Image ${idx + 1} URL`}
+                              placeholder={idx === 0 ? 'Paste URL or upload file →' : `Image ${idx + 1} URL or upload →`}
                               style={{ ...inputStyle, paddingLeft: '1.75rem' }}
                             />
                           </div>
+
+                          {/* Upload from file button */}
+                          <button
+                            type="button"
+                            disabled={uploadingSlot !== null}
+                            onClick={() => { uploadSlotRef.current = idx; fileInputRef.current?.click() }}
+                            title="Upload from file"
+                            style={{ flexShrink: 0, background: uploadingSlot === idx ? 'rgba(236,72,153,0.12)' : 'transparent', border: '1px solid rgba(236,72,153,0.25)', borderRadius: '0.5rem', padding: '0.35rem', cursor: uploadingSlot !== null ? 'not-allowed' : 'pointer', color: '#ec4899', display: 'flex', alignItems: 'center', transition: 'all 0.15s', opacity: uploadingSlot !== null && uploadingSlot !== idx ? 0.4 : 1 }}
+                            onMouseEnter={e => { if (uploadingSlot === null) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(236,72,153,0.12)' }}
+                            onMouseLeave={e => { if (uploadingSlot !== idx) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', animation: uploadingSlot === idx ? 'spin 1s linear infinite' : 'none' }}>
+                              {uploadingSlot === idx ? 'progress_activity' : 'upload'}
+                            </span>
+                          </button>
 
                           {/* Remove button */}
                           {(form.image_urls.length > 1 || url.trim()) && (
@@ -702,9 +760,15 @@ export default function ProductsPage() {
                       ))}
                     </div>
 
+                    {uploadError && (
+                      <p style={{ fontSize: '0.62rem', fontFamily: 'monospace', color: '#ef4444', marginTop: '0.4rem' }}>
+                        ⚠ {uploadError}
+                      </p>
+                    )}
+
                     {form.image_urls.length < MAX_IMAGES && (
                       <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.2)', marginTop: '0.5rem' }}>
-                        Up to {MAX_IMAGES} images • First image is the primary thumbnail
+                        Up to {MAX_IMAGES} images • First image is the primary thumbnail • Max 10 MB per file
                       </p>
                     )}
                   </div>
