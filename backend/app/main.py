@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.firebase.client import get_firebase_app
 from app.routers import auth
@@ -14,6 +17,7 @@ from app.routers.promo_codes import router as promo_codes_router
 from app.routers.reviews import router as reviews_router
 from app.routers.sales import router as sales_router
 from app.routers.return_requests import router as return_requests_router
+from app.routers.upload import router as upload_router
 from app.routers.wishlist import router as wishlist_router
 
 get_firebase_app()
@@ -42,6 +46,11 @@ app.include_router(invoices_router)
 app.include_router(sales_router)
 app.include_router(wishlist_router)
 app.include_router(promo_codes_router)
+app.include_router(upload_router)
+
+_static_dir = Path(__file__).resolve().parent.parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 @app.get("/")
