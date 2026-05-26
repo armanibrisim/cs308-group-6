@@ -9,6 +9,7 @@ interface AuthUser {
   token: string
   first_name?: string
   last_name?: string
+  tax_id?: string
 }
 
 interface AuthContextValue {
@@ -21,10 +22,37 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 const STORAGE_KEY = 'lumen_user'
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  const mergeMeIntoUser = useCallback((authUser: AuthUser, fresh: { first_name?: string; last_name?: string; tax_id?: string }) => {
+    const updated = {
+      ...authUser,
+      first_name: fresh.first_name ?? authUser.first_name,
+      last_name: fresh.last_name ?? authUser.last_name,
+      tax_id: fresh.tax_id ?? authUser.tax_id,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    setUser(updated)
+    return updated
+  }, [])
+
+  const refreshFromMe = useCallback(async (authUser: AuthUser) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${authUser.token}` },
+      })
+      if (res.ok) {
+        const fresh = await res.json()
+        mergeMeIntoUser(authUser, fresh)
+      }
+    } catch {
+      // network error — keep stored data
+    }
+  }, [mergeMeIntoUser])
 
   useEffect(() => {
     const init = async () => {
@@ -33,35 +61,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!stored) return
         const parsed: AuthUser = JSON.parse(stored)
         setUser(parsed)
-
-        // Refresh first_name/last_name from backend in case profile was updated
-        try {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/auth/me`,
-            { headers: { Authorization: `Bearer ${parsed.token}` } }
-          )
-          if (res.ok) {
-            const fresh = await res.json()
-            const updated = { ...parsed, first_name: fresh.first_name, last_name: fresh.last_name }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-            setUser(updated)
-          }
-        } catch {
-          // network error — keep stored data
-        }
+        await refreshFromMe(parsed)
       } catch {
         // ignore
       } finally {
         setIsLoading(false)
       }
     }
-    init()
-  }, [])
+    void init()
+  }, [refreshFromMe])
 
   const login = useCallback((authUser: AuthUser) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser))
     setUser(authUser)
-  }, [])
+    void refreshFromMe(authUser)
+  }, [refreshFromMe])
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)

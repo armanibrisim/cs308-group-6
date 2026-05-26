@@ -285,6 +285,7 @@ export default function ProfilePage() {
               {[
                 { label: 'EMAIL', value: user.email },
                 { label: 'NAME', value: `${user.first_name || ''} ${user.last_name || ''}`.trim() || '—' },
+                { label: 'TAX ID', value: user.tax_id?.trim() || '—' },
                 { label: 'ROLE', value: ROLE_LABEL[roleKey] },
               ].map(row => (
                 <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--c-panel-border)' }}>
