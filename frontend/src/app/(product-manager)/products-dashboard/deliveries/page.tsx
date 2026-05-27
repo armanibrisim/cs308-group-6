@@ -260,6 +260,7 @@ export default function DeliveriesPage() {
                           <td className="px-3 py-3">
                             <p className="text-white/90">{order.customer_name}</p>
                             <p className="text-xs text-white/45">{order.customer_email}</p>
+                            <p className="text-xs font-mono text-white/25">{order.customer_id}</p>
                           </td>
                           <td className="px-3 py-3 text-white/70">
                             {order.items.length} item{order.items.length !== 1 ? 's' : ''}
@@ -331,7 +332,10 @@ export default function DeliveriesPage() {
                                 <tbody>
                                   {order.items.map((item, i) => (
                                     <tr key={i} className="border-t border-white/5">
-                                      <td className="py-1 text-white/80">{item.product_name}</td>
+                                      <td className="py-1">
+                                        <p className="text-white/80">{item.product_name}</p>
+                                        <p className="text-white/25 font-mono">{item.product_id}</p>
+                                      </td>
                                       <td className="py-1 text-right text-white/60">{item.quantity}</td>
                                       <td className="py-1 text-right text-white/60">${fmtMoney(item.unit_price)}</td>
                                       <td className="py-1 text-right text-white/80">${fmtMoney(item.subtotal)}</td>
