@@ -25,6 +25,7 @@ def login_user(email: str, password: str) -> dict:
         "token": token,
         "first_name": data.get("first_name", ""),
         "last_name": data.get("last_name", ""),
+        "user_id": data.get("user_id", 0),
     }
 
 
@@ -35,7 +36,7 @@ def register_user(email: str, password: str, first_name: str, last_name: str) ->
             detail="This email is already registered.",
         )
 
-    doc_id = create_user(email, password, first_name, last_name)
+    doc_id, user_id = create_user(email, password, first_name, last_name)
     token = create_access_token({"sub": doc_id, "email": email, "role": "customer"})
 
     return {
@@ -46,4 +47,5 @@ def register_user(email: str, password: str, first_name: str, last_name: str) ->
         "token": token,
         "first_name": first_name,
         "last_name": last_name,
+        "user_id": user_id,
     }

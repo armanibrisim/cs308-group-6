@@ -23,6 +23,7 @@ class AuthResponse(BaseModel):
     token: str
     first_name: str = ""
     last_name: str = ""
+    user_id: int = 0
 
 
 class AddressCreate(BaseModel):

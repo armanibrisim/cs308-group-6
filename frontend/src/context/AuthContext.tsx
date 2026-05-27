@@ -10,6 +10,7 @@ interface AuthUser {
   first_name?: string
   last_name?: string
   tax_id?: string
+  user_id?: number
 }
 
 interface AuthContextValue {
@@ -28,12 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const mergeMeIntoUser = useCallback((authUser: AuthUser, fresh: { first_name?: string; last_name?: string; tax_id?: string }) => {
+  const mergeMeIntoUser = useCallback((authUser: AuthUser, fresh: { first_name?: string; last_name?: string; tax_id?: string; user_id?: number }) => {
     const updated = {
       ...authUser,
       first_name: fresh.first_name ?? authUser.first_name,
       last_name: fresh.last_name ?? authUser.last_name,
       tax_id: fresh.tax_id ?? authUser.tax_id,
+      user_id: fresh.user_id ?? authUser.user_id,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
     setUser(updated)

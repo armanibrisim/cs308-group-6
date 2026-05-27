@@ -283,7 +283,7 @@ export default function ProfilePage() {
             <p style={sectionTitleStyle}>Account Info</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
-                { label: 'USER ID', value: user.doc_id?.trim() || '—' },
+                { label: 'USER ID', value: user.user_id ? `#${user.user_id}` : '—' },
                 { label: 'EMAIL', value: user.email },
                 { label: 'NAME', value: `${user.first_name || ''} ${user.last_name || ''}`.trim() || '—' },
                 { label: 'TAX ID', value: user.tax_id?.trim() || '—' },
