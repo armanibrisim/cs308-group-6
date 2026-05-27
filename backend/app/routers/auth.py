@@ -39,6 +39,7 @@ async def me(current_user: dict = Depends(get_current_user)):
         "last_name": user.get("last_name", ""),
         "email": user.get("email", ""),
         "role": user.get("role", "customer"),
+        "tax_id": user.get("tax_id", ""),
     }
 
 
