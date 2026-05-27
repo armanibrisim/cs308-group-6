@@ -19,7 +19,7 @@ def _db():
 
 # Fields encrypted at rest. "password" is bcrypt-hashed and left as-is.
 _USER_ENC = {"first_name", "last_name", "email", "role", "tax_id", "created_at",
-             "addresses", "saved_cards"}
+             "addresses", "saved_cards", "user_id"}
 
 
 def _encrypt_user(doc: dict) -> dict:
@@ -58,10 +58,10 @@ def _generate_tax_id() -> str:
     return "TAX-" + "".join([str(random.randint(0, 9)) for _ in range(10)])
 
 
-def create_user(email: str, password: str, first_name: str, last_name: str) -> str:
+def create_user(email: str, password: str, first_name: str, last_name: str) -> tuple[str, int]:
     db = _db()
     doc_id = email
-    doc = {
+    base_doc = {
         "email": email,
         "password": hash_password(password),
         "first_name": first_name,
@@ -72,8 +72,21 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> s
         "tax_id": _generate_tax_id(),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    db.collection("users").document(doc_id).set(_encrypt_user(doc))
-    return doc_id
+
+    counters_ref = db.collection("meta").document("counters")
+    user_ref = db.collection("users").document(doc_id)
+
+    @firestore.transactional
+    def _txn(transaction):
+        snap = counters_ref.get(transaction=transaction)
+        next_id = ((snap.to_dict() or {}).get("user_count") or 0) + 1
+        doc = {**base_doc, "user_id": next_id}
+        transaction.set(user_ref, _encrypt_user(doc))
+        transaction.set(counters_ref, {"user_count": next_id}, merge=True)
+        return next_id
+
+    user_id = _txn(db.transaction())
+    return doc_id, user_id
 
 
 # ── Address helpers ───────────────────────────────────────────────────────────
@@ -202,6 +215,7 @@ def get_all_users() -> list[dict]:
         data = _decrypt_user(doc.to_dict())
         result.append({
             "id": doc.id,
+            "user_id": data.get("user_id", 0),
             "email": data.get("email", ""),
             "first_name": data.get("first_name", ""),
             "last_name": data.get("last_name", ""),

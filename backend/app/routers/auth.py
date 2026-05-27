@@ -40,6 +40,7 @@ async def me(current_user: dict = Depends(get_current_user)):
         "email": user.get("email", ""),
         "role": user.get("role", "customer"),
         "tax_id": user.get("tax_id", ""),
+        "user_id": user.get("user_id", 0),
     }
 
 
