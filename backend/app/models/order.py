@@ -16,6 +16,7 @@ class OrderItem(BaseModel):
 class OrderResponse(BaseModel):
     id: str
     customer_id: str
+    customer_user_id: Optional[int] = None  # sequential integer user ID
     customer_email: str
     customer_name: str
     delivery_address: str

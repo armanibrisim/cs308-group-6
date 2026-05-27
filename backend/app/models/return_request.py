@@ -11,6 +11,7 @@ class ReturnRequestResponse(BaseModel):
     id: str
     order_id: str
     customer_id: str
+    customer_user_id: Optional[int] = None  # sequential integer user ID
     customer_email: Optional[str] = None
     customer_name: Optional[str] = None
     product_id: str

@@ -3,6 +3,16 @@ from fastapi import HTTPException, status
 from app.models.order import OrderResponse, OrderStatusUpdate
 from app.repositories import order_repository
 from app.repositories.product_repository import increment_purchase_count, increment_stock
+from app.repositories.user_repository import get_user_by_id
+
+
+def _enrich_with_user_id(order: dict) -> dict:
+    """If customer_user_id is missing (legacy order), look it up from user doc."""
+    if order.get("customer_user_id") is None:
+        user = get_user_by_id(order["customer_id"])
+        if user:
+            order = {**order, "customer_user_id": user.get("user_id")}
+    return order
 
 
 def fetch_my_orders(customer_id: str) -> list[OrderResponse]:
@@ -23,7 +33,7 @@ def fetch_order(order_id: str, customer_id: str) -> OrderResponse:
 def fetch_all_orders(order_status: str | None) -> list[OrderResponse]:
     """Product manager: list all orders with optional status filter."""
     orders = order_repository.list_all_orders(status=order_status)
-    return [OrderResponse(**o) for o in orders]
+    return [OrderResponse(**_enrich_with_user_id(o)) for o in orders]
 
 
 def _adjust_purchase_counts(order: dict, old_status: str, new_status: str) -> None:
