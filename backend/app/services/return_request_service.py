@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from app.models.return_request import ReturnRequestResponse
 from app.repositories import notification_repository, order_repository, return_request_repository
 from app.repositories.product_repository import increment_purchase_count, increment_stock
+from app.repositories.user_repository import get_user_by_id
 
 RETURN_WINDOW_DAYS = 30
 
@@ -36,11 +37,12 @@ def _within_return_window(order: dict) -> bool:
     return datetime.now(timezone.utc) - delivered <= timedelta(days=RETURN_WINDOW_DAYS)
 
 
-def _to_response(d: dict) -> ReturnRequestResponse:
+def _to_response(d: dict, customer_user_id: int | None = None) -> ReturnRequestResponse:
     return ReturnRequestResponse(
         id=d["id"],
         order_id=d["order_id"],
         customer_id=d["customer_id"],
+        customer_user_id=customer_user_id,
         customer_email=d.get("customer_email"),
         customer_name=d.get("customer_name"),
         product_id=d["product_id"],
@@ -51,6 +53,12 @@ def _to_response(d: dict) -> ReturnRequestResponse:
         status=d["status"],
         created_at=d["created_at"],
     )
+
+
+def _get_customer_user_id(customer_id: str) -> int | None:
+    """Look up the sequential integer user_id for a given customer_id (email/doc_id)."""
+    user = get_user_by_id(customer_id)
+    return user.get("user_id") if user else None
 
 
 def create_return_for_line(
@@ -112,7 +120,15 @@ def list_my_returns(customer_id: str) -> list[ReturnRequestResponse]:
 
 def list_all_returns() -> list[ReturnRequestResponse]:
     rows = return_request_repository.list_all_returns()
-    return [_to_response(r) for r in rows]
+    # Cache user_id lookups to avoid redundant Firestore queries for same customer
+    uid_cache: dict[str, int | None] = {}
+    result = []
+    for r in rows:
+        cid = r["customer_id"]
+        if cid not in uid_cache:
+            uid_cache[cid] = _get_customer_user_id(cid)
+        result.append(_to_response(r, customer_user_id=uid_cache[cid]))
+    return result
 
 
 def approve_return(return_id: str) -> ReturnRequestResponse:

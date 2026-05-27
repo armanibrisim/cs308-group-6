@@ -13,6 +13,7 @@ interface ReturnRequest {
   id: string
   order_id: string
   customer_id: string
+  customer_user_id?: number | null
   customer_email?: string
   customer_name?: string
   product_id: string
@@ -228,7 +229,7 @@ export default function RefundsPage() {
                       {req.customer_name || req.customer_email || req.customer_id}
                     </p>
                     <p style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.35)', marginTop: '2px' }}>
-                      ORDER #{req.order_id.slice(-8).toUpperCase()} · {fmtDate(req.created_at)}
+                      {req.customer_user_id != null && `USER #${req.customer_user_id} · `}ORDER #{req.order_id.slice(-8).toUpperCase()} · {fmtDate(req.created_at)}
                     </p>
                     {req.reason && (
                       <p style={{ fontSize: '0.62rem', fontFamily: 'Inter, sans-serif', color: 'rgba(var(--c-text-rgb), 0.45)', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>

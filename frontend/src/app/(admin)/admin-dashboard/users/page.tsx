@@ -12,6 +12,7 @@ type Role = typeof ROLES[number]
 
 interface UserRow {
   id: string
+  user_id?: number | null
   email: string
   first_name: string
   last_name: string
@@ -168,6 +169,9 @@ export default function AdminUsersPage() {
                         {u.first_name || u.last_name ? `${u.first_name} ${u.last_name}`.trim() : '—'}
                         {isSelf && <span style={{ marginLeft: '0.5rem', fontSize: '0.55rem', color: '#ef4444', letterSpacing: '0.15em' }}>YOU</span>}
                       </p>
+                      {u.user_id != null && (
+                        <p style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(var(--c-text-rgb), 0.3)', marginTop: '1px' }}>#{u.user_id}</p>
+                      )}
                     </div>
                   </div>
 

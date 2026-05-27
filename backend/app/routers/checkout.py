@@ -109,10 +109,12 @@ async def checkout(
         customer_name = f"{first} {last}".strip() or user_id
         customer_email = user.get("email", user_id)
         customer_tax_id = user.get("tax_id")
+        customer_user_id = user.get("user_id")  # sequential integer user ID
     else:
         customer_name = user_id
         customer_email = user_id
         customer_tax_id = None
+        customer_user_id = None
 
     # ── 4. Mock payment ───────────────────────────────────────────────────────
     approved = _mock_payment_approved(
@@ -155,6 +157,7 @@ async def checkout(
     # ── 6. Create Order ───────────────────────────────────────────────────────
     order_data = {
         "customer_id": user_id,
+        "customer_user_id": customer_user_id,
         "customer_email": customer_email,
         "customer_name": customer_name,
         "delivery_address": payload.delivery_address,

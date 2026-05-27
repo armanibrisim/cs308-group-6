@@ -21,6 +21,7 @@ interface PMOrderItem {
 interface PMOrder {
   id: string
   customer_id: string
+  customer_user_id?: number | null
   customer_email: string
   customer_name: string
   delivery_address: string
@@ -260,7 +261,9 @@ export default function DeliveriesPage() {
                           <td className="px-3 py-3">
                             <p className="text-white/90">{order.customer_name}</p>
                             <p className="text-xs text-white/45">{order.customer_email}</p>
-                            <p className="text-xs font-mono text-white/25">{order.customer_id}</p>
+                            {order.customer_user_id != null && (
+                              <p className="text-xs font-mono text-white/30">#{order.customer_user_id}</p>
+                            )}
                           </td>
                           <td className="px-3 py-3 text-white/70">
                             {order.items.length} item{order.items.length !== 1 ? 's' : ''}
