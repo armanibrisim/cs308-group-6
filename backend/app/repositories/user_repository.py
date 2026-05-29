@@ -104,22 +104,28 @@ def get_addresses(user_id: str) -> list[dict]:
 def add_address(user_id: str, label: str, full_address: str, is_default: bool) -> dict:
     db = _db()
     ref = db.collection("users").document(user_id)
-
-    existing = get_addresses(user_id)
-
-    if is_default or len(existing) == 0:
-        is_default = True
-        for addr in existing:
-            addr["is_default"] = False
-
     new_addr = {
         "id": str(uuid.uuid4()),
         "label": label,
         "full_address": full_address,
         "is_default": is_default,
     }
-    existing.append(new_addr)
-    ref.update({"addresses": encrypt_json(existing)})
+
+    @firestore.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        data = _decrypt_user(doc.to_dict()) if doc.exists else {}
+        existing = list(data.get("addresses") or [])
+        if len(existing) >= 10:
+            raise ValueError("Maximum of 10 addresses allowed.")
+        if new_addr["is_default"] or len(existing) == 0:
+            new_addr["is_default"] = True
+            for addr in existing:
+                addr["is_default"] = False
+        existing.append(new_addr)
+        transaction.update(ref, {"addresses": encrypt_json(existing)})
+
+    _txn(db.transaction())
     return new_addr
 
 
@@ -171,13 +177,6 @@ def add_saved_card(
 ) -> dict:
     db = _db()
     ref = db.collection("users").document(user_id)
-    existing = get_saved_cards(user_id)
-
-    if is_default or len(existing) == 0:
-        is_default = True
-        for card in existing:
-            card["is_default"] = False
-
     new_card = {
         "id": str(uuid.uuid4()),
         "label": label,
@@ -186,8 +185,22 @@ def add_saved_card(
         "expiry": expiry,
         "is_default": is_default,
     }
-    existing.append(new_card)
-    ref.update({"saved_cards": encrypt_json(existing)})
+
+    @firestore.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        data = _decrypt_user(doc.to_dict()) if doc.exists else {}
+        existing = list(data.get("saved_cards") or [])
+        if len(existing) >= 10:
+            raise ValueError("Maximum of 10 saved cards allowed.")
+        if new_card["is_default"] or len(existing) == 0:
+            new_card["is_default"] = True
+            for card in existing:
+                card["is_default"] = False
+        existing.append(new_card)
+        transaction.update(ref, {"saved_cards": encrypt_json(existing)})
+
+    _txn(db.transaction())
     return new_card
 
 
