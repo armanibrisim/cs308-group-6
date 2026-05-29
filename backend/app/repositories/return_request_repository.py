@@ -101,3 +101,23 @@ def update_return_status(return_id: str, new_status: str) -> None:
     db.collection(RETURNS_COLLECTION).document(return_id).update({
         "status": encrypt_json(new_status),
     })
+
+
+def transition_return_status(return_id: str, expected: str, new_status: str) -> None:
+    """Atomically transition status from expected → new_status.
+    Raises ValueError if the current status is not expected
+    (another concurrent request already resolved this return)."""
+    db = _db()
+    ref = db.collection(RETURNS_COLLECTION).document(return_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            raise ValueError("Return request not found.")
+        data = _decrypt_return(doc.to_dict())
+        if data.get("status") != expected:
+            raise ValueError(f"Return request is no longer {expected}.")
+        transaction.update(ref, {"status": encrypt_json(new_status)})
+
+    _txn(db.transaction())

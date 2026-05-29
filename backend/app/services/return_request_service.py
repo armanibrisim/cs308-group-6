@@ -139,12 +139,15 @@ def approve_return(return_id: str) -> ReturnRequestResponse:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Request is not pending")
 
     refund_amount = float(row.get("total_price", 0))
-
     qty = int(row.get("quantity", 1))
+
+    try:
+        return_request_repository.transition_return_status(return_id, "pending", "approved")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
     increment_stock(row["product_id"], qty)
     increment_purchase_count(row["product_id"], -qty)
-    return_request_repository.update_return_status(return_id, "approved")
-
     order_repository.mark_item_refunded(row["order_id"], row["product_id"], refund_amount)
 
     notification_repository.create_notification(
@@ -169,6 +172,10 @@ def reject_return(return_id: str) -> ReturnRequestResponse:
     if row.get("status") != "pending":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Request is not pending")
 
-    return_request_repository.update_return_status(return_id, "rejected")
+    try:
+        return_request_repository.transition_return_status(return_id, "pending", "rejected")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
     row["status"] = "rejected"
     return _to_response(row)
