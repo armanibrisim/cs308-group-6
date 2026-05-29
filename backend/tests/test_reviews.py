@@ -3,6 +3,7 @@ Test cases for the review endpoints.
 Run with: pytest tests/test_reviews.py -v
 """
 
+import threading
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
@@ -60,6 +61,7 @@ def test_submit_review_with_comment_stays_pending():
 
     with patch("app.services.review_service.get_user_by_id", return_value={"first_name": "Test", "last_name": "User"}), \
          patch("app.services.review_service.get_product_by_id", return_value={"id": "prod-1", "name": "Test Ürün"}), \
+         patch("app.services.review_service.has_delivered_order_with_product", return_value=True), \
          patch("app.services.review_service.review_repository.get_review_by_user_and_product", return_value=None), \
          patch("app.services.review_service.review_repository.create_review", return_value="rev-1"), \
          patch("app.services.review_service.review_repository.get_review_by_id", return_value=saved):
@@ -87,6 +89,7 @@ def test_submit_rating_only_review_auto_approved():
 
     with patch("app.services.review_service.get_user_by_id", return_value={"first_name": "Test", "last_name": "User"}), \
          patch("app.services.review_service.get_product_by_id", return_value={"id": "prod-1", "name": "Test Ürün"}), \
+         patch("app.services.review_service.has_delivered_order_with_product", return_value=True), \
          patch("app.services.review_service.review_repository.get_review_by_user_and_product", return_value=None), \
          patch("app.services.review_service.review_repository.create_review", return_value="rev-1"), \
          patch("app.services.review_service.review_repository.update_review_status"), \
@@ -116,6 +119,7 @@ def test_submit_review_duplicate_returns_409():
 
     with patch("app.services.review_service.get_user_by_id", return_value={"first_name": "Test", "last_name": "User"}), \
          patch("app.services.review_service.get_product_by_id", return_value={"id": "prod-1", "name": "Test Ürün"}), \
+         patch("app.services.review_service.has_delivered_order_with_product", return_value=True), \
          patch("app.services.review_service.review_repository.get_review_by_user_and_product", return_value=existing_review):
 
         resp = client.post(
@@ -180,3 +184,82 @@ def test_product_manager_can_approve_pending_review():
 
     assert resp.status_code == 200
     assert resp.json()["status"] == "approved"
+
+
+# ---------------------------------------------------------------------------
+# Test 6 — DB-level duplicate (ön kontrol geçti, işlem reddedildi)
+# ---------------------------------------------------------------------------
+def test_submit_review_db_level_duplicate_returns_409():
+    """
+    GIVEN ön kontrol None döner (pre-check geçti), ancak atomik işlem
+          ValueError fırlatır (eş zamanlı istek zaten yazdı)
+    WHEN  POST /reviews çağrıldığında
+    THEN  409 döner ve "already reviewed" mesajı içerir
+    """
+    with patch("app.services.review_service.get_user_by_id", return_value={"first_name": "Test", "last_name": "User"}), \
+         patch("app.services.review_service.get_product_by_id", return_value={"id": "prod-1", "name": "Test Ürün"}), \
+         patch("app.services.review_service.has_delivered_order_with_product", return_value=True), \
+         patch("app.services.review_service.review_repository.get_review_by_user_and_product", return_value=None), \
+         patch("app.services.review_service.review_repository.create_review",
+               side_effect=ValueError("You have already reviewed this product.")):
+
+        resp = client.post(
+            "/reviews",
+            json={"product_id": "prod-1", "rating": 4, "comment": "Deneme"},
+            headers=CUSTOMER_AUTH,
+        )
+
+    assert resp.status_code == 409
+    assert "already reviewed" in resp.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Test 7 — 2 eş zamanlı review: yalnızca biri başarılı
+# ---------------------------------------------------------------------------
+def test_concurrent_review_submissions_only_one_succeeds():
+    """
+    GIVEN aynı ürün için aynı anda 2 eş zamanlı review isteği
+    WHEN  2 thread aynı anda POST /reviews gönderdiğinde
+    THEN  tam olarak 1 istek 201, diğeri 409 döner.
+          Atomik işlem ikinci isteği reddeder.
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def create_review_side_effect(data):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("You have already reviewed this product.")
+        return "rev-1"
+
+    saved = _review(status="pending", comment="İyi ürün")
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.review_service.get_user_by_id", return_value={"first_name": "Test", "last_name": "User"}), \
+         patch("app.services.review_service.get_product_by_id", return_value={"id": "prod-1", "name": "Test Ürün"}), \
+         patch("app.services.review_service.has_delivered_order_with_product", return_value=True), \
+         patch("app.services.review_service.review_repository.get_review_by_user_and_product", return_value=None), \
+         patch("app.services.review_service.review_repository.create_review",
+               side_effect=create_review_side_effect), \
+         patch("app.services.review_service.review_repository.get_review_by_id", return_value=saved):
+
+        def do_submit():
+            resp = client.post(
+                "/reviews",
+                json={"product_id": "prod-1", "rating": 4, "comment": "İyi ürün"},
+                headers=CUSTOMER_AUTH,
+            )
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_submit) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"

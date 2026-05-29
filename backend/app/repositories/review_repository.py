@@ -65,6 +65,7 @@ def _decrypt_vote(doc: dict) -> dict:
 
 
 def create_review(data: dict) -> str:
+    """Atomically create a review. Raises ValueError if user already reviewed this product."""
     db = _db()
     now = datetime.now(timezone.utc).isoformat()
     data["created_at"] = now
@@ -74,10 +75,20 @@ def create_review(data: dict) -> str:
     if "user_id" in data:
         data["user_id_hash"] = make_hash(data["user_id"])
 
-    ref = db.collection(REVIEWS_COLLECTION).document()
-    data["id"] = ref.id
-    ref.set(_encrypt_review(data))
-    return ref.id
+    # Deterministic doc ID: one review per (user, product) pair enforced at DB level.
+    doc_id = make_hash(f"{data['user_id']}:{data['product_id']}")
+    ref = db.collection(REVIEWS_COLLECTION).document(doc_id)
+    data["id"] = doc_id
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        snapshot = ref.get(transaction=transaction)
+        if snapshot.exists:
+            raise ValueError("You have already reviewed this product.")
+        transaction.set(ref, _encrypt_review(data))
+
+    _txn(db.transaction())
+    return doc_id
 
 
 def get_reviews_by_product(product_id: str, approved_only: bool = True) -> list[dict]:

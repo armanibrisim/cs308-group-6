@@ -52,7 +52,13 @@ def submit_review(payload: ReviewCreate, user_id: str) -> ReviewResponse:
         "rating": payload.rating,
         "comment": payload.comment,
     }
-    review_id = review_repository.create_review(data)
+    try:
+        review_id = review_repository.create_review(data)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        )
 
     # Rating-only reviews (no comment) are auto-approved — no manager action needed.
     # We update the product rating counters immediately in that case.
