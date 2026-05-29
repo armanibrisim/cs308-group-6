@@ -52,7 +52,13 @@ def submit_review(payload: ReviewCreate, user_id: str) -> ReviewResponse:
         "rating": payload.rating,
         "comment": payload.comment,
     }
-    review_id = review_repository.create_review(data)
+    try:
+        review_id = review_repository.create_review(data)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        )
 
     # Rating-only reviews (no comment) are auto-approved — no manager action needed.
     # We update the product rating counters immediately in that case.
@@ -89,7 +95,11 @@ def approve_review(review_id: str) -> ReviewResponse:
             detail="Only pending reviews can be approved",
         )
 
-    review_repository.update_review_status(review_id, "approved")
+    try:
+        review_repository.transition_review_status(review_id, "pending", "approved")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
     review["status"] = "approved"
 
     # Atomically increment rating_count and rating_sum on the product document.
@@ -109,7 +119,11 @@ def reject_review(review_id: str) -> ReviewResponse:
             detail="Only pending reviews can be rejected",
         )
 
-    review_repository.update_review_status(review_id, "rejected")
+    try:
+        review_repository.transition_review_status(review_id, "pending", "rejected")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
     review["status"] = "rejected"
 
     # Rejected ratings still count toward the product average — only the comment is hidden.

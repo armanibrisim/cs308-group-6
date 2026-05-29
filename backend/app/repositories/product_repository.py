@@ -352,11 +352,24 @@ def increment_stock(product_id: str, quantity: int) -> None:
 # ── Category helpers ──────────────────────────────────────────────────────────
 
 def create_category(data: dict) -> str:
+    """Atomically create a category using the slug as the document ID.
+    Raises ValueError if a category with this slug already exists."""
     db = _db()
-    ref = db.collection(CATEGORIES_COLLECTION).document()
-    data["id"] = ref.id
-    ref.set(data)
-    return ref.id
+    slug = data.get("slug")
+    if not slug:
+        raise ValueError("Category must have a slug.")
+    ref = db.collection(CATEGORIES_COLLECTION).document(slug)
+    data["id"] = slug
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        if doc.exists:
+            raise ValueError("A category with this slug already exists.")
+        transaction.set(ref, data)
+
+    _txn(db.transaction())
+    return slug
 
 
 def list_categories() -> list[dict]:

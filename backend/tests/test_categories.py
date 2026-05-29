@@ -3,6 +3,7 @@ Unit tests for POST /categories (Category Creation)
 Run with: pytest tests/test_categories.py -v
 """
 
+import threading
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
@@ -138,10 +139,10 @@ def test_create_category_no_token_rejected():
     """
     GIVEN no Authorization header
     WHEN  POST /categories is called
-    THEN  403 is returned (bearer scheme rejects missing token)
+    THEN  401 is returned (bearer scheme rejects missing token)
     """
     resp = client.post("/categories", json={"name": "No Auth"})
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -226,3 +227,72 @@ def test_create_category_missing_name_unprocessable():
     """
     resp = client.post("/categories", json={"description": "No name given"}, headers=PM_AUTH)
     assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Test 11 — DB-level duplicate: create_category raises ValueError → 409
+# ---------------------------------------------------------------------------
+def test_create_category_db_level_duplicate_returns_409():
+    """
+    GIVEN the pre-checks pass (get_category_by_name and get_category_by_slug
+          both return None) BUT create_category raises ValueError because the
+          atomic transaction found the slug document already exists
+          (a concurrent request won the race)
+    WHEN  POST /categories is called
+    THEN  409 Conflict is returned
+    """
+    with patch("app.services.product_service.get_category_by_name", return_value=None), \
+         patch("app.services.product_service.get_category_by_slug", return_value=None), \
+         patch("app.services.product_service.create_category",
+               side_effect=ValueError("A category with this slug already exists.")):
+
+        resp = client.post("/categories", json={"name": "Electronics"}, headers=PM_AUTH)
+
+    assert resp.status_code == 409
+    assert "slug" in resp.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Test 12 — Concurrent category creation with same name: only one succeeds
+# ---------------------------------------------------------------------------
+def test_concurrent_category_creation_only_one_succeeds():
+    """
+    GIVEN two concurrent POST /categories requests with the same name
+    WHEN  both threads fire at the same time
+    THEN  exactly 1 returns 201 and 1 returns 409
+          (the atomic slug-as-doc-ID transaction rejects the second)
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def create_category_side_effect(data):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("A category with this slug already exists.")
+        return data.get("slug", "electronics")
+
+    stored = _stored_category(name="Electronics", slug="electronics")
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.product_service.get_category_by_name", return_value=None), \
+         patch("app.services.product_service.get_category_by_slug", return_value=None), \
+         patch("app.services.product_service.create_category",
+               side_effect=create_category_side_effect), \
+         patch("app.services.product_service.get_category_by_id", return_value=stored):
+
+        def do_create():
+            resp = client.post("/categories", json={"name": "Electronics"}, headers=PM_AUTH)
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_create) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"

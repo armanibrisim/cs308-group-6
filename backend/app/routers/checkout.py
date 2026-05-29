@@ -19,8 +19,8 @@ from app.models.invoice import InvoiceCreate, InvoiceItem, InvoiceResponse
 from app.models.order import CheckoutRequest, OrderResponse
 from app.repositories import delivery_repository, invoice_repository, order_repository
 from app.repositories.cart_repository import clear_cart, get_cart
-from app.repositories.product_repository import decrement_stock, get_product_by_id, increment_purchase_count
-from app.repositories.promo_code_repository import increment_uses, validate_promo_code
+from app.repositories.product_repository import decrement_stock, get_product_by_id, increment_purchase_count, increment_stock
+from app.repositories.promo_code_repository import increment_uses, release_promo_code, validate_promo_code
 from app.repositories.user_repository import get_user_by_id
 from app.services.email_service import send_invoice_email
 from app.utils.pdf import generate_invoice_pdf
@@ -116,38 +116,46 @@ async def checkout(
         customer_tax_id = None
         customer_user_id = None
 
-    # ── 4. Mock payment ───────────────────────────────────────────────────────
-    approved = _mock_payment_approved(
-        payload.card_last4, payload.card_holder_name, total_amount
-    )
-    if not approved:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Payment declined by banking entity",
-        )
-
-    # ── 5. Decrement stock (atomic, per product) ──────────────────────────────
-    # Roll-back list in case a later item fails stock check at the DB level
+    # ── 4. Decrement stock (atomic, per product) ──────────────────────────────
+    # Secure stock before payment — a declined card must never charge on phantom inventory.
+    # Roll-back list in case a later item fails the DB-level stock check.
     decremented: list[tuple[str, int]] = []
     try:
         for item in enriched_items:
             decrement_stock(item["product_id"], item["quantity"])
             decremented.append((item["product_id"], item["quantity"]))
     except ValueError as exc:
-        # Re-increment already-decremented items to restore consistency
-        import firebase_admin.firestore as _fs
-        from app.firebase.client import get_firebase_app
-        from app.repositories.product_repository import PRODUCTS_COLLECTION, _db as _pdb, _invalidate_product, _invalidate_products
-        _db = _pdb()
         for pid, qty in decremented:
-            _db.collection(PRODUCTS_COLLECTION).document(pid).update(
-                {"stock_quantity": _fs.Increment(qty)}
-            )
-            _invalidate_product(pid)
-        _invalidate_products()
+            increment_stock(pid, qty)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
+        )
+
+    # ── 4b. Claim promo code (atomic check + increment) ──────────────────────
+    if applied_promo:
+        try:
+            increment_uses(applied_promo["id"])
+        except ValueError as exc:
+            for pid, qty in decremented:
+                increment_stock(pid, qty)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            )
+
+    # ── 5. Mock payment ───────────────────────────────────────────────────────
+    approved = _mock_payment_approved(
+        payload.card_last4, payload.card_holder_name, total_amount
+    )
+    if not approved:
+        for pid, qty in decremented:
+            increment_stock(pid, qty)
+        if applied_promo:
+            release_promo_code(applied_promo["id"])
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Payment declined by banking entity",
         )
 
     # ── 5b. Increment sold count ──────────────────────────────────────────────
@@ -210,14 +218,6 @@ async def checkout(
         "delivery_address": payload.delivery_address,
     }
     delivery_repository.create_delivery(delivery_data)
-
-    # ── 9. Increment promo code uses (if a code was applied) ──────────────────
-    if applied_promo:
-        try:
-            increment_uses(applied_promo["id"])
-        except Exception:
-            # Non-critical: log and continue even if increment fails
-            pass
 
     # ── 10. Generate PDF & send email ─────────────────────────────────────────
     try:

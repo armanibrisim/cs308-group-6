@@ -11,6 +11,7 @@ Endpoints covered:
 Run with: pytest tests/test_return_refund.py -v
 """
 
+import threading
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -91,7 +92,7 @@ def test_approve_return_success():
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
          patch("app.services.return_request_service.increment_stock"), \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
          patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
          patch("app.services.return_request_service.notification_repository.create_notification"):
 
@@ -163,7 +164,7 @@ def test_approve_return_increments_stock():
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
          patch("app.services.return_request_service.increment_stock") as mock_stock, \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
          patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
          patch("app.services.return_request_service.notification_repository.create_notification"):
 
@@ -186,7 +187,7 @@ def test_approve_return_marks_order_refunded():
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
          patch("app.services.return_request_service.increment_stock"), \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
          patch("app.services.return_request_service.order_repository.mark_item_refunded") as mock_refund, \
          patch("app.services.return_request_service.notification_repository.create_notification"):
 
@@ -209,7 +210,7 @@ def test_approve_return_sends_notification():
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
          patch("app.services.return_request_service.increment_stock"), \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
          patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
          patch("app.services.return_request_service.notification_repository.create_notification") as mock_notify:
 
@@ -246,7 +247,7 @@ def test_reject_return_success():
     row = _make_return("ret-1")
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"):
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"):
 
         resp = client.patch("/return-requests/ret-1/reject", headers=SM_AUTH)
 
@@ -298,7 +299,7 @@ def test_reject_return_no_order_update_no_notification():
     row = _make_return("ret-1")
 
     with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
-         patch("app.services.return_request_service.return_request_repository.update_return_status"), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
          patch("app.services.return_request_service.order_repository.mark_item_refunded") as mock_refund, \
          patch("app.services.return_request_service.notification_repository.create_notification") as mock_notify:
 
@@ -363,3 +364,74 @@ def test_create_return_duplicate_pending_request():
         )
 
     assert resp.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# Test 16 — DB-level race: transition_return_status raises ValueError → 409
+# ---------------------------------------------------------------------------
+def test_approve_return_db_level_race_returns_409():
+    """
+    GIVEN the pre-check passes (get_return_by_id returns pending)
+    BUT   transition_return_status raises ValueError
+          (another concurrent request already approved/rejected it)
+    WHEN  PATCH /return-requests/{id}/approve is called
+    THEN  409 Conflict is returned
+    """
+    row = _make_return("ret-1")
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status",
+               side_effect=ValueError("Return request is no longer pending.")):
+
+        resp = client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+
+    assert resp.status_code == 409
+    assert "no longer pending" in resp.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Test 17 — Concurrent approve × 2: only one succeeds
+# ---------------------------------------------------------------------------
+def test_concurrent_approve_only_one_succeeds():
+    """
+    GIVEN two concurrent PATCH /return-requests/{id}/approve requests
+    WHEN  both threads fire at the same time
+    THEN  exactly 1 returns 200 and 1 returns 409
+          (the atomic transition rejects the second request)
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def transition_side_effect(return_id, expected, new_status):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("Return request is no longer pending.")
+
+    row_data = _make_return("ret-1")
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id",
+               side_effect=lambda _: dict(row_data)), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status",
+               side_effect=transition_side_effect), \
+         patch("app.services.return_request_service.increment_stock"), \
+         patch("app.services.return_request_service.increment_purchase_count"), \
+         patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
+         patch("app.services.return_request_service.notification_repository.create_notification"):
+
+        def do_approve():
+            resp = client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_approve) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(200) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"

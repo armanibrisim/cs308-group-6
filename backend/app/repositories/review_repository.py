@@ -65,6 +65,7 @@ def _decrypt_vote(doc: dict) -> dict:
 
 
 def create_review(data: dict) -> str:
+    """Atomically create a review. Raises ValueError if user already reviewed this product."""
     db = _db()
     now = datetime.now(timezone.utc).isoformat()
     data["created_at"] = now
@@ -74,10 +75,20 @@ def create_review(data: dict) -> str:
     if "user_id" in data:
         data["user_id_hash"] = make_hash(data["user_id"])
 
-    ref = db.collection(REVIEWS_COLLECTION).document()
-    data["id"] = ref.id
-    ref.set(_encrypt_review(data))
-    return ref.id
+    # Deterministic doc ID: one review per (user, product) pair enforced at DB level.
+    doc_id = make_hash(f"{data['user_id']}:{data['product_id']}")
+    ref = db.collection(REVIEWS_COLLECTION).document(doc_id)
+    data["id"] = doc_id
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        snapshot = ref.get(transaction=transaction)
+        if snapshot.exists:
+            raise ValueError("You have already reviewed this product.")
+        transaction.set(ref, _encrypt_review(data))
+
+    _txn(db.transaction())
+    return doc_id
 
 
 def get_reviews_by_product(product_id: str, approved_only: bool = True) -> list[dict]:
@@ -128,6 +139,26 @@ def update_review_status(review_id: str, new_status: str) -> None:
     db.collection(REVIEWS_COLLECTION).document(review_id).update({"status": new_status})
 
 
+def transition_review_status(review_id: str, expected: str, new_status: str) -> None:
+    """Atomically transition status from expected → new_status.
+    Raises ValueError if the current status is not expected
+    (another concurrent request already resolved this review)."""
+    db = _db()
+    ref = db.collection(REVIEWS_COLLECTION).document(review_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            raise ValueError("Review not found.")
+        # status is stored unencrypted — read directly
+        if doc.to_dict().get("status") != expected:
+            raise ValueError(f"Review is no longer {expected}.")
+        transaction.update(ref, {"status": new_status})
+
+    _txn(db.transaction())
+
+
 def update_review(review_id: str, updates: dict) -> None:
     db = _db()
     db.collection(REVIEWS_COLLECTION).document(review_id).update(_enc_review_update(updates))
@@ -165,85 +196,83 @@ def get_user_votes_for_product(user_id: str, product_id: str) -> dict[str, str]:
 
 
 def set_vote(review_id: str, user_id: str, product_id: str, vote_type: str) -> tuple[int, int]:
-    """Create or overwrite a vote and update the review counts via a transaction.
+    """Atomically create or overwrite a vote and update the review counts.
     Returns (likes_delta, dislikes_delta) so callers avoid a re-fetch."""
     db = _db()
     vote_ref = db.collection(REVIEW_VOTES_COLLECTION).document(f"{review_id}_{user_id}")
     review_ref = db.collection(REVIEWS_COLLECTION).document(review_id)
 
-    existing = vote_ref.get()
-    old_type = None
-    if existing.exists:
-        old_type = _decrypt_vote(existing.to_dict()).get("vote_type")
+    @firestore_module.transactional
+    def _txn(transaction):
+        # Authoritative read of existing vote inside the transaction
+        vote_doc = vote_ref.get(transaction=transaction)
+        old_type = _decrypt_vote(vote_doc.to_dict()).get("vote_type") if vote_doc.exists else None
 
-    likes_delta = 0
-    dislikes_delta = 0
+        # Compute delta based on old vs new vote type
+        likes_delta = dislikes_delta = 0
+        if old_type and old_type != vote_type:
+            likes_delta, dislikes_delta = (1, -1) if vote_type == "like" else (-1, 1)
+        elif not old_type:
+            if vote_type == "like":
+                likes_delta = 1
+            else:
+                dislikes_delta = 1
+        # old_type == vote_type → delta stays 0 (already voted this way, idempotent)
 
-    if old_type and old_type != vote_type:
-        if vote_type == "like":
-            likes_delta, dislikes_delta = 1, -1
-        else:
-            likes_delta, dislikes_delta = -1, 1
-    elif not old_type:
-        if vote_type == "like":
-            likes_delta = 1
-        else:
-            dislikes_delta = 1
+        # Write vote document inside the same transaction
+        transaction.set(vote_ref, {
+            **_encrypt_vote({
+                "review_id": review_id,
+                "user_id": user_id,
+                "product_id": product_id,
+                "vote_type": vote_type,
+            }),
+            "user_id_hash": make_hash(user_id),
+            "product_id_hash": make_hash(product_id),
+        })
 
-    # Write vote document (with HMAC query keys unencrypted).
-    vote_ref.set({
-        **_encrypt_vote({
-            "review_id": review_id,
-            "user_id": user_id,
-            "product_id": product_id,
-            "vote_type": vote_type,
-        }),
-        "user_id_hash": make_hash(user_id),
-        "product_id_hash": make_hash(product_id),
-    })
+        # Update review counters only if something actually changed
+        if likes_delta != 0 or dislikes_delta != 0:
+            review_doc = review_ref.get(transaction=transaction)
+            if review_doc.exists:
+                data = _decrypt_review(review_doc.to_dict())
+                new_likes = max(0, (data.get("likes") or 0) + likes_delta)
+                new_dislikes = max(0, (data.get("dislikes") or 0) + dislikes_delta)
+                transaction.update(review_ref, {
+                    "likes": encrypt_json(new_likes),
+                    "dislikes": encrypt_json(new_dislikes),
+                })
 
-    # Update review likes/dislikes with a transaction.
-    if likes_delta != 0 or dislikes_delta != 0:
-        @firestore_module.transactional
-        def _update_counts(transaction):
-            doc = review_ref.get(transaction=transaction)
-            if not doc.exists:
-                return
-            data = _decrypt_review(doc.to_dict())
-            new_likes = max(0, (data.get("likes") or 0) + likes_delta)
-            new_dislikes = max(0, (data.get("dislikes") or 0) + dislikes_delta)
-            transaction.update(review_ref, {
-                "likes": encrypt_json(new_likes),
-                "dislikes": encrypt_json(new_dislikes),
-            })
+        return likes_delta, dislikes_delta
 
-        _update_counts(db.transaction())
-
-    return likes_delta, dislikes_delta
+    return _txn(db.transaction())
 
 
 def remove_vote(review_id: str, user_id: str, vote_type: str) -> tuple[int, int]:
-    """Delete a vote and decrement the corresponding count on the review.
+    """Atomically delete a vote and decrement the corresponding count on the review.
     Returns (likes_delta, dislikes_delta) so callers avoid a re-fetch."""
     db = _db()
-    db.collection(REVIEW_VOTES_COLLECTION).document(f"{review_id}_{user_id}").delete()
-
+    vote_ref = db.collection(REVIEW_VOTES_COLLECTION).document(f"{review_id}_{user_id}")
     review_ref = db.collection(REVIEWS_COLLECTION).document(review_id)
 
     @firestore_module.transactional
-    def _dec(transaction):
-        doc = review_ref.get(transaction=transaction)
-        if not doc.exists:
+    def _txn(transaction):
+        vote_doc = vote_ref.get(transaction=transaction)
+        if not vote_doc.exists:
+            # Already removed by a concurrent request — nothing to do
             return
-        data = _decrypt_review(doc.to_dict())
-        if vote_type == "like":
-            new_val = max(0, (data.get("likes") or 0) - 1)
-            transaction.update(review_ref, {"likes": encrypt_json(new_val)})
-        else:
-            new_val = max(0, (data.get("dislikes") or 0) - 1)
-            transaction.update(review_ref, {"dislikes": encrypt_json(new_val)})
+        transaction.delete(vote_ref)
+        review_doc = review_ref.get(transaction=transaction)
+        if review_doc.exists:
+            data = _decrypt_review(review_doc.to_dict())
+            if vote_type == "like":
+                new_val = max(0, (data.get("likes") or 0) - 1)
+                transaction.update(review_ref, {"likes": encrypt_json(new_val)})
+            else:
+                new_val = max(0, (data.get("dislikes") or 0) - 1)
+                transaction.update(review_ref, {"dislikes": encrypt_json(new_val)})
 
-    _dec(db.transaction())
+    _txn(db.transaction())
     return (-1, 0) if vote_type == "like" else (0, -1)
 
 

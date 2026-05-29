@@ -62,7 +62,10 @@ async def create_address(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum of 10 addresses allowed",
         )
-    return add_address(current_user["user_id"], body.label, body.full_address, body.is_default)
+    try:
+        return add_address(current_user["user_id"], body.label, body.full_address, body.is_default)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.delete("/me/addresses/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -104,10 +107,13 @@ async def create_card(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum of 10 saved cards allowed",
         )
-    return add_saved_card(
-        current_user["user_id"], body.label, body.last4,
-        body.card_holder_name, body.expiry, body.is_default,
-    )
+    try:
+        return add_saved_card(
+            current_user["user_id"], body.label, body.last4,
+            body.card_holder_name, body.expiry, body.is_default,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.delete("/me/cards/{card_id}", status_code=status.HTTP_204_NO_CONTENT)

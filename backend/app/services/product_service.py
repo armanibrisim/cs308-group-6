@@ -255,7 +255,10 @@ def add_category(payload: CategoryCreate) -> CategoryResponse:
 
     data = payload.model_dump()
     data["slug"] = slug
-    category_id = create_category(data)
+    try:
+        category_id = create_category(data)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     created = get_category_by_id(category_id)
     return _category_response(created)
 

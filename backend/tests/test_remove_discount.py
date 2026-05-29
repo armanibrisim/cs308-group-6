@@ -128,7 +128,7 @@ def test_remove_discount_unauthorized():
     """
     GIVEN no Authorization header
     WHEN  DELETE /sales/discounts/{product_id} is called
-    THEN  response is 403 (HTTPBearer returns 403 when no token is provided)
+    THEN  response is 401 Unauthorized (HTTPBearer raises 401 for missing credentials)
     """
     resp = client.delete("/sales/discounts/prod-1")
-    assert resp.status_code == 403
+    assert resp.status_code == 401

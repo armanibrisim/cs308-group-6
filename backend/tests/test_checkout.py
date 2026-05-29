@@ -3,7 +3,8 @@ Test cases for POST /checkout
 Run with: pytest tests/test_checkout.py -v
 """
 
-from unittest.mock import patch, MagicMock
+import threading
+from unittest.mock import patch, MagicMock, call
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -93,19 +94,22 @@ def _patch_all(cart_items=None, product=None, order_id="order-1", invoice_id="in
         product = _product()
 
     return [
-        patch("app.routers.checkout.get_cart", return_value=_cart(cart_items)),
-        patch("app.routers.checkout.get_product_by_id", return_value=product),
-        patch("app.routers.checkout.get_user_by_id", return_value=_user()),
-        patch("app.routers.checkout.decrement_stock"),
-        patch("app.routers.checkout.order_repository.create_order", return_value=order_id),
-        patch("app.routers.checkout.order_repository.get_order_by_id", return_value=_order(order_id)),
-        patch("app.routers.checkout.order_repository.set_invoice_id"),
-        patch("app.routers.checkout.invoice_repository.create_invoice", return_value=invoice_id),
-        patch("app.routers.checkout.invoice_repository.get_invoice_by_id", return_value=_invoice(invoice_id)),
-        patch("app.routers.checkout.delivery_repository.create_delivery"),
-        patch("app.routers.checkout.generate_invoice_pdf", return_value=b"%PDF"),
-        patch("app.routers.checkout.send_invoice_email"),
-        patch("app.routers.checkout.clear_cart"),
+        patch("app.routers.checkout.get_cart", return_value=_cart(cart_items)),        # 0
+        patch("app.routers.checkout.get_product_by_id", return_value=product),         # 1
+        patch("app.routers.checkout.get_user_by_id", return_value=_user()),            # 2
+        patch("app.routers.checkout.decrement_stock"),                                  # 3
+        patch("app.routers.checkout.increment_stock"),                                  # 4
+        patch("app.routers.checkout.increment_uses"),                                   # 5
+        patch("app.routers.checkout.release_promo_code"),                               # 6
+        patch("app.routers.checkout.order_repository.create_order", return_value=order_id),          # 7
+        patch("app.routers.checkout.order_repository.get_order_by_id", return_value=_order(order_id)),  # 8
+        patch("app.routers.checkout.order_repository.set_invoice_id"),                 # 9
+        patch("app.routers.checkout.invoice_repository.create_invoice", return_value=invoice_id),    # 10
+        patch("app.routers.checkout.invoice_repository.get_invoice_by_id", return_value=_invoice(invoice_id)),  # 11
+        patch("app.routers.checkout.delivery_repository.create_delivery"),             # 12
+        patch("app.routers.checkout.generate_invoice_pdf", return_value=b"%PDF"),     # 13
+        patch("app.routers.checkout.send_invoice_email"),                              # 14
+        patch("app.routers.checkout.clear_cart"),                                      # 15
     ]
 
 
@@ -120,7 +124,7 @@ def test_checkout_success_returns_order_and_invoice():
     """
     patches = _patch_all()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], \
-         patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12]:
+         patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12], patches[13], patches[14], patches[15]:
         resp = client.post("/checkout", json=VALID_PAYLOAD, headers=AUTH)
 
     assert resp.status_code == 201
@@ -192,12 +196,18 @@ def test_checkout_declined_card_returns_402():
     GIVEN card_last4="0000" olan bir ödeme isteği (test-decline tetikleyici)
     WHEN  POST /checkout çağrıldığında
     THEN  402 Payment Required döner
+    NOTE  Stok, ödeme kontrolünden önce düşürüldüğü için bu testte decrement_stock
+          ve increment_stock da mock'lanmalıdır.
     """
     payload = {**VALID_PAYLOAD, "card_last4": "0000"}
 
     with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item()])), \
          patch("app.routers.checkout.get_product_by_id", return_value=_product()), \
-         patch("app.routers.checkout.get_user_by_id", return_value=_user()):
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.decrement_stock"), \
+         patch("app.routers.checkout.increment_stock"), \
+         patch("app.routers.checkout.increment_uses"), \
+         patch("app.routers.checkout.release_promo_code"):
         resp = client.post("/checkout", json=payload, headers=AUTH)
 
     assert resp.status_code == 402
@@ -247,7 +257,7 @@ def test_checkout_tax_is_8_percent():
     """
     patches = _patch_all()
     with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], \
-         patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12]:
+         patches[6], patches[7], patches[8], patches[9], patches[10], patches[11], patches[12], patches[13], patches[14], patches[15]:
         resp = client.post("/checkout", json=VALID_PAYLOAD, headers=AUTH)
 
     assert resp.status_code == 201
@@ -258,15 +268,15 @@ def test_checkout_tax_is_8_percent():
 # ---------------------------------------------------------------------------
 # Test 8 — Kimlik doğrulama olmadan 403 döner
 # ---------------------------------------------------------------------------
-def test_checkout_unauthenticated_returns_403():
+def test_checkout_unauthenticated_returns_401():
     """
     GIVEN Authorization header'ı olmayan bir istek
     WHEN  POST /checkout çağrıldığında
-    THEN  403 Forbidden döner
+    THEN  401 Unauthorized döner (eksik kimlik bilgisi)
     """
     resp = client.post("/checkout", json=VALID_PAYLOAD)
 
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -335,3 +345,264 @@ def test_checkout_multiple_items_total_is_correct():
     assert body["order"]["subtotal"] == 300.0
     assert body["order"]["total_amount"] == 369.0
     assert len(body["order"]["items"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Test 11 — Reddedilen kart stoku geri yükler (increment_stock çağrılır)
+# ---------------------------------------------------------------------------
+def test_declined_card_restores_stock():
+    """
+    GIVEN card_last4="0000" (ödeme reddedilir)
+    WHEN  POST /checkout çağrıldığında
+    THEN  402 döner ve decrement_stock çağrılmış olmasına rağmen
+          increment_stock aynı miktarla çağrılarak stok geri yüklenir.
+    """
+    payload = {**VALID_PAYLOAD, "card_last4": "0000"}
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item(qty=2)])), \
+         patch("app.routers.checkout.get_product_by_id", return_value=_product(stock=5)), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.decrement_stock") as mock_decr, \
+         patch("app.routers.checkout.increment_stock") as mock_incr:
+        resp = client.post("/checkout", json=payload, headers=AUTH)
+
+    assert resp.status_code == 402
+    assert "declined" in resp.json()["detail"].lower()
+    # Stock was decremented (secured before payment attempt)
+    mock_decr.assert_called_once_with("prod-1", 2)
+    # Stock was restored because payment was declined
+    mock_incr.assert_called_once_with("prod-1", 2)
+
+
+# ---------------------------------------------------------------------------
+# Test 12 — İkinci ürün DB'de yetersiz stok hatası verirse birinci ürün geri yüklenir
+# ---------------------------------------------------------------------------
+def test_db_level_stock_failure_restores_earlier_items():
+    """
+    GIVEN 2 ürünlü sepet; her ikisi de önbellek kontrolünü geçer, ancak
+          ikinci ürün DB işlem seviyesinde ValueError fırlatır
+    WHEN  POST /checkout çağrıldığında
+    THEN  409 döner ve birinci ürünün stoğu increment_stock ile geri yüklenir.
+
+    Not: Her iki ürün de önbellekte yeterli stoka sahip görünür (erken kontrol
+    geçer). Asıl sınama, DB işlemi sırasında ikinci ürünün başarısız olmasıdır.
+    """
+    # Both products appear in-stock in cache so the early check passes for both.
+    # The real guard (decrement_stock transaction) fails for the second product.
+    product1 = _product("prod-1", "Product A", stock=5, price=100.0)
+    product2 = _product("prod-2", "Product B", stock=5, price=200.0)
+    cart_items = [_cart_item("prod-1", 1), _cart_item("prod-2", 1)]
+
+    def get_product_side_effect(pid):
+        return product1 if pid == "prod-1" else product2
+
+    call_count = {"n": 0}
+
+    def decrement_side_effect(pid, qty):
+        call_count["n"] += 1
+        if call_count["n"] == 2:
+            raise ValueError("Insufficient stock")
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart(cart_items)), \
+         patch("app.routers.checkout.get_product_by_id", side_effect=get_product_side_effect), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.decrement_stock", side_effect=decrement_side_effect), \
+         patch("app.routers.checkout.increment_stock") as mock_incr:
+        resp = client.post("/checkout", json=VALID_PAYLOAD, headers=AUTH)
+
+    assert resp.status_code == 409
+    assert "insufficient stock" in resp.json()["detail"].lower()
+    # prod-1 was decremented before prod-2 failed, so prod-1 must be restored
+    mock_incr.assert_called_once_with("prod-1", 1)
+
+
+# ---------------------------------------------------------------------------
+# Test 13 — 3 eş zamanlı alıcı: yalnızca biri başarılı, diğer ikisi 409 alır
+# ---------------------------------------------------------------------------
+def test_concurrent_purchases_only_one_succeeds():
+    """
+    GIVEN stokta 1 adet ürün ve 3 eş zamanlı alıcı
+    WHEN  3 thread aynı anda POST /checkout isteği gönderdiğinde
+    THEN  tam olarak 1 istek 201 döner, diğer 2 istek 409 döner.
+          Başarısız olan her alıcı için increment_stock çağrılır (toplam 2 kez).
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def decrement_side_effect(pid, qty):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("Insufficient stock")
+
+    incr_calls = []
+    incr_lock = threading.Lock()
+
+    def increment_side_effect(pid, qty):
+        with incr_lock:
+            incr_calls.append((pid, qty))
+
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item()])), \
+         patch("app.routers.checkout.get_product_by_id", return_value=_product(stock=1)), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.decrement_stock", side_effect=decrement_side_effect), \
+         patch("app.routers.checkout.increment_stock", side_effect=increment_side_effect), \
+         patch("app.routers.checkout.increment_purchase_count"), \
+         patch("app.routers.checkout.order_repository.create_order", return_value="order-1"), \
+         patch("app.routers.checkout.order_repository.get_order_by_id", return_value=_order()), \
+         patch("app.routers.checkout.order_repository.set_invoice_id"), \
+         patch("app.routers.checkout.invoice_repository.create_invoice", return_value="inv-1"), \
+         patch("app.routers.checkout.invoice_repository.get_invoice_by_id", return_value=_invoice()), \
+         patch("app.routers.checkout.delivery_repository.create_delivery"), \
+         patch("app.routers.checkout.generate_invoice_pdf", return_value=b"%PDF"), \
+         patch("app.routers.checkout.send_invoice_email"), \
+         patch("app.routers.checkout.clear_cart"):
+
+        def do_checkout():
+            resp = client.post("/checkout", json=VALID_PAYLOAD, headers=AUTH)
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_checkout) for _ in range(3)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 2, f"Expected 2 conflicts, got: {results}"
+    # Single-item cart: when decrement_stock raises immediately, `decremented` is still
+    # empty, so there is nothing to roll back. increment_stock must NOT be called.
+    assert len(incr_calls) == 0
+
+
+# ---------------------------------------------------------------------------
+# Test 14 — Promo kodu limiti aşıldığında 409 döner ve stok geri yüklenir
+# ---------------------------------------------------------------------------
+def test_promo_at_limit_raises_409_and_restores_stock():
+    """
+    GIVEN increment_uses() atomik işlemi ValueError fırlatır (limit aşıldı)
+    WHEN  POST /checkout çağrıldığında
+    THEN  409 döner, stok geri yüklenir (increment_stock çağrılır),
+          release_promo_code çağrılmaz (kod hiç claim edilmedi).
+    """
+    PROMO_PAYLOAD = {**VALID_PAYLOAD, "promo_code": "SAVE10"}
+    applied_promo = {"id": "promo-1", "code": "SAVE10", "discount_percent": 10}
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item()])), \
+         patch("app.routers.checkout.get_product_by_id", return_value=_product()), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.validate_promo_code", return_value=applied_promo), \
+         patch("app.routers.checkout.decrement_stock"), \
+         patch("app.routers.checkout.increment_stock") as mock_incr, \
+         patch("app.routers.checkout.increment_uses",
+               side_effect=ValueError("Promo code has reached its usage limit.")), \
+         patch("app.routers.checkout.release_promo_code") as mock_release:
+        resp = client.post("/checkout", json=PROMO_PAYLOAD, headers=AUTH)
+
+    assert resp.status_code == 409
+    assert "usage limit" in resp.json()["detail"].lower()
+    # Stock must be restored
+    mock_incr.assert_called_once_with("prod-1", 1)
+    # Nothing to release — the claim itself failed
+    mock_release.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test 15 — Reddedilen kart hem stoku hem promo kullanımını geri yükler
+# ---------------------------------------------------------------------------
+def test_declined_card_with_promo_restores_stock_and_promo():
+    """
+    GIVEN Promo kodu başarıyla claim edildi (increment_uses başarılı),
+          ancak kart reddedildi (card_last4="0000")
+    WHEN  POST /checkout çağrıldığında
+    THEN  402 döner, increment_stock VE release_promo_code her ikisi çağrılır.
+    """
+    payload = {**VALID_PAYLOAD, "card_last4": "0000", "promo_code": "SAVE10"}
+    applied_promo = {"id": "promo-1", "code": "SAVE10", "discount_percent": 10}
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item()])), \
+         patch("app.routers.checkout.get_product_by_id", return_value=_product()), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.validate_promo_code", return_value=applied_promo), \
+         patch("app.routers.checkout.decrement_stock"), \
+         patch("app.routers.checkout.increment_stock") as mock_incr, \
+         patch("app.routers.checkout.increment_uses"), \
+         patch("app.routers.checkout.release_promo_code") as mock_release:
+        resp = client.post("/checkout", json=payload, headers=AUTH)
+
+    assert resp.status_code == 402
+    assert "declined" in resp.json()["detail"].lower()
+    # Stock restored
+    mock_incr.assert_called_once_with("prod-1", 1)
+    # Promo claim rolled back
+    mock_release.assert_called_once_with("promo-1")
+
+
+# ---------------------------------------------------------------------------
+# Test 16 — 2 eş zamanlı checkout, max_uses=1: biri başarılı, biri 409
+# ---------------------------------------------------------------------------
+def test_concurrent_promo_only_one_succeeds():
+    """
+    GIVEN max_uses=1 olan bir promo kodu ve 2 eş zamanlı alıcı
+    WHEN  2 thread aynı anda POST /checkout isteği gönderdiğinde
+    THEN  tam olarak 1 istek 201 döner, diğeri 409 döner.
+          release_promo_code çağrılmaz (başarısız thread kodu hiç claim etmedi).
+    """
+    lock = threading.Lock()
+    claim_count = {"n": 0}
+
+    def increment_uses_side_effect(code_id):
+        with lock:
+            claim_count["n"] += 1
+            n = claim_count["n"]
+        if n > 1:
+            raise ValueError("Promo code has reached its usage limit.")
+
+    applied_promo = {"id": "promo-1", "code": "SAVE10", "discount_percent": 10}
+    PROMO_PAYLOAD = {**VALID_PAYLOAD, "promo_code": "SAVE10"}
+
+    results = []
+    results_lock = threading.Lock()
+    release_calls = []
+    release_lock = threading.Lock()
+
+    with patch("app.routers.checkout.get_cart", return_value=_cart([_cart_item()])), \
+         patch("app.routers.checkout.get_product_by_id", return_value=_product(stock=10)), \
+         patch("app.routers.checkout.get_user_by_id", return_value=_user()), \
+         patch("app.routers.checkout.validate_promo_code", return_value=applied_promo), \
+         patch("app.routers.checkout.decrement_stock"), \
+         patch("app.routers.checkout.increment_stock"), \
+         patch("app.routers.checkout.increment_uses", side_effect=increment_uses_side_effect), \
+         patch("app.routers.checkout.release_promo_code",
+               side_effect=lambda cid: release_calls.append(cid) or release_lock.acquire(blocking=False)), \
+         patch("app.routers.checkout.increment_purchase_count"), \
+         patch("app.routers.checkout.order_repository.create_order", return_value="order-1"), \
+         patch("app.routers.checkout.order_repository.get_order_by_id", return_value=_order()), \
+         patch("app.routers.checkout.order_repository.set_invoice_id"), \
+         patch("app.routers.checkout.invoice_repository.create_invoice", return_value="inv-1"), \
+         patch("app.routers.checkout.invoice_repository.get_invoice_by_id", return_value=_invoice()), \
+         patch("app.routers.checkout.delivery_repository.create_delivery"), \
+         patch("app.routers.checkout.generate_invoice_pdf", return_value=b"%PDF"), \
+         patch("app.routers.checkout.send_invoice_email"), \
+         patch("app.routers.checkout.clear_cart"):
+
+        def do_checkout():
+            resp = client.post("/checkout", json=PROMO_PAYLOAD, headers=AUTH)
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_checkout) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"
+    # Failing thread's increment_uses raised before any claim — nothing to release
+    assert len(release_calls) == 0

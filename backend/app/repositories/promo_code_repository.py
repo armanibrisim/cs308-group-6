@@ -214,7 +214,36 @@ def validate_promo_code(code: str) -> dict:
 
 
 def increment_uses(code_id: str) -> None:
-    """Increment the uses counter via a read-decrypt-increment-encrypt-write transaction."""
+    """Atomically check limits and increment the uses counter.
+
+    Raises ValueError if the code is inactive, expired, or has reached max_uses.
+    This is the authoritative guard — the check and the write are a single transaction.
+    """
+    db = _db()
+    ref = db.collection(PROMO_CODES_COLLECTION).document(code_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            raise ValueError("Promo code no longer exists.")
+        data = _decrypt_promo(doc.to_dict())
+        if not data.get("is_active", False):
+            raise ValueError("Promo code is no longer active.")
+        expires_at = data.get("expires_at")
+        if expires_at and _now_iso() > expires_at:
+            raise ValueError("Promo code has expired.")
+        max_uses = data.get("max_uses")
+        current_uses = data.get("uses") or 0
+        if max_uses is not None and current_uses >= max_uses:
+            raise ValueError("Promo code has reached its usage limit.")
+        transaction.update(ref, {"uses": encrypt_json(current_uses + 1)})
+
+    _txn(db.transaction())
+
+
+def release_promo_code(code_id: str) -> None:
+    """Decrement uses by 1 (floor 0) — rollback for a failed or declined checkout."""
     db = _db()
     ref = db.collection(PROMO_CODES_COLLECTION).document(code_id)
 
@@ -224,7 +253,7 @@ def increment_uses(code_id: str) -> None:
         if not doc.exists:
             return
         data = _decrypt_promo(doc.to_dict())
-        new_uses = (data.get("uses") or 0) + 1
-        transaction.update(ref, {"uses": encrypt_json(new_uses)})
+        current_uses = data.get("uses") or 0
+        transaction.update(ref, {"uses": encrypt_json(max(0, current_uses - 1))})
 
     _txn(db.transaction())
