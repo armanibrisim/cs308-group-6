@@ -4,7 +4,7 @@ Run with: pytest tests/test_reviews.py -v
 """
 
 import threading
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -173,7 +173,7 @@ def test_product_manager_can_approve_pending_review():
     approved_review = {**pending_review, "status": "approved"}
 
     with patch("app.services.review_service.review_repository.get_review_by_id", return_value=pending_review), \
-         patch("app.services.review_service.review_repository.update_review_status"), \
+         patch("app.services.review_service.review_repository.transition_review_status"), \
          patch("app.services.review_service.update_product_rating_counters"):
 
         resp = client.put(
@@ -262,4 +262,80 @@ def test_concurrent_review_submissions_only_one_succeeds():
             t.join()
 
     assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"
+
+
+# ---------------------------------------------------------------------------
+# Test 8 — DB-level race on approve: transition_review_status raises ValueError → 409
+# ---------------------------------------------------------------------------
+def test_approve_review_db_level_race_returns_409():
+    """
+    GIVEN the pre-check passes (get_review_by_id returns pending review)
+    BUT   transition_review_status raises ValueError
+          (another concurrent request already approved/rejected it)
+    WHEN  PUT /reviews/{id}/status with status=approved is called
+    THEN  409 Conflict is returned
+    """
+    pending_review = _review(status="pending")
+
+    with patch("app.services.review_service.review_repository.get_review_by_id", return_value=pending_review), \
+         patch("app.services.review_service.review_repository.transition_review_status",
+               side_effect=ValueError("Review is no longer pending.")):
+
+        resp = client.put(
+            "/reviews/rev-1/status",
+            json={"status": "approved"},
+            headers=PM_AUTH,
+        )
+
+    assert resp.status_code == 409
+    assert "no longer pending" in resp.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Test 9 — Concurrent approve × 2: only one succeeds
+# ---------------------------------------------------------------------------
+def test_concurrent_approve_review_only_one_succeeds():
+    """
+    GIVEN two concurrent PUT /reviews/{id}/status approve requests
+    WHEN  both threads fire at the same time
+    THEN  exactly 1 returns 200 and 1 returns 409
+          (the atomic transition rejects the second request)
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def transition_side_effect(review_id, expected, new_status):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("Review is no longer pending.")
+
+    review_data = _review(status="pending")
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.review_service.review_repository.get_review_by_id",
+               side_effect=lambda _: dict(review_data)), \
+         patch("app.services.review_service.review_repository.transition_review_status",
+               side_effect=transition_side_effect), \
+         patch("app.services.review_service.update_product_rating_counters"):
+
+        def do_approve():
+            resp = client.put(
+                "/reviews/rev-1/status",
+                json={"status": "approved"},
+                headers=PM_AUTH,
+            )
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_approve) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(200) == 1, f"Expected 1 success, got: {results}"
     assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"

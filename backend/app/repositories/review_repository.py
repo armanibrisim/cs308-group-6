@@ -139,6 +139,26 @@ def update_review_status(review_id: str, new_status: str) -> None:
     db.collection(REVIEWS_COLLECTION).document(review_id).update({"status": new_status})
 
 
+def transition_review_status(review_id: str, expected: str, new_status: str) -> None:
+    """Atomically transition status from expected → new_status.
+    Raises ValueError if the current status is not expected
+    (another concurrent request already resolved this review)."""
+    db = _db()
+    ref = db.collection(REVIEWS_COLLECTION).document(review_id)
+
+    @firestore_module.transactional
+    def _txn(transaction):
+        doc = ref.get(transaction=transaction)
+        if not doc.exists:
+            raise ValueError("Review not found.")
+        # status is stored unencrypted — read directly
+        if doc.to_dict().get("status") != expected:
+            raise ValueError(f"Review is no longer {expected}.")
+        transaction.update(ref, {"status": new_status})
+
+    _txn(db.transaction())
+
+
 def update_review(review_id: str, updates: dict) -> None:
     db = _db()
     db.collection(REVIEWS_COLLECTION).document(review_id).update(_enc_review_update(updates))
