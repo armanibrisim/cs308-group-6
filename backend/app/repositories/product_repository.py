@@ -54,6 +54,12 @@ def _db():
     return firestore_module.client()
 
 
+def _doc_to_product(doc) -> dict:
+    data = doc.to_dict()
+    data.setdefault("id", doc.id)
+    return data
+
+
 def create_product(data: dict) -> str:
     db = _db()
     now = datetime.now(timezone.utc).isoformat()
@@ -77,6 +83,7 @@ def get_product_by_id(product_id: str) -> Optional[dict]:
     if not doc.exists:
         return None
     data = doc.to_dict()
+    data.setdefault("id", doc.id)
     _set_product(product_id, data)
     return data
 
@@ -99,6 +106,7 @@ def get_product_names_by_ids(product_ids: list[str]) -> dict[str, str]:
         for doc in db.get_all(refs):
             if doc.exists:
                 data = doc.to_dict()
+                data.setdefault("id", doc.id)
                 _set_product(doc.id, data)
                 result[doc.id] = data.get("name", doc.id)
 
@@ -124,7 +132,7 @@ def list_products(
         if products is None:
             db = _db()
             docs = list(db.collection(PRODUCTS_COLLECTION).stream())
-            products = [d.to_dict() for d in docs]
+            products = [_doc_to_product(d) for d in docs]
             _set_products_all(products)
             for p in products:
                 _set_product(p["id"], p)
@@ -134,7 +142,7 @@ def list_products(
             filter=FieldFilter("category_id", "==", category_id)
         )
         docs = list(query.stream())
-        products = [d.to_dict() for d in docs]
+        products = [_doc_to_product(d) for d in docs]
 
     # Text search on name and description (Firestore lacks full-text; filter in-memory)
     if search:
@@ -180,7 +188,7 @@ def list_featured_products(limit: int = 8) -> tuple[list[dict], int]:
     if products is None:
         db = _db()
         docs = list(db.collection(PRODUCTS_COLLECTION).stream())
-        products = [d.to_dict() for d in docs]
+        products = [_doc_to_product(d) for d in docs]
         _set_products_all(products)
         for p in products:
             _set_product(p["id"], p)
