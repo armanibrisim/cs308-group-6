@@ -339,3 +339,88 @@ def test_concurrent_approve_review_only_one_succeeds():
 
     assert results.count(200) == 1, f"Expected 1 success, got: {results}"
     assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"
+
+
+# ---------------------------------------------------------------------------
+# Test 10 — set_vote returns zero delta when vote already exists (idempotent)
+# ---------------------------------------------------------------------------
+def test_vote_idempotent_when_already_voted():
+    """
+    GIVEN a user who has already liked a review (atomic check inside set_vote
+          found existing vote of same type → delta = 0)
+    WHEN  POST /reviews/{id}/vote with same vote_type is called again
+    THEN  200 is returned and the like count is unchanged (no double-count)
+    """
+    approved_review = _review(status="approved", likes=5, dislikes=1)
+
+    with patch("app.services.review_service.review_repository.get_review_by_id",
+               return_value=approved_review), \
+         patch("app.services.review_service.review_repository.get_user_vote",
+               return_value=None), \
+         patch("app.services.review_service.review_repository.set_vote",
+               return_value=(0, 0)):
+
+        resp = client.post(
+            "/reviews/rev-1/vote",
+            json={"vote_type": "like"},
+            headers=CUSTOMER_AUTH,
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    # Delta is 0 — counts must stay exactly as they were in the review
+    assert body["likes"] == 5
+    assert body["dislikes"] == 1
+    assert body["user_vote"] == "like"
+
+
+# ---------------------------------------------------------------------------
+# Test 11 — Concurrent same-type votes: only one increments the counter
+# ---------------------------------------------------------------------------
+def test_concurrent_same_vote_no_double_count():
+    """
+    GIVEN two concurrent POST /reviews/{id}/vote like requests from same user
+    WHEN  both threads fire at the same time
+    THEN  both return 200, but the second call returns delta=0
+          (atomic transaction detected the vote already exists → no double-count)
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def set_vote_side_effect(review_id, user_id, product_id, vote_type):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        # First call: new vote → delta +1
+        # Second call: atomic check found existing same-type vote → delta 0
+        return (1, 0) if n == 1 else (0, 0)
+
+    review_data = _review(status="approved", likes=3, dislikes=0)
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.review_service.review_repository.get_review_by_id",
+               side_effect=lambda _: dict(review_data)), \
+         patch("app.services.review_service.review_repository.get_user_vote",
+               return_value=None), \
+         patch("app.services.review_service.review_repository.set_vote",
+               side_effect=set_vote_side_effect):
+
+        def do_vote():
+            resp = client.post(
+                "/reviews/rev-1/vote",
+                json={"vote_type": "like"},
+                headers=CUSTOMER_AUTH,
+            )
+            with results_lock:
+                results.append(resp.json()["likes"])
+
+        threads = [threading.Thread(target=do_vote) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    # One thread incremented likes by 1, the other got delta=0
+    assert 4 in results, f"Expected one result with likes=4, got: {results}"
+    assert 3 in results, f"Expected one result with likes=3 (no double-count), got: {results}"
