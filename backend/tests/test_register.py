@@ -3,6 +3,7 @@ Test cases for POST /auth/register
 Run with: pytest tests/test_register.py -v
 """
 
+import threading
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
@@ -33,7 +34,7 @@ def test_register_success():
     THEN  response is 201 Created, success=True, role=customer, and a token is returned
     """
     with patch("app.services.auth_service.get_user_by_email", return_value=None), \
-         patch("app.services.auth_service.create_user", return_value="newuser@example.com"):
+         patch("app.services.auth_service.create_user", return_value=("newuser@example.com", 1)):
 
         response = client.post("/auth/register", json=VALID_PAYLOAD)
 
@@ -110,7 +111,7 @@ def test_register_new_user_always_gets_customer_role():
           (no privilege escalation possible through registration)
     """
     with patch("app.services.auth_service.get_user_by_email", return_value=None), \
-         patch("app.services.auth_service.create_user", return_value="admin@example.com"):
+         patch("app.services.auth_service.create_user", return_value=("admin@example.com", 2)):
 
         response = client.post("/auth/register", json={
             "email": "admin@example.com",
@@ -121,3 +122,66 @@ def test_register_new_user_always_gets_customer_role():
 
     assert response.status_code == 201
     assert response.json()["role"] == "customer"
+
+
+# ---------------------------------------------------------------------------
+# Test Case 6 — DB-level duplicate: create_user raises ValueError → 409
+# ---------------------------------------------------------------------------
+def test_register_db_level_duplicate_returns_409():
+    """
+    GIVEN the pre-check passes (get_user_by_email returns None)
+    BUT   create_user raises ValueError because the atomic transaction
+          found the document already exists (concurrent request won the race)
+    WHEN  POST /auth/register is called
+    THEN  response is 409 Conflict with "already registered" in the detail
+    """
+    with patch("app.services.auth_service.get_user_by_email", return_value=None), \
+         patch("app.services.auth_service.create_user",
+               side_effect=ValueError("This email is already registered.")):
+
+        response = client.post("/auth/register", json=VALID_PAYLOAD)
+
+    assert response.status_code == 409
+    assert "already registered" in response.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Test Case 7 — Concurrent registrations with same email: only one succeeds
+# ---------------------------------------------------------------------------
+def test_concurrent_registration_only_one_succeeds():
+    """
+    GIVEN two concurrent POST /auth/register requests with the same email
+    WHEN  both threads fire at the same time
+    THEN  exactly 1 returns 201 and 1 returns 409
+          (the atomic existence check in the transaction rejects the second)
+    """
+    lock = threading.Lock()
+    call_count = {"n": 0}
+
+    def create_user_side_effect(email, password, first_name, last_name):
+        with lock:
+            call_count["n"] += 1
+            n = call_count["n"]
+        if n > 1:
+            raise ValueError("This email is already registered.")
+        return (email, n)
+
+    results = []
+    results_lock = threading.Lock()
+
+    with patch("app.services.auth_service.get_user_by_email", return_value=None), \
+         patch("app.services.auth_service.create_user", side_effect=create_user_side_effect):
+
+        def do_register():
+            resp = client.post("/auth/register", json=VALID_PAYLOAD)
+            with results_lock:
+                results.append(resp.status_code)
+
+        threads = [threading.Thread(target=do_register) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+    assert results.count(201) == 1, f"Expected 1 success, got: {results}"
+    assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"

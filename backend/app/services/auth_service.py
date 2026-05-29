@@ -36,7 +36,10 @@ def register_user(email: str, password: str, first_name: str, last_name: str) ->
             detail="This email is already registered.",
         )
 
-    doc_id, user_id = create_user(email, password, first_name, last_name)
+    try:
+        doc_id, user_id = create_user(email, password, first_name, last_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     token = create_access_token({"sub": doc_id, "email": email, "role": "customer"})
 
     return {

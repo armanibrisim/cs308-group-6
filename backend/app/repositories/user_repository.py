@@ -78,6 +78,9 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> t
 
     @firestore.transactional
     def _txn(transaction):
+        user_snap = user_ref.get(transaction=transaction)
+        if user_snap.exists:
+            raise ValueError("This email is already registered.")
         snap = counters_ref.get(transaction=transaction)
         next_id = ((snap.to_dict() or {}).get("user_count") or 0) + 1
         doc = {**base_doc, "user_id": next_id}
