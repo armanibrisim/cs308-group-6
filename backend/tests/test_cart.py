@@ -235,17 +235,17 @@ def test_add_item_missing_product_id():
 
 
 # ---------------------------------------------------------------------------
-# Test 10 — 403 when no auth token is provided
+# Test 10 — 401 when no auth token is provided
 # ---------------------------------------------------------------------------
 def test_add_item_unauthenticated():
     """
     GIVEN no Authorization header
     WHEN  POST /cart/items is called
-    THEN  response is 403 Forbidden (FastAPI returns 403 for missing credentials)
+    THEN  response is 401 Unauthorized (HTTPBearer raises 401 for missing credentials)
     """
     resp = client.post("/cart/items", json={"product_id": "prod-1", "quantity": 1})
 
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------

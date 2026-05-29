@@ -152,7 +152,7 @@ def test_invoice_list_unauthorized():
     """
     GIVEN no Authorization header
     WHEN  GET /invoices is called
-    THEN  response is 403 (HTTPBearer returns 403 when no token is provided)
+    THEN  response is 401 Unauthorized (HTTPBearer raises 401 for missing credentials)
     """
     resp = client.get("/invoices")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
