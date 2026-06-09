@@ -6,6 +6,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { SideNav } from '../../../components/layout/SideNav'
 import { useAuth } from '../../../context/AuthContext'
 import { Order, OrderItem, ReturnRequest, orderService } from '../../../services/orderService'
+import { apiService } from '../../../services/api'
+
+export interface ReturnableItem {
+  order_id: string
+  order_date: string
+  delivered_at: string
+  days_left: number
+  product_id: string
+  product_name: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  image_url?: string | null
+}
 
 // ── Constants & helpers ───────────────────────────────────────────────────────
 
@@ -307,6 +321,26 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess, onCancelSucc
 
   const cancellable = order.status === 'processing'
 
+  const handleDownloadInvoice = async () => {
+    if (!order.invoice_id) return
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const resp = await fetch(`${API_BASE}/invoices/${order.invoice_id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!resp.ok) throw new Error('Failed to download invoice')
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `invoice_${order.invoice_id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Could not download invoice. Please try again.', false)
+    }
+  }
+
   const handleCancelOrder = async () => {
     setCancelling(true)
     try {
@@ -381,9 +415,30 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess, onCancelSucc
               <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--c-text)' }}>#{order.id.slice(-8).toUpperCase()}</div>
               <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, marginTop: '4px' }}>{fmtDate(order.created_at)}</div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Total</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>{fmt(order.total_amount)}</div>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Total</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>{fmt(order.total_amount)}</div>
+              </div>
+              {order.invoice_id && (
+                <button
+                  onClick={handleDownloadInvoice}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    padding: '5px 12px', borderRadius: '0.4rem',
+                    background: 'transparent',
+                    border: '1px solid rgba(var(--c-text-rgb), 0.18)',
+                    color: MUTED, cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(var(--c-text-rgb), 0.4)'; e.currentTarget.style.color = 'var(--c-text)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--c-text-rgb), 0.18)'; e.currentTarget.style.color = MUTED }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>download</span>
+                  Invoice PDF
+                </button>
+              )}
             </div>
           </div>
 
@@ -644,6 +699,7 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([])
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([])
+  const [returnableItems, setReturnableItems] = useState<ReturnableItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -652,12 +708,16 @@ export default function OrdersPage() {
     setLoading(true)
     setError(null)
     try {
-      const [ordersData, returnData] = await Promise.allSettled([
+      const [ordersData, returnData, returnableData] = await Promise.allSettled([
         orderService.getMyOrders(user.token),
         orderService.getMyReturnRequests(user.token),
+        apiService.get<ReturnableItem[]>('/orders/returnable-items', {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }),
       ])
       setOrders(ordersData.status === 'fulfilled' ? ordersData.value : [])
       setReturnRequests(returnData.status === 'fulfilled' ? returnData.value : [])
+      setReturnableItems(returnableData.status === 'fulfilled' ? returnableData.value : [])
       if (ordersData.status === 'rejected') throw ordersData.reason
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load orders.')
@@ -693,6 +753,59 @@ export default function OrdersPage() {
             Refresh
           </button>
         </div>
+
+        {/* Returnable items panel — powered by GET /orders/returnable-items */}
+        {!loading && returnableItems.length > 0 && (
+          <div style={{
+            marginBottom: '2.5rem',
+            background: 'rgba(245,158,11,0.04)',
+            border: '1px solid rgba(245,158,11,0.22)',
+            borderRadius: '1.25rem',
+            padding: '1.5rem 2rem',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+              <span className="material-symbols-outlined" style={{ color: '#f59e0b', fontSize: '18px' }}>assignment_return</span>
+              <p style={{ fontSize: '11px', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#f59e0b', fontWeight: 700 }}>
+                {returnableItems.length} item{returnableItems.length > 1 ? 's' : ''} eligible for return
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {returnableItems.map((item, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  flexWrap: 'wrap', gap: '0.75rem',
+                  padding: '0.875rem 1rem',
+                  background: 'rgba(0,0,0,0.2)', borderRadius: '0.75rem',
+                  border: '1px solid rgba(245,158,11,0.10)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {item.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image_url} alt={item.product_name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '0.375rem', flexShrink: 0 }} />
+                    )}
+                    <div>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--c-text)', marginBottom: '2px' }}>{item.product_name}</p>
+                      <p style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED }}>
+                        Order #{item.order_id.slice(-8).toUpperCase()} · Qty {item.quantity} · {fmt(item.subtotal)}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: '10px', fontFamily: 'monospace', fontWeight: 700,
+                      color: item.days_left <= 5 ? '#ef4444' : '#f59e0b',
+                      background: item.days_left <= 5 ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.10)',
+                      border: `1px solid ${item.days_left <= 5 ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                      padding: '3px 8px', borderRadius: '9999px',
+                    }}>
+                      {item.days_left}d left
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && (
           <div style={{ marginBottom: '2rem', padding: '1rem 1.5rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', fontSize: '12px', color: '#ef4444', fontFamily: 'monospace' }}>
