@@ -321,6 +321,26 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess, onCancelSucc
 
   const cancellable = order.status === 'processing'
 
+  const handleDownloadInvoice = async () => {
+    if (!order.invoice_id) return
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+      const resp = await fetch(`${API_BASE}/invoices/${order.invoice_id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!resp.ok) throw new Error('Failed to download invoice')
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `invoice_${order.invoice_id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Could not download invoice. Please try again.', false)
+    }
+  }
+
   const handleCancelOrder = async () => {
     setCancelling(true)
     try {
@@ -395,9 +415,30 @@ function OrderCard({ order, token, returnRequests, onReturnSuccess, onCancelSucc
               <div style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--c-text)' }}>#{order.id.slice(-8).toUpperCase()}</div>
               <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, marginTop: '4px' }}>{fmtDate(order.created_at)}</div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Total</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>{fmt(order.total_amount)}</div>
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontFamily: 'monospace', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Total</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--c-text)', letterSpacing: '-0.02em' }}>{fmt(order.total_amount)}</div>
+              </div>
+              {order.invoice_id && (
+                <button
+                  onClick={handleDownloadInvoice}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    padding: '5px 12px', borderRadius: '0.4rem',
+                    background: 'transparent',
+                    border: '1px solid rgba(var(--c-text-rgb), 0.18)',
+                    color: MUTED, cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(var(--c-text-rgb), 0.4)'; e.currentTarget.style.color = 'var(--c-text)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--c-text-rgb), 0.18)'; e.currentTarget.style.color = MUTED }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>download</span>
+                  Invoice PDF
+                </button>
+              )}
             </div>
           </div>
 
