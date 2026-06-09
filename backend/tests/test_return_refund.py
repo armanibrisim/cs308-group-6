@@ -696,3 +696,74 @@ def test_returnable_items_excludes_in_transit_order():
 
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+# ===========================================================================
+# Stock restoration on return approval
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 28 — Stock is NOT restored when a return is rejected
+# ---------------------------------------------------------------------------
+def test_reject_return_does_not_restore_stock():
+    """
+    GIVEN a pending return request
+    WHEN  PATCH /return-requests/{id}/reject is called
+    THEN  increment_stock is never called (stock must not change on rejection)
+    """
+    row = _make_return("ret-1")
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.increment_stock") as mock_stock:
+
+        resp = client.patch("/return-requests/ret-1/reject", headers=SM_AUTH)
+
+    assert resp.status_code == 200
+    mock_stock.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test 29 — Stock restored quantity exactly matches the return request quantity
+# ---------------------------------------------------------------------------
+def test_approve_return_restores_exact_quantity():
+    """
+    GIVEN a pending return for 3 units of product "p1"
+    WHEN  PATCH /return-requests/{id}/approve is called
+    THEN  increment_stock is called with quantity=3, not any other value
+    """
+    row = {**_make_return("ret-1"), "quantity": 3, "total_price": 299.97}
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.increment_stock") as mock_stock, \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
+         patch("app.services.return_request_service.notification_repository.create_notification"):
+
+        client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+
+    mock_stock.assert_called_once_with("p1", 3)
+
+
+# ---------------------------------------------------------------------------
+# Test 30 — Purchase count is decremented when a return is approved
+# ---------------------------------------------------------------------------
+def test_approve_return_decrements_purchase_count():
+    """
+    GIVEN a pending return for 2 units of product "p1"
+    WHEN  PATCH /return-requests/{id}/approve is called
+    THEN  increment_purchase_count is called with ("p1", -2) to reverse the
+          purchase count that was added when the order was originally placed
+    """
+    row = _make_return("ret-1")
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.increment_stock"), \
+         patch("app.services.return_request_service.increment_purchase_count") as mock_pc, \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
+         patch("app.services.return_request_service.notification_repository.create_notification"):
+
+        client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+
+    mock_pc.assert_called_once_with("p1", -2)
