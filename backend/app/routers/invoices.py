@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
 from app.dependencies import get_current_user, require_role
@@ -27,9 +27,14 @@ async def get_invoice(
 @router.get("/{invoice_id}/pdf")
 async def download_invoice_pdf(
     invoice_id: str,
-    current_user: dict = Depends(require_role("product_manager", "sales_manager")),
+    current_user: dict = Depends(get_current_user),
 ):
     invoice = fetch_invoice(invoice_id)
+
+    # Customers may only download their own invoice
+    if current_user["role"] == "customer" and invoice.customer_id != current_user["user_id"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     pdf_bytes = generate_invoice_pdf(invoice)
     return Response(
         content=pdf_bytes,
