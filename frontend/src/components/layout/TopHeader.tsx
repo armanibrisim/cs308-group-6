@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
@@ -28,18 +29,7 @@ export function TopHeader() {
       }}
     >
       <div style={{ width: '160px', display: 'flex', alignItems: 'center' }}>
-        <span
-          className="font-wide"
-          style={{
-            fontSize: '1.4rem',
-            color: '#fff',
-            textTransform: 'uppercase',
-            cursor: 'default',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          LUMEN
-        </span>
+        <Image src="/logo.png" alt="LUMEN" width={44} height={48} priority style={{ objectFit: 'contain' }} />
       </div>
 
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
