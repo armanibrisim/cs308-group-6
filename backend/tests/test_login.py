@@ -143,30 +143,3 @@ def test_login_success_product_manager_role():
     assert body["success"] is True
     assert body["role"] == "product_manager"
     assert "token" in body
-
-
-# ---------------------------------------------------------------------------
-# Test Case 6 — Login succeeds when Firestore user_id is a non-numeric string
-# ---------------------------------------------------------------------------
-def test_login_success_with_legacy_string_user_id():
-    """
-    GIVEN a user whose Firestore user_id is a legacy string value
-    WHEN  POST /auth/login is called with valid credentials
-    THEN  response is 200 OK and user_id falls back to 0
-    """
-    with patch("app.services.auth_service.get_user_by_email") as mock_get, \
-         patch("app.services.auth_service.verify_password", return_value=True):
-
-        doc_id, data = _make_user_doc(role="customer", password_hash="hashed_pw")
-        data["user_id"] = "ah9zJYYzLD3BToN4H3y1ItKNZnc6kGyRCwh5feM="
-        mock_get.return_value = (doc_id, data)
-
-        response = client.post("/auth/login", json={
-            "email": "test@example.com",
-            "password": "correct_password",
-        })
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["success"] is True
-    assert body["user_id"] == 0

@@ -14,7 +14,7 @@ from app.repositories.user_repository import (
     set_default_address,
     set_default_card,
 )
-from app.services.auth_service import login_user, normalize_user_id, register_user
+from app.services.auth_service import login_user, register_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,7 +40,7 @@ async def me(current_user: dict = Depends(get_current_user)):
         "email": user.get("email", ""),
         "role": user.get("role", "customer"),
         "tax_id": user.get("tax_id", ""),
-        "user_id": normalize_user_id(user.get("user_id", 0)),
+        "user_id": user.get("user_id", 0),
     }
 
 

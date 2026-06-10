@@ -17,18 +17,11 @@ function setCached<T>(key: string, data: T): void {
   _cache.set(key, { data, expires: Date.now() + CACHE_TTL })
 }
 
-function invalidateProductCache(id?: string): void {
-  if (id) _cache.delete(`/products/${id}`)
+function invalidateProductCache(id: string): void {
+  _cache.delete(`/products/${id}`)
   for (const key of _cache.keys()) {
     if (key.startsWith('/products?')) _cache.delete(key)
   }
-}
-
-export interface StockProductResponse {
-  id: string
-  stock_quantity: number
-  in_stock: boolean
-  name?: string
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -82,39 +75,15 @@ export const productService = {
     return apiService.get<Product[]>(`/products/search?q=${encodeURIComponent(query)}`)
   },
 
-  /** Fetch all products by paginating through the list endpoint. */
-  async getAllProducts(): Promise<{ products: Product[]; total: number }> {
-    const pageSize = 100
-    let page = 1
-    let all: Product[] = []
-    let total = 0
-
-    while (true) {
-      const res = await this.getProducts({ page, limit: pageSize })
-      all = all.concat(res.products)
-      total = res.total
-      if (all.length >= total || res.products.length === 0) break
-      page += 1
-    }
-
-    return { products: all, total }
-  },
-
   /** Product manager: set absolute stock (backend PATCH /products/{id}/stock). */
-  async updateStock(productId: string, stock_quantity: number, token: string): Promise<StockProductResponse> {
-    const data = await apiService.patch<StockProductResponse & { stockQuantity?: number; inStock?: boolean }>(
+  async updateStock(productId: string, stock_quantity: number, token: string): Promise<Product & { stock_quantity?: number }> {
+    const data = await apiService.patch<Product & { stock_quantity?: number }>(
       `/products/${productId}/stock`,
       { stock_quantity },
       { headers: { Authorization: `Bearer ${token}` } },
     )
     invalidateProductCache(productId)
-    const qty = data.stock_quantity ?? data.stockQuantity ?? stock_quantity
-    return {
-      id: data.id ?? productId,
-      name: data.name,
-      stock_quantity: qty,
-      in_stock: data.in_stock ?? data.inStock ?? qty > 0,
-    }
+    return data
   },
 
   // Invalidate specific product entries (called after checkout to show updated stock)

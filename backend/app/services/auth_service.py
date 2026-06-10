@@ -4,25 +4,6 @@ from app.repositories.user_repository import create_user, get_user_by_email
 from app.utils.security import create_access_token, verify_password
 
 
-def normalize_user_id(value) -> int:
-    """Coerce Firestore user_id to int; legacy string values must not break login."""
-    if value is None or isinstance(value, bool):
-        return 0
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        stripped = value.strip()
-        if stripped.isdigit():
-            return int(stripped)
-        try:
-            return int(float(stripped))
-        except ValueError:
-            return 0
-    return 0
-
-
 def login_user(email: str, password: str) -> dict:
     result = get_user_by_email(email)
 
@@ -44,7 +25,7 @@ def login_user(email: str, password: str) -> dict:
         "token": token,
         "first_name": data.get("first_name", ""),
         "last_name": data.get("last_name", ""),
-        "user_id": normalize_user_id(data.get("user_id", 0)),
+        "user_id": data.get("user_id", 0),
     }
 
 
@@ -69,5 +50,5 @@ def register_user(email: str, password: str, first_name: str, last_name: str) ->
         "token": token,
         "first_name": first_name,
         "last_name": last_name,
-        "user_id": normalize_user_id(user_id),
+        "user_id": user_id,
     }
