@@ -1,5 +1,15 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 class ApiService {
   private baseURL: string
 
@@ -24,7 +34,21 @@ class ApiService {
     const response = await fetch(url, config)
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      let detail = `HTTP error! status: ${response.status}`
+      try {
+        const body = await response.json()
+        if (typeof body.detail === 'string') {
+          detail = body.detail
+        } else if (Array.isArray(body.detail)) {
+          detail = body.detail
+            .map((item: { msg?: string }) => item?.msg)
+            .filter(Boolean)
+            .join(', ') || detail
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new ApiError(response.status, detail)
     }
 
     return response.json()
