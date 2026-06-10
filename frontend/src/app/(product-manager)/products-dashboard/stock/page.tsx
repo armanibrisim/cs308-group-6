@@ -475,12 +475,7 @@ export default function StockPage() {
                       style={{
                         ...stockInputStyle,
                         borderColor: isDirty ? 'rgba(var(--c-neon-rgb), 0.45)' : 'rgba(var(--c-text-rgb), 0.15)',
-                        color:
-                          p.stock_quantity === 0
-                            ? '#ef4444'
-                            : p.stock_quantity < 5
-                              ? '#f59e0b'
-                              : 'var(--c-text)',
+                        color: 'var(--c-text)',
                       }}
                     />
                   </div>
