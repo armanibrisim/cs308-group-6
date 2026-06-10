@@ -21,18 +21,3 @@ class ReturnRequestResponse(BaseModel):
     reason: str
     status: str
     created_at: str
-
-
-class ReturnableItem(BaseModel):
-    """A single order line item the customer is currently eligible to return."""
-    order_id: str
-    order_date: str          # ISO timestamp of the order
-    delivered_at: str        # ISO timestamp when order became delivered
-    days_left: int           # Whole days remaining in the 30-day return window
-    product_id: str
-    product_name: str
-    quantity: int
-    unit_price: float
-    subtotal: float          # unit_price * quantity (pre-discount line total)
-    image_url: Optional[str] = None
-

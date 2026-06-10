@@ -2,9 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 
-from app.models.return_request import ReturnableItem, ReturnRequestResponse
+from app.models.return_request import ReturnRequestResponse
 from app.repositories import notification_repository, order_repository, return_request_repository
-from app.repositories.product_repository import get_product_by_id, increment_purchase_count, increment_stock
+from app.repositories.product_repository import increment_purchase_count, increment_stock
 from app.repositories.user_repository import get_user_by_id
 
 RETURN_WINDOW_DAYS = 30
@@ -179,88 +179,3 @@ def reject_return(return_id: str) -> ReturnRequestResponse:
 
     row["status"] = "rejected"
     return _to_response(row)
-
-
-def list_returnable_items(customer_id: str) -> list[ReturnableItem]:
-    """Return every order line item the customer is currently eligible to return.
-
-    Eligibility rules (all must hold):
-    1. Order belongs to this customer.
-    2. Order status is "delivered".
-    3. Delivery was within the 30-day return window.
-    4. No pending or approved return request exists for (order_id, product_id).
-    5. The item has not already been approved-refunded (in order.refunded_items).
-    """
-    now = datetime.now(timezone.utc)
-    orders = order_repository.list_orders_by_customer(customer_id)
-
-    # Pre-fetch all existing return requests for this customer in one query
-    # and build a set of (order_id, product_id) pairs that are blocked.
-    existing_returns = return_request_repository.list_returns_for_customer(customer_id)
-    blocked: set[tuple[str, str]] = {
-        (r["order_id"], r["product_id"])
-        for r in existing_returns
-        if r.get("status") in ("pending", "approved")
-    }
-
-    # Cache product lookups (image_url) to avoid duplicate Firestore reads
-    product_cache: dict[str, dict | None] = {}
-
-    items: list[ReturnableItem] = []
-
-    for order in orders:
-        if order.get("status") != "delivered":
-            continue
-        if not _within_return_window(order):
-            continue
-
-        order_id = order["id"]
-        order_date = order.get("created_at", "")
-
-        # Determine the exact delivery timestamp for days_left calculation
-        delivered_ts = _delivery_timestamp(order)
-        try:
-            delivered_dt = _parse_dt(delivered_ts)
-        except ValueError:
-            continue
-
-        deadline = delivered_dt + timedelta(days=RETURN_WINDOW_DAYS)
-        days_left = max(0, (deadline - now).days)
-
-        # Build a set of product_ids already refunded on this specific order
-        refunded_product_ids: set[str] = {
-            entry["product_id"]
-            for entry in (order.get("refunded_items") or [])
-        }
-
-        for line in (order.get("items") or []):
-            pid = line.get("product_id", "")
-            if not pid:
-                continue
-            if (order_id, pid) in blocked:
-                continue
-            if pid in refunded_product_ids:
-                continue
-
-            # Fetch product image (cached)
-            if pid not in product_cache:
-                product_cache[pid] = get_product_by_id(pid)
-            product = product_cache[pid]
-            image_url = (product or {}).get("image_url")
-
-            items.append(ReturnableItem(
-                order_id=order_id,
-                order_date=order_date,
-                delivered_at=delivered_ts,
-                days_left=days_left,
-                product_id=pid,
-                product_name=line.get("product_name", ""),
-                quantity=int(line.get("quantity", 1)),
-                unit_price=float(line.get("unit_price", 0)),
-                subtotal=float(line.get("subtotal", 0)),
-                image_url=image_url,
-            ))
-
-    # Sort: soonest deadline first so the UI can show urgency
-    items.sort(key=lambda x: x.days_left)
-    return items

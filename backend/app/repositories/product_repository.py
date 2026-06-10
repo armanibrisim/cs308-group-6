@@ -337,11 +337,7 @@ def decrement_stock(product_id: str, quantity: int) -> None:
 
 
 def increment_stock(product_id: str, quantity: int) -> None:
-    """Restore stock atomically (e.g. after an approved return).
-
-    Raises ValueError if the product document does not exist so callers
-    receive a clear error instead of a silent Firestore no-op.
-    """
+    """Add quantity back to stock (e.g. approved return)."""
     if quantity <= 0:
         return
     db = _db()
@@ -350,8 +346,6 @@ def increment_stock(product_id: str, quantity: int) -> None:
     @firestore_module.transactional
     def _txn(transaction):
         snapshot = ref.get(transaction=transaction)
-        if not snapshot.exists:
-            raise ValueError(f"Product {product_id} not found — cannot restore stock")
         current_stock = snapshot.get("stock_quantity") or 0
         transaction.update(ref, {
             "stock_quantity": int(current_stock) + quantity,
