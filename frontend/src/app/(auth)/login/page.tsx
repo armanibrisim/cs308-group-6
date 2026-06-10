@@ -7,7 +7,7 @@ import React, { useState } from 'react'
 import styles from '../../../components/auth/AuthLayout.module.css'
 import { AuthButton, AuthInput, AuthLayout, ImageSlider } from '../../../components/auth'
 import { useAuth } from '../../../context/AuthContext'
-import { authService } from '../../../services/authService'
+import { authService, loginErrorMessage } from '../../../services/authService'
 import { cartService } from '../../../services/cartService'
 
 const GUEST_CART_KEY = 'lumen_guest_cart'
@@ -77,8 +77,8 @@ export default function LoginPage() {
       } else {
         router.push('/browse')
       }
-    } catch {
-      setError('Invalid email or password.')
+    } catch (err) {
+      setError(loginErrorMessage(err))
     } finally {
       setLoading(false)
     }
