@@ -23,6 +23,7 @@ from app.repositories.product_repository import (
     get_category_by_name,
     get_category_by_slug,
     get_product_by_id,
+    is_complete_product,
     list_categories,
     list_featured_products,
     list_products,
@@ -84,6 +85,10 @@ def _resolve_category_id(category_slug: str) -> Optional[str]:
     return None
 
 
+def _products_to_responses(products: list[dict]) -> list[ProductResponse]:
+    return [_to_product_response(p) for p in products if is_complete_product(p)]
+
+
 def _to_product_response(data: dict) -> ProductResponse:
     rating_count = data.get("rating_count") or 0
     rating_sum = data.get("rating_sum") or 0
@@ -139,7 +144,7 @@ def fetch_products(
         limit=limit,
     )
     return ProductListResponse(
-        products=[_to_product_response(p) for p in products],
+        products=_products_to_responses(products),
         total=total,
     )
 
@@ -148,7 +153,7 @@ def fetch_featured_products(limit: int = 8) -> ProductListResponse:
     """Return newest products for the homepage featured section."""
     products, total = list_featured_products(limit)
     return ProductListResponse(
-        products=[_to_product_response(p) for p in products],
+        products=_products_to_responses(products),
         total=total,
     )
 
@@ -156,12 +161,12 @@ def fetch_featured_products(limit: int = 8) -> ProductListResponse:
 def search_products(q: str) -> list[ProductResponse]:
     """Full-text search across product names and descriptions."""
     products, _ = list_products(search=q, page=1, limit=50)
-    return [_to_product_response(p) for p in products]
+    return _products_to_responses(products)
 
 
 def fetch_product(product_id: str) -> ProductResponse:
     data = get_product_by_id(product_id)
-    if data is None:
+    if data is None or not is_complete_product(data):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found",
