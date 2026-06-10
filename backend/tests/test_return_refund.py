@@ -7,6 +7,7 @@ Endpoints covered:
   GET   /return-requests
   GET   /return-requests/my
   POST  /orders/{order_id}/items/{product_id}/return
+  GET   /orders/returnable-items
 
 Run with: pytest tests/test_return_refund.py -v
 """
@@ -435,3 +436,334 @@ def test_concurrent_approve_only_one_succeeds():
 
     assert results.count(200) == 1, f"Expected 1 success, got: {results}"
     assert results.count(409) == 1, f"Expected 1 conflict, got: {results}"
+
+
+# ===========================================================================
+# GET /orders/returnable-items
+# ===========================================================================
+
+def _make_full_order(
+    oid: str,
+    status: str = "delivered",
+    customer_id: str = "cust@test.com",
+    delivered_at: str | None = None,
+    items: list | None = None,
+    refunded_items: list | None = None,
+) -> dict:
+    if delivered_at is None:
+        delivered_at = (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+    return {
+        "id": oid,
+        "customer_id": customer_id,
+        "customer_email": "cust@test.com",
+        "customer_name": "Test User",
+        "delivery_address": "123 Main St",
+        "items": items or [
+            {
+                "product_id": "p1",
+                "product_name": "Laptop",
+                "quantity": 1,
+                "unit_price": 999.99,
+                "subtotal": 999.99,
+            }
+        ],
+        "subtotal": 999.99,
+        "tax": 80.0,
+        "shipping": 0.0,
+        "total_amount": 1079.99,
+        "status": status,
+        "delivered_at": delivered_at,
+        "created_at": "2026-02-20T10:00:00+00:00",
+        "updated_at": "2026-02-25T10:00:00+00:00",
+        "refunded_items": refunded_items or [],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Test 18 — Happy path: one delivered order within window → item returned
+# ---------------------------------------------------------------------------
+def test_returnable_items_happy_path():
+    """
+    GIVEN a customer with one delivered order within the 30-day return window
+    WHEN  GET /orders/returnable-items is called
+    THEN  response is 200 and contains one returnable item with correct fields
+    """
+    order = _make_full_order("ord-1")
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]), \
+         patch("app.services.return_request_service.get_product_by_id", return_value={"image_url": "https://example.com/img.jpg"}):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["product_id"] == "p1"
+    assert data[0]["product_name"] == "Laptop"
+    assert data[0]["order_id"] == "ord-1"
+    assert data[0]["quantity"] == 1
+    assert data[0]["subtotal"] == 999.99
+    assert data[0]["days_left"] >= 0
+    assert data[0]["image_url"] == "https://example.com/img.jpg"
+
+
+# ---------------------------------------------------------------------------
+# Test 19 — No orders at all → empty list
+# ---------------------------------------------------------------------------
+def test_returnable_items_no_orders():
+    """
+    GIVEN a customer with no orders
+    WHEN  GET /orders/returnable-items is called
+    THEN  response is 200 and the list is empty
+    """
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Test 20 — Order delivered more than 30 days ago → not returnable
+# ---------------------------------------------------------------------------
+def test_returnable_items_expired_window():
+    """
+    GIVEN a delivered order whose delivery was 31 days ago (outside the 30-day window)
+    WHEN  GET /orders/returnable-items is called
+    THEN  response is 200 and the list is empty
+    """
+    expired_delivered_at = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
+    order = _make_full_order("ord-1", delivered_at=expired_delivered_at)
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Test 21 — Item already has a pending return request → excluded
+# ---------------------------------------------------------------------------
+def test_returnable_items_excludes_pending_return():
+    """
+    GIVEN a delivered order within the return window
+      AND a return request for "p1" is already in "pending" status
+    WHEN  GET /orders/returnable-items is called
+    THEN  "p1" is not included in the returnable items list
+    """
+    order = _make_full_order("ord-1")
+    pending_return = {**_make_return("ret-1", status="pending", product_id="p1"), "order_id": "ord-1"}
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[pending_return]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Test 22 — Item already has an approved return → excluded
+# ---------------------------------------------------------------------------
+def test_returnable_items_excludes_approved_return():
+    """
+    GIVEN a delivered order within the return window
+      AND a return request for "p1" is already "approved"
+    WHEN  GET /orders/returnable-items is called
+    THEN  "p1" is not included in the returnable items list
+    """
+    order = _make_full_order("ord-1")
+    approved_return = {**_make_return("ret-1", status="approved", product_id="p1"), "order_id": "ord-1"}
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[approved_return]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Test 23 — Item with a rejected return is still returnable
+# ---------------------------------------------------------------------------
+def test_returnable_items_includes_item_with_rejected_return():
+    """
+    GIVEN a delivered order within the return window
+      AND a return request for "p1" was "rejected" (customer may try again)
+    WHEN  GET /orders/returnable-items is called
+    THEN  "p1" IS included because a rejected request does not block a new one
+    """
+    order = _make_full_order("ord-1")
+    rejected_return = {**_make_return("ret-1", status="rejected", product_id="p1"), "order_id": "ord-1"}
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[rejected_return]), \
+         patch("app.services.return_request_service.get_product_by_id", return_value=None):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+    assert resp.json()[0]["product_id"] == "p1"
+
+
+# ---------------------------------------------------------------------------
+# Test 24 — Item in order's refunded_items list → excluded
+# ---------------------------------------------------------------------------
+def test_returnable_items_excludes_already_refunded_item():
+    """
+    GIVEN a delivered order within the return window
+      AND "p1" is already in the order's refunded_items list (approved refund recorded)
+    WHEN  GET /orders/returnable-items is called
+    THEN  "p1" is excluded because it has already been refunded
+    """
+    order = _make_full_order("ord-1", refunded_items=[{"product_id": "p1"}])
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ---------------------------------------------------------------------------
+# Test 25 — Missing auth token → 403
+# ---------------------------------------------------------------------------
+def test_returnable_items_requires_auth():
+    """
+    GIVEN no Authorization header in the request
+    WHEN  GET /orders/returnable-items is called
+    THEN  response is 403 (HTTPBearer rejects unauthenticated requests)
+    """
+    resp = client.get("/orders/returnable-items")
+    assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Test 26 — Results are sorted by days_left ascending (most urgent first)
+# ---------------------------------------------------------------------------
+def test_returnable_items_sorted_by_days_left():
+    """
+    GIVEN two delivered orders: one delivered 25 days ago (5 days left),
+      one delivered 2 days ago (28 days left)
+    WHEN  GET /orders/returnable-items is called
+    THEN  the item from the older order appears first (fewer days_left)
+    """
+    urgent_delivered_at = (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
+    recent_delivered_at = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+
+    urgent_order = _make_full_order(
+        "ord-urgent",
+        delivered_at=urgent_delivered_at,
+        items=[{"product_id": "p-urgent", "product_name": "Phone", "quantity": 1, "unit_price": 500.0, "subtotal": 500.0}],
+    )
+    recent_order = _make_full_order(
+        "ord-recent",
+        delivered_at=recent_delivered_at,
+        items=[{"product_id": "p-recent", "product_name": "Tablet", "quantity": 1, "unit_price": 300.0, "subtotal": 300.0}],
+    )
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[recent_order, urgent_order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]), \
+         patch("app.services.return_request_service.get_product_by_id", return_value=None):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+    assert data[0]["product_id"] == "p-urgent"
+    assert data[1]["product_id"] == "p-recent"
+    assert data[0]["days_left"] <= data[1]["days_left"]
+
+
+# ---------------------------------------------------------------------------
+# Test 27 — Non-delivered order (in-transit) is excluded
+# ---------------------------------------------------------------------------
+def test_returnable_items_excludes_in_transit_order():
+    """
+    GIVEN an order with status "in-transit" (not yet delivered)
+    WHEN  GET /orders/returnable-items is called
+    THEN  none of its items appear in the returnable list
+    """
+    order = _make_full_order("ord-1", status="in-transit")
+
+    with patch("app.services.return_request_service.order_repository.list_orders_by_customer", return_value=[order]), \
+         patch("app.services.return_request_service.return_request_repository.list_returns_for_customer", return_value=[]):
+        resp = client.get("/orders/returnable-items", headers=CUSTOMER_AUTH)
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# ===========================================================================
+# Stock restoration on return approval
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Test 28 — Stock is NOT restored when a return is rejected
+# ---------------------------------------------------------------------------
+def test_reject_return_does_not_restore_stock():
+    """
+    GIVEN a pending return request
+    WHEN  PATCH /return-requests/{id}/reject is called
+    THEN  increment_stock is never called (stock must not change on rejection)
+    """
+    row = _make_return("ret-1")
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.increment_stock") as mock_stock:
+
+        resp = client.patch("/return-requests/ret-1/reject", headers=SM_AUTH)
+
+    assert resp.status_code == 200
+    mock_stock.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test 29 — Stock restored quantity exactly matches the return request quantity
+# ---------------------------------------------------------------------------
+def test_approve_return_restores_exact_quantity():
+    """
+    GIVEN a pending return for 3 units of product "p1"
+    WHEN  PATCH /return-requests/{id}/approve is called
+    THEN  increment_stock is called with quantity=3, not any other value
+    """
+    row = {**_make_return("ret-1"), "quantity": 3, "total_price": 299.97}
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.increment_stock") as mock_stock, \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
+         patch("app.services.return_request_service.notification_repository.create_notification"):
+
+        client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+
+    mock_stock.assert_called_once_with("p1", 3)
+
+
+# ---------------------------------------------------------------------------
+# Test 30 — Purchase count is decremented when a return is approved
+# ---------------------------------------------------------------------------
+def test_approve_return_decrements_purchase_count():
+    """
+    GIVEN a pending return for 2 units of product "p1"
+    WHEN  PATCH /return-requests/{id}/approve is called
+    THEN  increment_purchase_count is called with ("p1", -2) to reverse the
+          purchase count that was added when the order was originally placed
+    """
+    row = _make_return("ret-1")
+
+    with patch("app.services.return_request_service.return_request_repository.get_return_by_id", return_value=row), \
+         patch("app.services.return_request_service.increment_stock"), \
+         patch("app.services.return_request_service.increment_purchase_count") as mock_pc, \
+         patch("app.services.return_request_service.return_request_repository.transition_return_status"), \
+         patch("app.services.return_request_service.order_repository.mark_item_refunded"), \
+         patch("app.services.return_request_service.notification_repository.create_notification"):
+
+        client.patch("/return-requests/ret-1/approve", headers=SM_AUTH)
+
+    mock_pc.assert_called_once_with("p1", -2)

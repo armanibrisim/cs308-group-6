@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -112,8 +113,8 @@ export function Navbar() {
 
           {/* Brand Logo */}
           <div className="flex flex-col items-start shrink-0">
-            <Link href="/" className="lumen-logo text-3xl font-bold tracking-tighter font-headline">
-              LUMEN
+            <Link href="/" className="lumen-logo shrink-0">
+              <Image src="/logo.png" alt="LUMEN" width={52} height={56} priority style={{ objectFit: 'contain' }} />
             </Link>
             <button
               onClick={toggleTheme}

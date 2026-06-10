@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_current_user, require_role
 from app.models.order import OrderResponse, OrderStatusUpdate
-from app.models.return_request import CreateReturnBody, ReturnRequestResponse
+from app.models.return_request import CreateReturnBody, ReturnableItem, ReturnRequestResponse
 from app.services.order_service import (
     cancel_order,
     fetch_all_orders,
@@ -13,7 +13,7 @@ from app.services.order_service import (
     update_order_status,
     update_order_status_free,
 )
-from app.services.return_request_service import create_return_for_line
+from app.services.return_request_service import create_return_for_line, list_returnable_items
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -60,6 +60,23 @@ async def cancel_my_order(
 ):
     """Customer: cancel a processing order and restore stock."""
     return cancel_order(order_id, current_user["user_id"])
+
+
+@router.get("/returnable-items", response_model=list[ReturnableItem])
+async def list_returnable_order_items(
+    current_user: dict = Depends(get_current_user),
+):
+    """Customer: list all order line items currently eligible for return.
+
+    An item is returnable when:
+    - Its order is delivered.
+    - The delivery was within the last 30 days.
+    - No pending or approved return request exists for this (order, product).
+    - The item has not already been refunded.
+
+    Results are sorted by days_left ascending (most urgent first).
+    """
+    return list_returnable_items(current_user["user_id"])
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
