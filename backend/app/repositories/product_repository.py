@@ -60,21 +60,6 @@ def _doc_to_product(doc) -> dict:
     return data
 
 
-def is_complete_product(data: dict) -> bool:
-    """Return False for Firestore docs missing fields required by ProductResponse."""
-    string_fields = (
-        "id", "name", "model", "serial_number", "description",
-        "warranty", "distributor", "category_id",
-    )
-    for field in string_fields:
-        value = data.get(field)
-        if value is None or (isinstance(value, str) and not value.strip()):
-            return False
-    if data.get("stock_quantity") is None or data.get("price") is None:
-        return False
-    return True
-
-
 def create_product(data: dict) -> str:
     db = _db()
     now = datetime.now(timezone.utc).isoformat()
@@ -159,8 +144,6 @@ def list_products(
         docs = list(query.stream())
         products = [_doc_to_product(d) for d in docs]
 
-    products = [p for p in products if is_complete_product(p)]
-
     # Text search on name and description (Firestore lacks full-text; filter in-memory)
     if search:
         lower = search.lower()
@@ -209,8 +192,7 @@ def list_featured_products(limit: int = 8) -> tuple[list[dict], int]:
         _set_products_all(products)
         for p in products:
             _set_product(p["id"], p)
-    complete = [p for p in products if is_complete_product(p)]
-    sorted_products = sorted(complete, key=lambda p: p.get("created_at", ""), reverse=True)
+    sorted_products = sorted(products, key=lambda p: p.get("created_at", ""), reverse=True)
     return sorted_products[:limit], len(sorted_products)
 
 

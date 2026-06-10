@@ -1,4 +1,4 @@
-import { ApiError, apiService } from './api'
+import { apiService } from './api'
 
 export interface LoginRequest {
   email: string
@@ -20,17 +20,6 @@ export interface AuthResponse {
   token: string
   first_name?: string
   last_name?: string
-}
-
-export function loginErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 401) return 'Invalid email or password.'
-    if (err.status >= 500) return 'Server error. Please try again later.'
-    return err.message
-  }
-  if (err instanceof TypeError) return 'Could not connect to the server. Check that the backend is running.'
-  if (err instanceof Error && err.message) return err.message
-  return 'Sign in failed. Please try again.'
 }
 
 export const authService = {
