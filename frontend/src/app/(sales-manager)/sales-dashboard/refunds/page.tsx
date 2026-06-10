@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { DashboardPageHeader, SALES_MANAGER_HEADER } from '../../../../components/dashboard/DashboardPageHeader'
 import { useAuth } from '../../../../context/AuthContext'
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
@@ -40,7 +40,6 @@ const STATUS_CFG: Record<ReqStatus, { label: string; color: string; bg: string; 
 
 export default function RefundsPage() {
   const { user } = useAuth()
-  const router = useRouter()
   const token = user?.token ?? ''
 
   const [requests, setRequests] = useState<ReturnRequest[]>([])
@@ -110,28 +109,17 @@ export default function RefundsPage() {
     <main className="min-h-screen px-8 py-10 text-white">
       <div className="mx-auto w-full max-w-[1200px] space-y-6">
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-          <button
-            onClick={() => router.push('/sales-dashboard')}
-            style={{ background: 'none', border: '1px solid rgba(var(--c-text-rgb), 0.12)', borderRadius: '50%', width: '2.25rem', height: '2.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(var(--c-text-rgb), 0.5)', flexShrink: 0, transition: 'border-color 0.2s, color 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#f59e0b'; (e.currentTarget as HTMLButtonElement).style.color = '#f59e0b' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.12)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.5)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>arrow_back</span>
-          </button>
-          <div>
-            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#f59e0b', marginBottom: '0.2rem' }}>Sales Manager</p>
-            <h1 style={{ fontSize: '1.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--c-text)' }}>
-              Refund Requests
-              {pendingCount > 0 && (
-                <span style={{ marginLeft: '0.75rem', fontSize: '0.75rem', padding: '2px 10px', borderRadius: '9999px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', verticalAlign: 'middle' }}>
-                  {pendingCount} pending
-                </span>
-              )}
-            </h1>
-          </div>
-        </div>
+        <DashboardPageHeader
+          {...SALES_MANAGER_HEADER}
+          title="Refund Requests"
+          badge={
+            pendingCount > 0 ? (
+              <span style={{ marginLeft: '0.75rem', fontSize: '0.75rem', padding: '2px 10px', borderRadius: '9999px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', verticalAlign: 'middle' }}>
+                {pendingCount} pending
+              </span>
+            ) : undefined
+          }
+        />
 
         {/* Search + Filter + Stats */}
         <div className="glass-panel rounded-3xl border border-white/10" style={{ padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
