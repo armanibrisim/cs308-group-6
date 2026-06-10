@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
+import { DashboardPageHeader, PRODUCT_MANAGER_HEADER } from '../../../../components/dashboard/DashboardPageHeader'
 import { useAuth } from '../../../../context/AuthContext'
 import { AVAILABLE_ICONS, getCategoryIcon } from '../../../../constants/categoryIcons'
 
@@ -380,18 +380,10 @@ export default function CategoriesPage() {
     <main className="min-h-screen px-8 py-10 text-white">
       <div className="mx-auto w-full max-w-[1200px] space-y-6">
 
-        {/* ── Header ── */}
-        <section className="glass-panel rounded-3xl border border-white/10 p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Product Module</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">Categories</h1>
-            </div>
-            <Link href="/products-dashboard" className="inline-flex rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition hover:border-primary/40 hover:text-primary">
-              ← Back to Dashboard
-            </Link>
-          </div>
-        </section>
+        <DashboardPageHeader
+          {...PRODUCT_MANAGER_HEADER}
+          title="Categories"
+        />
 
         <div className="space-y-5">
 

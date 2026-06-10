@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { DashboardPageHeader, ADMIN_HEADER } from '../../../../components/dashboard/DashboardPageHeader'
 import { useAuth } from '../../../../context/AuthContext'
 import { ROLE_META } from '../../../../constants/roleColors'
 
@@ -22,7 +22,6 @@ interface UserRow {
 
 export default function AdminUsersPage() {
   const { user } = useAuth()
-  const router = useRouter()
 
   const [users, setUsers] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,21 +73,10 @@ export default function AdminUsersPage() {
     <main className="min-h-screen px-8 py-10 text-white">
       <div className="mx-auto w-full max-w-[1100px] space-y-6">
 
-        {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-          <button
-            onClick={() => router.push('/admin-dashboard')}
-            style={{ background: 'none', border: '1px solid rgba(var(--c-text-rgb), 0.12)', borderRadius: '50%', width: '2.25rem', height: '2.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(var(--c-text-rgb), 0.5)', flexShrink: 0, transition: 'border-color 0.2s, color 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ef4444'; (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--c-text-rgb), 0.12)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(var(--c-text-rgb), 0.5)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>arrow_back</span>
-          </button>
-          <div>
-            <p style={{ fontSize: '0.6rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.2rem' }}>Admin</p>
-            <h1 style={{ fontSize: '1.75rem', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--c-text)' }}>User Management</h1>
-          </div>
-        </div>
+        <DashboardPageHeader
+          {...ADMIN_HEADER}
+          title="User Management"
+        />
 
         {/* ── Search + Stats ── */}
         <div className="grounded-box" style={{ borderRadius: '1.25rem', padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
